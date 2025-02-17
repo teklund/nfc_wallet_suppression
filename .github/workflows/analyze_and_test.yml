@@ -1,0 +1,61 @@
+name: Analyze and Test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  analyze_and_test:
+    name: Analyze and Test
+    runs-on: ubuntu-latest  # Generally the best choice for Flutter
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+#      - name: Setup Java
+#        uses: actions/setup-java@v4
+#        with:
+#          distribution: 'zulu' # Recommended for Flutter
+#          java-version: '17'   # Flutter currently supports Java 17, important for Android builds
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable' # Alternatively, use the 'stable' channel. Avoid 'dev' or 'beta' for CI.
+          cache: true            # Cache Flutter dependencies for faster builds
+
+      - name: Get Flutter Dependencies
+        run: flutter pub get
+
+      - name: Analyze Code (flutter analyze)
+        run: flutter analyze
+
+      - name: Run Tests (flutter test)
+        run: flutter test # --coverage  # Run tests and collect code coverage
+
+#      - name: Upload coverage to Codecov (Optional, but recommended)
+#        uses: codecov/codecov-action@v3
+#        with:
+#          token: ${{ secrets.CODECOV_TOKEN }} # Add a secret for your Codecov token
+#          file: ./coverage/lcov.info       # Path to the coverage report
+#          flags: unittests                  # Add flags, if needed
+#          verbose: true                     # Provides more output, helps with troubleshooting.
+
+      - name: Build Example App (Optional, but recommended for plugins)
+        run: |
+          cd example
+          flutter build apk --debug  # Or `flutter build ios --debug` (requires macOS runner)
+        #if: ${{ always() }}  # Run this step even if previous steps fail (for diagnostics)
+        # The always() condition is crucial. It makes sure that you test building the Example, even if you fail other checks.
+
+      - name: Check Formatting (flutter format)
+        run: flutter format --set-exit-if-changed .  # Check for formatting issues, and exits with non-zero on error.
+
+      - name: Check Pubspec Health (pana - optional)
+        uses:  dart-lang/pana-github-action@v2   #pana action
+        if: ${{ always() }}  # Run even if tests fail to get package health insights.
