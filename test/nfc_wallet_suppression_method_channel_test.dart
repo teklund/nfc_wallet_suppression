@@ -5,23 +5,23 @@ import 'package:nfc_wallet_suppression/nfc_wallet_suppression_method_channel.dar
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  MethodChannelNfcWalletSuppression platform = MethodChannelNfcWalletSuppression();
+  MethodChannelNfcWalletSuppression platform =
+      MethodChannelNfcWalletSuppression();
   const MethodChannel channel = MethodChannel('nfc_wallet_suppression');
 
   setUp(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
-      channel,
-      (MethodCall methodCall) async {
-        return '42';
-      },
-    );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+          return false;
+        });
   });
 
   tearDown(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(channel, null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, null);
   });
 
-  test('getPlatformVersion', () async {
-    expect(await platform.getPlatformVersion(), '42');
+  test('isSuppressed', () async {
+    expect(await platform.isSuppressed(), isFalse);
   });
 }

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:nfc_wallet_suppression/nfc_wallet_suppression.dart';
 
 void main() {
@@ -16,11 +15,8 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
-  bool _isSupressing = false;
+  bool _isSuppressed = false;
   String? _error;
-
-  final _nfcWalletSuppressionPlugin = NfcWalletSuppression();
 
   @override
   void initState() {
@@ -28,33 +24,24 @@ class _MyAppState extends State<MyApp> {
     initPlatformState();
   }
 
-  // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
-    String platformVersion;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    // We also handle the message potentially returning null.
     try {
-      platformVersion = await _nfcWalletSuppressionPlugin.getPlatformVersion() ?? 'Unknown platform version';
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
+      await _checkIsSuppressed();
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = '$error';
+      });
     }
-
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
-
-    setState(() {
-      _platformVersion = platformVersion;
-    });
   }
 
   Future<void> _onRequestSuppression() async {
-    var result = await NfcWalletSuppression().requestSuppression();
+    var result = await NfcWalletSuppression.requestSuppression();
+    if (!mounted) return;
     if (result == true) {
       setState(() {
         _error = null;
-        _isSupressing = true;
+        _isSuppressed = true;
       });
     } else {
       setState(() {
@@ -64,11 +51,12 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _onReleaseSuppression() async {
-    var result = await NfcWalletSuppression().releaseSuppression();
+    var result = await NfcWalletSuppression.releaseSuppression();
+    if (!mounted) return;
     if (result == true) {
       setState(() {
         _error = null;
-        _isSupressing = false;
+        _isSuppressed = false;
       });
     } else {
       setState(() {
@@ -78,11 +66,12 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _checkIsSuppressed() async {
-    var result = await NfcWalletSuppression().isSuppressed();
+    var result = await NfcWalletSuppression.isSuppressed();
+    if (!mounted) return;
     if (result != null) {
       setState(() {
         _error = null;
-        _isSupressing = result;
+        _isSuppressed = result;
       });
     } else {
       setState(() {
@@ -93,7 +82,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    String suppressionStatus = _isSupressing ? 'Suppressed' : 'Not suppressed';
+    String suppressionStatus = _isSuppressed ? 'Suppressed' : 'Not suppressed';
 
     return MaterialApp(
       home: Scaffold(
@@ -103,11 +92,19 @@ class _MyAppState extends State<MyApp> {
             mainAxisSize: MainAxisSize.min,
             spacing: 8,
             children: [
-              Text('Running on: $_platformVersion'),
               Text('Suppression status: $suppressionStatus\n${_error ?? ''}'),
-              FilledButton(onPressed: _onRequestSuppression, child: Text('Request suppression')),
-              FilledButton(onPressed: _onReleaseSuppression, child: Text('Release suppression')),
-              FilledButton(onPressed: _checkIsSuppressed, child: Text('Check suppression')),
+              FilledButton(
+                onPressed: _onRequestSuppression,
+                child: Text('Request suppression'),
+              ),
+              FilledButton(
+                onPressed: _onReleaseSuppression,
+                child: Text('Release suppression'),
+              ),
+              FilledButton(
+                onPressed: _checkIsSuppressed,
+                child: Text('Check suppression'),
+              ),
             ],
           ),
         ),

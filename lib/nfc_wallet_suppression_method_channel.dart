@@ -9,24 +9,31 @@ class MethodChannelNfcWalletSuppression extends NfcWalletSuppressionPlatform {
   @visibleForTesting
   final methodChannel = const MethodChannel('nfc_wallet_suppression');
 
-  @override
-  Future<String?> getPlatformVersion() async {
-    final version = await methodChannel.invokeMethod<String>('getPlatformVersion');
-    return version;
-  }
-
+  /// Requests suppression of the NFC wallet.
+  ///
+  /// Returns `true` if the suppression was successfully requested, `false` otherwise.
   @override
   Future<bool?> requestSuppression() async {
-    final success = await methodChannel.invokeMethod<bool>('requestSuppression');
+    final success = await methodChannel.invokeMethod<bool>(
+      'requestSuppression',
+    );
     return success;
   }
 
+  /// Releases the suppression of the NFC wallet.
+  ///
+  /// Returns `true` if the suppression was successfully released, `false` otherwise.
   @override
   Future<bool?> releaseSuppression() async {
-    final success = await methodChannel.invokeMethod<bool>('releaseSuppression');
+    final success = await methodChannel.invokeMethod<bool>(
+      'releaseSuppression',
+    );
     return success;
   }
 
+  /// Checks if the NFC wallet is currently suppressed.
+  ///
+  /// Returns `true` if the wallet is suppressed, `false` otherwise.
   @override
   Future<bool?> isSuppressed() async {
     final success = await methodChannel.invokeMethod<bool>('isSuppressed');

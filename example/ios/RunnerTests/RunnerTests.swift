@@ -11,14 +11,15 @@ import XCTest
 
 class RunnerTests: XCTestCase {
 
-  func testGetPlatformVersion() {
+  //TODO Fix tests
+  func testIsSuppressed() {
     let plugin = NfcWalletSuppressionPlugin()
 
-    let call = FlutterMethodCall(methodName: "getPlatformVersion", arguments: [])
+    let call = FlutterMethodCall(methodName: "isSuppressed", arguments: [])
 
     let resultExpectation = expectation(description: "result block must be called.")
     plugin.handle(call) { result in
-      XCTAssertEqual(result as! String, "iOS " + UIDevice.current.systemVersion)
+      XCTAssertEqual(result as! bool, false)
       resultExpectation.fulfill()
     }
     waitForExpectations(timeout: 1)

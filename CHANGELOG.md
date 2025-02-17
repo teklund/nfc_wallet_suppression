@@ -1,3 +1,5 @@
 ## 0.0.1
 
-* TODO: Describe initial release.
+*   Initial release of the `nfc_wallet_suppression` plugin.
+*   **iOS:** Added NFC wallet suppression using PassKit (request, release, check status).
+*   **Android:** Added NFC wallet suppression using NfcAdapter (request, release, check status).

@@ -14,8 +14,6 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin {
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     switch call.method {
-    case "getPlatformVersion":
-      result("iOS " + UIDevice.current.systemVersion)
     case "requestSuppression":
       requestSuppression(result: result)
     case "releaseSuppression":
