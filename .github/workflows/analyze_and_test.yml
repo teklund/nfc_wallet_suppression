@@ -32,6 +32,9 @@ jobs:
       - name: Get Flutter Dependencies
         run: flutter pub get
 
+      - name: Check Formatting (flutter format)
+        run: dart format .  --set-exit-if-changed
+
       - name: Analyze Code (flutter analyze)
         run: flutter analyze
 
@@ -53,8 +56,6 @@ jobs:
         #if: ${{ always() }}  # Run this step even if previous steps fail (for diagnostics)
         # The always() condition is crucial. It makes sure that you test building the Example, even if you fail other checks.
 
-      - name: Check Formatting (flutter format)
-        run: flutter format --set-exit-if-changed .  # Check for formatting issues, and exits with non-zero on error.
 
 #      - name: Check Pubspec Health (pana - optional)
 #        uses:  dart-lang/pana-github-action@v2   #pana action
