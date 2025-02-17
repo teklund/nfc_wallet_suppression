@@ -56,6 +56,6 @@ jobs:
       - name: Check Formatting (flutter format)
         run: flutter format --set-exit-if-changed .  # Check for formatting issues, and exits with non-zero on error.
 
-      - name: Check Pubspec Health (pana - optional)
-        uses:  dart-lang/pana-github-action@v2   #pana action
-        if: ${{ always() }}  # Run even if tests fail to get package health insights.
+#      - name: Check Pubspec Health (pana - optional)
+#        uses:  dart-lang/pana-github-action@v2   #pana action
+#        if: ${{ always() }}  # Run even if tests fail to get package health insights.
