@@ -26,4 +26,16 @@ abstract class NfcWalletSuppressionPlatform extends PlatformInterface {
   Future<String?> getPlatformVersion() {
     throw UnimplementedError('platformVersion() has not been implemented.');
   }
+
+  Future<bool?> requestSuppression() {
+    throw UnimplementedError('requestSuppression() has not been implemented.');
+  }
+
+  Future<bool?> releaseSuppression() {
+    throw UnimplementedError('releaseSuppression() has not been implemented.');
+  }
+
+  Future<bool?> isSuppressed() {
+    throw UnimplementedError('isSuppressed() has not been implemented.');
+  }
 }

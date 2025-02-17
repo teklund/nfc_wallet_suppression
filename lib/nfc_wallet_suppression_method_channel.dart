@@ -14,4 +14,22 @@ class MethodChannelNfcWalletSuppression extends NfcWalletSuppressionPlatform {
     final version = await methodChannel.invokeMethod<String>('getPlatformVersion');
     return version;
   }
+
+  @override
+  Future<bool?> requestSuppression() async {
+    final success = await methodChannel.invokeMethod<bool>('requestSuppression');
+    return success;
+  }
+
+  @override
+  Future<bool?> releaseSuppression() async {
+    final success = await methodChannel.invokeMethod<bool>('releaseSuppression');
+    return success;
+  }
+
+  @override
+  Future<bool?> isSuppressed() async {
+    final success = await methodChannel.invokeMethod<bool>('isSuppressed');
+    return success;
+  }
 }
