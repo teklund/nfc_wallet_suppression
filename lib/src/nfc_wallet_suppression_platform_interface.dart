@@ -1,6 +1,7 @@
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'nfc_wallet_suppression_method_channel.dart';
+import 'nfc_wallet_suppression_status.dart';
 
 /// An interface for a platform-specific implementation of the `nfc_wallet_suppression` plugin.
 ///
@@ -33,7 +34,7 @@ abstract class NfcWalletSuppressionPlatform extends PlatformInterface {
   ///
   /// Returns `true` if the request was successful, `false` if it failed, and `null`
   /// if the platform does not support this method.
-  Future<bool?> requestSuppression() {
+  Future<SuppressionStatus> requestSuppression() {
     throw UnimplementedError('requestSuppression() has not been implemented.');
   }
 
@@ -41,7 +42,7 @@ abstract class NfcWalletSuppressionPlatform extends PlatformInterface {
   ///
   /// Returns `true` if the release was successful, `false` if it failed, and `null`
   /// if the platform does not support this method.
-  Future<bool?> releaseSuppression() {
+  Future<SuppressionStatus> releaseSuppression() {
     throw UnimplementedError('releaseSuppression() has not been implemented.');
   }
 
@@ -49,7 +50,7 @@ abstract class NfcWalletSuppressionPlatform extends PlatformInterface {
   ///
   /// Returns `true` if the wallet is suppressed, `false` if it is not, and `null`
   /// if the platform does not support this method.
-  Future<bool?> isSuppressed() {
+  Future<bool> isSuppressed() {
     throw UnimplementedError('isSuppressed() has not been implemented.');
   }
 }

@@ -80,7 +80,7 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, MethodCallHandler, ActivityAwar
     val activity = activity
     val nfcAdapter = NfcAdapter.getDefaultAdapter(activity)
     if (nfcAdapter == null || activity == null || !nfcAdapter.isEnabled() ) {
-      result.error("404", "NFC not available", null)
+      result.error("UNAVAILABLE", "NFC not available", null)
       return
     }
 
@@ -111,7 +111,7 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, MethodCallHandler, ActivityAwar
   private fun releaseSuppression(result: Result) {
     val nfcAdapter = NfcAdapter.getDefaultAdapter(activity)
     if (nfcAdapter == null || activity == null || !nfcAdapter.isEnabled() ) {
-      result.error("404", "NFC not available", null)
+      result.error("UNAVAILABLE", "NFC not available", null)
       return
     }
     nfcAdapter.disableForegroundDispatch(activity)

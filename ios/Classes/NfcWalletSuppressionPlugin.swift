@@ -32,39 +32,52 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin {
 //              return
 //          }
     //https://developer.apple.com/documentation/passkit/pkpasslibrary/requestautomaticpasspresentationsuppression(responsehandler:)
-    suppressionToken = PKPassLibrary.requestAutomaticPassPresentationSuppression(responseHandler: { result in
+    self.suppressionToken = PKPassLibrary.requestAutomaticPassPresentationSuppression(responseHandler: { requestResult in
       //https://developer.apple.com/documentation/passkit/pkautomaticpasspresentationsuppressionresult
-      switch result {
+      switch requestResult {
         case .success:
           print("Pass presentation suppressed successfully.")
-//        case .alreadySuppressed:
-//          print("Pass presentation was already suppressed.")
+            result("Suppressed")
+        case .notSupported:
+            result(FlutterError(code: "NOT_SUPPORTED",
+                message: "The device doesn’t support the suppression of automatic pass presentation.",
+                details: nil))
+        case .alreadyPresenting:
+            result(FlutterError(code: "ALREADY_PRESENTING",
+                message: "The device is already presenting passes.",
+                details: nil))
+        case .cancelled:
+            result(FlutterError(code: "CANCELLED",
+                message: "Suppression cancelled",
+                details: nil))
         case .denied:
-          print("Pass presentation suppression denied.")
-//        case .failed:
-//          print("Pass presentation suppression failed.")
+            result(FlutterError(code: "DENIED",
+                message: "The user prevented the suppression, or an internal error occurred.",
+                details: nil))
         @unknown default:
-          print("Unknown suppression result.")
+          result(FlutterError(code: "UNKNOWN",
+                message: "Unknown suppression result.",
+                details: nil))
         }
     })
-    print("Automatic Pass Presentation Suppressed")
 //    guard let suppressionToken = token else {
 //      result(false)
 //      return
 //    }
-    result(true)
   }
 
   //https://developer.apple.com/documentation/passkit/pkpasslibrary/endautomaticpasspresentationsuppression(withrequesttoken:)
   private func releaseSuppression(result: @escaping FlutterResult) {
     guard let token = suppressionToken else {
-      result(false)
+      result(FlutterError(code: "UNAVAILABLE",
+                                     message: "NFC not available",
+                                     details: nil))
       return
     }
     PKPassLibrary.endAutomaticPassPresentationSuppression(withRequestToken: token)
     print("Automatic Pass Presentation enabled")
     suppressionToken = nil
-    result(true)
+    result("Not suppressed anymore")
   }
 
   private func isSuppressed(result: @escaping FlutterResult) {

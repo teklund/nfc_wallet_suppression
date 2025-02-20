@@ -15,7 +15,7 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('isSuppressed test', (WidgetTester tester) async {
-    final bool? suppressed = await NfcWalletSuppression.isSuppressed();
+    final bool suppressed = await NfcWalletSuppression.isSuppressed();
     // The version string depends on the host platform running the test, so
     // just assert that some non-empty string is returned.
     expect(suppressed, true);
