@@ -3,8 +3,8 @@ package dev.teklund.nfc_wallet_suppression
 import android.app.Activity
 import android.app.PendingIntent
 import android.content.Intent
-import android.content.IntentFilter
 import android.nfc.NfcAdapter
+import android.nfc.Tag
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -14,15 +14,18 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 
 /** NfcWalletSuppressionPlugin */
-class NfcWalletSuppressionPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
+class NfcWalletSuppressionPlugin: FlutterPlugin, MethodCallHandler, ActivityAware,
+  NfcAdapter.ReaderCallback {
   /// The MethodChannel that will the communication between Flutter and native Android
   ///
   /// This local reference serves to register the plugin with the Flutter Engine and unregister it
   /// when the Flutter Engine is detached from the Activity
   private lateinit var channel : MethodChannel
 
-  private var supperessionActive : Boolean = false
+  private var suppressionActive : Boolean = false
   private var activity : Activity? = null
+
+  override fun onTagDiscovered(tag: Tag?) {}
 
   override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     channel = MethodChannel(flutterPluginBinding.binaryMessenger, "nfc_wallet_suppression")
@@ -30,17 +33,16 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, MethodCallHandler, ActivityAwar
   }
 
   override fun onMethodCall(call: MethodCall, result: Result) {
+
     when (call.method) {
       "isSuppressed" -> {
         result.success(isSuppressed())
       }
       "requestSuppression" -> {
-        val success = requestSuppression()
-        result.success(success)
+        requestSuppression(result)
       }
       "releaseSuppression" -> {
-        val success = releaseSuppression()
-        result.success(success)
+        releaseSuppression(result)
       }
       else -> {
         result.notImplemented()
@@ -58,6 +60,7 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, MethodCallHandler, ActivityAwar
   }
 
   override fun onDetachedFromActivityForConfigChanges() {
+    println("detached")
     onDetachedFromActivity()
   }
 
@@ -70,15 +73,15 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, MethodCallHandler, ActivityAwar
   }
 
   private fun isSuppressed(): Boolean {
-    return activity != null && supperessionActive
+    return activity != null && suppressionActive
   }
 
-  private fun requestSuppression(): Boolean {
-    var activity = activity
-    var nfcAdapter = NfcAdapter.getDefaultAdapter(activity)
-    if (nfcAdapter == null || activity == null) {
-      print("NFC not available")
-      return false
+  private fun requestSuppression(result: Result) {
+    val activity = activity
+    val nfcAdapter = NfcAdapter.getDefaultAdapter(activity)
+    if (nfcAdapter == null || activity == null || !nfcAdapter.isEnabled() ) {
+      result.error("404", "NFC not available", null)
+      return
     }
 
     val intent = Intent(activity, activity.javaClass).apply {
@@ -91,23 +94,29 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, MethodCallHandler, ActivityAwar
       PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
     )
 
-    val intentFiltersArray = arrayOf(IntentFilter(NfcAdapter.ACTION_TAG_DISCOVERED))
-    nfcAdapter.enableForegroundDispatch(activity, pendingIntent, intentFiltersArray, null)
-    supperessionActive = true;
-    print("Suppressed")
-    return true
+    nfcAdapter.enableForegroundDispatch(activity, pendingIntent, null, null)
+
+    // Read all techs, skip NDEF to skip P2P
+    val flags: Int = NfcAdapter.FLAG_READER_NFC_A or
+            NfcAdapter.FLAG_READER_NFC_B or
+            NfcAdapter.FLAG_READER_NFC_F or
+            NfcAdapter.FLAG_READER_NFC_V or
+            NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
+
+    nfcAdapter.enableReaderMode(activity, this, flags, null)
+    suppressionActive = true;
+    result.success("Suppressed")
   }
 
-  private fun releaseSuppression(): Boolean {
-    var activity = activity
-    var nfcAdapter = NfcAdapter.getDefaultAdapter(activity)
-    if (nfcAdapter == null || activity == null) {
-      print("NFC not available")
-      return false
+  private fun releaseSuppression(result: Result) {
+    val nfcAdapter = NfcAdapter.getDefaultAdapter(activity)
+    if (nfcAdapter == null || activity == null || !nfcAdapter.isEnabled() ) {
+      result.error("404", "NFC not available", null)
+      return
     }
     nfcAdapter.disableForegroundDispatch(activity)
-    print("Not suppressed anymore")
-    supperessionActive = false;
-    return true
+    nfcAdapter.disableReaderMode(activity)
+    suppressionActive = false
+    result.success("Not suppressed anymore")
   }
 }
