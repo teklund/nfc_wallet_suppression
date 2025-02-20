@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "dev.teklund.nfc_wallet_suppression_example"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "27.0.12077973"//flutter.ndkVersion
+    ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

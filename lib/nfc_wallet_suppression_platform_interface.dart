@@ -13,7 +13,8 @@ abstract class NfcWalletSuppressionPlatform extends PlatformInterface {
 
   static final Object _token = Object();
 
-  static NfcWalletSuppressionPlatform _instance = MethodChannelNfcWalletSuppression();
+  static NfcWalletSuppressionPlatform _instance =
+      MethodChannelNfcWalletSuppression();
 
   /// The default instance of [NfcWalletSuppressionPlatform] to use.
   ///
