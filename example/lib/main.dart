@@ -15,7 +15,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  bool _isSuppressed = false;
+  SuppressionStatus _suppressionStatus = SuppressionStatus.notSuppressed;
   String? _error;
 
   @override
@@ -36,29 +36,29 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _onRequestSuppression() async {
-    var result = await NfcWalletSuppression.requestSuppression();
-    if (!mounted) return;
-    if (result == true) {
+    try {
+      var result = await NfcWalletSuppression.requestSuppression();
+      if (!mounted) return;
       setState(() {
         _error = null;
-        _isSuppressed = true;
+        _suppressionStatus = result;
       });
-    } else {
+    } catch (error, _) {
       setState(() {
-        _error = 'Error requesting suppression';
+        _error = 'Error requesting suppression: $error';
       });
     }
   }
 
   Future<void> _onReleaseSuppression() async {
-    var result = await NfcWalletSuppression.releaseSuppression();
-    if (!mounted) return;
-    if (result == true) {
+    try {
+      var result = await NfcWalletSuppression.releaseSuppression();
+      if (!mounted) return;
       setState(() {
         _error = null;
-        _isSuppressed = false;
+        _suppressionStatus = result;
       });
-    } else {
+    } catch (error, _) {
       setState(() {
         _error = 'Error releasing suppression';
       });
@@ -66,24 +66,25 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _checkIsSuppressed() async {
-    var result = await NfcWalletSuppression.isSuppressed();
-    if (!mounted) return;
-    if (result != null) {
+    try {
+      var result = await NfcWalletSuppression.isSuppressed();
+      if (!mounted) return;
       setState(() {
         _error = null;
-        _isSuppressed = result;
+        _suppressionStatus =
+            result
+                ? SuppressionStatus.suppressed
+                : SuppressionStatus.notSuppressed;
       });
-    } else {
+    } catch (error, _) {
       setState(() {
-        _error = 'Error checking suppression status';
+        _error = 'Error checking suppression status: $error';
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    String suppressionStatus = _isSuppressed ? 'Suppressed' : 'Not suppressed';
-
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(title: const Text('Plugin example app')),
@@ -92,7 +93,9 @@ class _MyAppState extends State<MyApp> {
             mainAxisSize: MainAxisSize.min,
             spacing: 8,
             children: [
-              Text('Suppression status: $suppressionStatus\n${_error ?? ''}'),
+              Text(
+                'Suppression status: ${_suppressionStatus.name}\n${_error ?? ''}',
+              ),
               FilledButton(
                 onPressed: _onRequestSuppression,
                 child: Text('Request suppression'),

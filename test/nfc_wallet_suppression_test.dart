@@ -1,7 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nfc_wallet_suppression/nfc_wallet_suppression.dart';
-import 'package:nfc_wallet_suppression/nfc_wallet_suppression_method_channel.dart';
-import 'package:nfc_wallet_suppression/nfc_wallet_suppression_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 class MockNfcWalletSuppressionPlatform
@@ -10,15 +8,15 @@ class MockNfcWalletSuppressionPlatform
   bool _isSuppressing = false;
 
   @override
-  Future<bool?> requestSuppression() {
+  Future<SuppressionStatus> requestSuppression() {
     _isSuppressing = true;
-    return Future.value(true);
+    return Future.value(SuppressionStatus.suppressed);
   }
 
   @override
-  Future<bool?> releaseSuppression() {
+  Future<SuppressionStatus> releaseSuppression() {
     _isSuppressing = false;
-    return Future.value(true);
+    return Future.value(SuppressionStatus.notSuppressed);
   }
 
   @override
