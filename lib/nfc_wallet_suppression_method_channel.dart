@@ -15,7 +15,9 @@ class MethodChannelNfcWalletSuppression extends NfcWalletSuppressionPlatform {
   @override
   Future<bool?> requestSuppression() async {
     try {
-      final msg = await methodChannel.invokeMethod<String?>('requestSuppression');
+      final msg = await methodChannel.invokeMethod<String?>(
+        'requestSuppression',
+      );
 
       if (msg != null) {
         if (kDebugMode) {
@@ -41,7 +43,9 @@ class MethodChannelNfcWalletSuppression extends NfcWalletSuppressionPlatform {
   @override
   Future<bool?> releaseSuppression() async {
     try {
-      final msg = await methodChannel.invokeMethod<String>('releaseSuppression');
+      final msg = await methodChannel.invokeMethod<String>(
+        'releaseSuppression',
+      );
 
       if (msg != null) {
         if (kDebugMode) {
