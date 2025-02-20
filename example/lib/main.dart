@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:nfc_wallet_suppression/nfc_wallet_suppression.dart';
 
@@ -94,18 +93,9 @@ class _MyAppState extends State<MyApp> {
             spacing: 8,
             children: [
               Text('Suppression status: $suppressionStatus\n${_error ?? ''}'),
-              FilledButton(
-                onPressed: _onRequestSuppression,
-                child: Text('Request suppression'),
-              ),
-              FilledButton(
-                onPressed: _onReleaseSuppression,
-                child: Text('Release suppression'),
-              ),
-              FilledButton(
-                onPressed: _checkIsSuppressed,
-                child: Text('Check suppression'),
-              ),
+              FilledButton(onPressed: _onRequestSuppression, child: Text('Request suppression')),
+              FilledButton(onPressed: _onReleaseSuppression, child: Text('Release suppression')),
+              FilledButton(onPressed: _checkIsSuppressed, child: Text('Check suppression')),
             ],
           ),
         ),
