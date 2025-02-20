@@ -14,10 +14,23 @@ class MethodChannelNfcWalletSuppression extends NfcWalletSuppressionPlatform {
   /// Returns `true` if the suppression was successfully requested, `false` otherwise.
   @override
   Future<bool?> requestSuppression() async {
-    final success = await methodChannel.invokeMethod<bool>(
-      'requestSuppression',
-    );
-    return success;
+    try {
+      final msg = await methodChannel.invokeMethod<String?>('requestSuppression');
+
+      if (kDebugMode && msg != null) {
+        print(msg);
+      }
+    } on PlatformException catch (e) {
+      if (kDebugMode) {
+        print(e.message ?? "No error message supplied");
+      }
+
+      if (e.code == "404") return null;
+
+      return false;
+    }
+
+    return true;
   }
 
   /// Releases the suppression of the NFC wallet.
@@ -25,10 +38,22 @@ class MethodChannelNfcWalletSuppression extends NfcWalletSuppressionPlatform {
   /// Returns `true` if the suppression was successfully released, `false` otherwise.
   @override
   Future<bool?> releaseSuppression() async {
-    final success = await methodChannel.invokeMethod<bool>(
-      'releaseSuppression',
-    );
-    return success;
+    try {
+      final msg = await methodChannel.invokeMethod<String>('releaseSuppression');
+
+      if (kDebugMode && msg != null) {
+        print(msg);
+      }
+    } on PlatformException catch (e) {
+      if (kDebugMode) {
+        print(e.message ?? "No error message supplied");
+      }
+
+      if (e.code == "404") return null;
+
+      return false;
+    }
+    return true;
   }
 
   /// Checks if the NFC wallet is currently suppressed.
