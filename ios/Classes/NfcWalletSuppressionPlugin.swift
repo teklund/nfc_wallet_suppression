@@ -26,11 +26,6 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin {
   }
 
   private func requestSuppression(result: @escaping FlutterResult) {
-//    if suppressionToken != nil {
-//              print("Pass presentation is already suppressed.")
-//              result(false)
-//              return
-//          }
     //https://developer.apple.com/documentation/passkit/pkpasslibrary/requestautomaticpasspresentationsuppression(responsehandler:)
     self.suppressionToken = PKPassLibrary.requestAutomaticPassPresentationSuppression(responseHandler: { requestResult in
       //https://developer.apple.com/documentation/passkit/pkautomaticpasspresentationsuppressionresult
@@ -60,18 +55,14 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin {
                 details: nil))
         }
     })
-//    guard let suppressionToken = token else {
-//      result(false)
-//      return
-//    }
   }
 
   //https://developer.apple.com/documentation/passkit/pkpasslibrary/endautomaticpasspresentationsuppression(withrequesttoken:)
   private func releaseSuppression(result: @escaping FlutterResult) {
     guard let token = suppressionToken else {
       result(FlutterError(code: "UNAVAILABLE",
-                                     message: "NFC not available",
-                                     details: nil))
+                          message: "NFC not available",
+                          details: nil))
       return
     }
     PKPassLibrary.endAutomaticPassPresentationSuppression(withRequestToken: token)
