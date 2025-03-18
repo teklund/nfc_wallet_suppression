@@ -43,7 +43,7 @@ in the plugins AndroidManifest.xml file.
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- You need to add following permissions to your AndroidManifest.xml file -->
     <uses-permission android:name="android.permission.NFC" />
-    <uses-feature android:name="android.hardware.nfc" android:required="true" />
+    <uses-feature android:name="android.hardware.nfc" android:required="false" />
 </manifest>
 ```
 
