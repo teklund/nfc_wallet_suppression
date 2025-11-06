@@ -30,6 +30,7 @@ This document outlines a comprehensive plan to address all identified issues in 
 ## 🔴 Phase 1: Critical Fixes (Must Fix Before 1.0)
 
 ### 1. Fix Library Exports
+
 - **File:** `lib/nfc_wallet_suppression.dart`
 - **Issue:** Exposes internal implementation details that should be private
 - **Fix:** Remove exports of `method_channel` and `platform_interface`
@@ -48,6 +49,7 @@ export 'src/nfc_wallet_suppression_platform_interface.dart';
 ---
 
 ### 2. Fix iOS Token Management Race Condition
+
 - **File:** `ios/Classes/NfcWalletSuppressionPlugin.swift`
 - **Issue:** Multiple rapid calls can create token leaks and race conditions
 - **Fix:** Add guard to check for existing token and properly release before creating new one
@@ -65,6 +67,7 @@ if let existingToken = suppressionToken {
 ---
 
 ### 3. Fix Android State Persistence Issue
+
 - **File:** `android/src/main/kotlin/dev/teklund/nfc_wallet_suppression/NfcWalletSuppressionPlugin.kt`
 - **Issue:** Suppression state lost on activity recreation (e.g., screen rotation)
 - **Fix:** Implement state saving/restoration mechanism
@@ -72,6 +75,7 @@ if let existingToken = suppressionToken {
 - **Time:** 15 min
 
 **Options:**
+
 1. Use SharedPreferences to persist state
 2. Use instance state bundle
 3. Re-establish suppression on activity recreation
@@ -79,6 +83,7 @@ if let existingToken = suppressionToken {
 ---
 
 ### 4. Fix Duplicate Test Name
+
 - **File:** `test/nfc_wallet_suppression_test.dart`
 - **Issue:** Two tests named `isSuppressed_defaultFalse` will conflict
 - **Fix:** Rename third test to `isSuppressed_falseAfterRelease`
@@ -93,6 +98,7 @@ test('isSuppressed_falseAfterRelease', () async {
 ---
 
 ### 5. Fix Integration Test Expectations
+
 - **File:** `example/integration_test/plugin_integration_test.dart`
 - **Issue:** Test expects `true` but default state is `false`
 - **Fix:** Change expectation to `false` or add proper setup
@@ -111,6 +117,7 @@ testWidgets('isSuppressed test', (WidgetTester tester) async {
 ## 🟡 Phase 2: High Priority (Should Fix Soon)
 
 ### 6. Add Comprehensive API Documentation
+
 - **File:** `lib/src/nfc_wallet_suppression.dart`
 - **Issue:** Missing detailed dartdoc comments on public methods
 - **Fix:** Add complete documentation with examples, platform notes, exceptions
@@ -118,6 +125,7 @@ testWidgets('isSuppressed test', (WidgetTester tester) async {
 - **Time:** 15 min
 
 **Documentation should include:**
+
 - Method purpose and use cases
 - Platform-specific behavior differences
 - Return value descriptions for each status
@@ -128,6 +136,7 @@ testWidgets('isSuppressed test', (WidgetTester tester) async {
 ---
 
 ### 7. Replace print() with Proper Logging
+
 - **File:** `lib/src/nfc_wallet_suppression_method_channel.dart`
 - **Issue:** Using `print()` and `kDebugMode` checks in production code
 - **Fix:** Replace with `debugPrint()` or remove entirely
@@ -148,6 +157,7 @@ debugPrint('[NfcWalletSuppression] $msg');
 ---
 
 ### 8. Add Platform Capability Check Method
+
 - **Files:** All platform files
 - **Issue:** No way to check if feature is supported before attempting to use
 - **Fix:** Add `isSupported()` method
@@ -155,6 +165,7 @@ debugPrint('[NfcWalletSuppression] $msg');
 - **Time:** 15 min
 
 **Implementation:**
+
 - Add method to platform interface
 - iOS: Check PassKit availability
 - Android: Check NFC adapter availability
@@ -163,6 +174,7 @@ debugPrint('[NfcWalletSuppression] $msg');
 ---
 
 ### 9. Update Podspec with Correct Metadata
+
 - **File:** `ios/nfc_wallet_suppression.podspec`
 - **Issue:** Placeholder values for homepage and author
 - **Fix:** Update with actual GitHub URL and author info
@@ -171,12 +183,15 @@ debugPrint('[NfcWalletSuppression] $msg');
 
 ```ruby
 s.homepage = 'https://github.com/teklund/nfc_wallet_suppression'
-s.author = { 'TEklund' => 'your@email.com' }
+s.author = { 'TEklund' => 'email@example.com' }
 ```
+
+**Note:** Replace `email@example.com` with your actual email address.
 
 ---
 
 ### 10. Fix CHANGELOG.md Formatting
+
 - **File:** `CHANGELOG.md`
 - **Issue:** Linting errors (MD041, MD047)
 - **Fix:** Add top-level heading and ensure single trailing newline
@@ -197,6 +212,7 @@ All notable changes to this project will be documented in this file.
 ## 🟢 Phase 3: Polish & Improvements
 
 ### 11. Remove Dead Code and Cleanup Android
+
 - **File:** `android/src/main/kotlin/dev/teklund/nfc_wallet_suppression/NfcWalletSuppressionPlugin.kt`
 - **Issue:** Commented code and empty callback implementation
 - **Fix:** Remove commented line, add explanatory comment for empty callback
@@ -217,6 +233,7 @@ override fun onTagDiscovered(tag: Tag?) {
 ---
 
 ### 12. Fix README Code Formatting
+
 - **File:** `README.md`
 - **Issue:** Missing space after `catch` keyword
 - **Fix:** Add space to follow Dart style guide
@@ -234,6 +251,7 @@ override fun onTagDiscovered(tag: Tag?) {
 ---
 
 ### 13. Document or Clarify Android NFC Permission
+
 - **File:** `android/src/main/AndroidManifest.xml` and `CHANGELOG.md`
 - **Issue:** Changelog says "Don't require" but permission still exists
 - **Fix:** Either remove permission or clarify it's optional
@@ -241,12 +259,14 @@ override fun onTagDiscovered(tag: Tag?) {
 - **Time:** 5 min
 
 **Decision needed:**
+
 - If permission truly not needed: Remove from manifest
 - If permission helps: Keep but update changelog to say "optional"
 
 ---
 
 ### 14. Add Example App Improvements
+
 - **File:** `example/lib/main.dart`
 - **Issue:** Missing `const` keywords, could have better error handling
 - **Fix:** Add const where appropriate, improve error display
@@ -254,6 +274,7 @@ override fun onTagDiscovered(tag: Tag?) {
 - **Time:** 8 min
 
 **Improvements:**
+
 - Add const to Text widgets
 - Better error state display
 - Add loading states
@@ -262,6 +283,7 @@ override fun onTagDiscovered(tag: Tag?) {
 ---
 
 ### 15. Enable or Document Privacy Manifest
+
 - **File:** `ios/nfc_wallet_suppression.podspec`
 - **Issue:** Privacy manifest exists but not enabled in podspec
 - **Fix:** Enable resource bundle or document why not needed
@@ -269,6 +291,7 @@ override fun onTagDiscovered(tag: Tag?) {
 - **Time:** 5 min
 
 **Options:**
+
 1. Uncomment the `s.resource_bundles` line if needed
 2. Add comment explaining PassKit doesn't require special privacy declarations
 3. Research if PassKit NFC suppression needs privacy manifest entry
@@ -278,6 +301,7 @@ override fun onTagDiscovered(tag: Tag?) {
 ## 🧪 Phase 4: Comprehensive Testing (Test-Driven Development)
 
 ### 16. Add iOS Token Management Tests
+
 - **File:** `test/nfc_wallet_suppression_ios_test.dart` (new file)
 - **Issue:** No tests for iOS token management edge cases
 - **Tests to add:**
@@ -290,6 +314,7 @@ override fun onTagDiscovered(tag: Tag?) {
 - **Time:** 20 min
 
 **Test Structure:**
+
 ```dart
 // Mock PKPassLibrary responses
 // Test token lifecycle
@@ -300,6 +325,7 @@ override fun onTagDiscovered(tag: Tag?) {
 ---
 
 ### 17. Add Android State Persistence Tests
+
 - **File:** `test/nfc_wallet_suppression_android_test.dart` (new file)
 - **Issue:** No tests for Android activity lifecycle and state persistence
 - **Tests to add:**
@@ -312,6 +338,7 @@ override fun onTagDiscovered(tag: Tag?) {
 - **Time:** 20 min
 
 **Test Coverage:**
+
 - Activity lifecycle events
 - NFC availability scenarios
 - State persistence mechanisms
@@ -320,6 +347,7 @@ override fun onTagDiscovered(tag: Tag?) {
 ---
 
 ### 18. Add Platform Support Tests
+
 - **File:** `test/nfc_wallet_suppression_platform_test.dart` (new file)
 - **Issue:** No tests for new `isSupported()` method
 - **Tests to add:**
@@ -334,6 +362,7 @@ override fun onTagDiscovered(tag: Tag?) {
 ---
 
 ### 19. Add Comprehensive Error Handling Tests
+
 - **File:** `test/nfc_wallet_suppression_error_test.dart` (new file)
 - **Issue:** Limited testing of all `SuppressionStatus` enum values
 - **Tests to add:**
@@ -346,6 +375,7 @@ override fun onTagDiscovered(tag: Tag?) {
 - **Time:** 15 min
 
 **All Status Values to Test:**
+
 - `notSuppressed`
 - `suppressed`
 - `unavailable`
@@ -358,6 +388,7 @@ override fun onTagDiscovered(tag: Tag?) {
 ---
 
 ### 20. Add Integration Tests
+
 - **File:** `example/integration_test/comprehensive_integration_test.dart` (new file)
 - **Issue:** Only one basic integration test exists
 - **Tests to add:**
@@ -371,6 +402,7 @@ override fun onTagDiscovered(tag: Tag?) {
 - **Time:** 25 min
 
 **Real Device Tests:**
+
 - iOS device with PassKit entitlement
 - Android device with NFC hardware
 - Both platforms without NFC
@@ -378,6 +410,7 @@ override fun onTagDiscovered(tag: Tag?) {
 ---
 
 ### 21. Add Method Channel Mock Tests
+
 - **File:** `test/nfc_wallet_suppression_method_channel_test.dart` (enhance existing)
 - **Issue:** Current method channel tests are minimal
 - **Tests to add:**
@@ -394,6 +427,7 @@ override fun onTagDiscovered(tag: Tag?) {
 ## � Phase 5: Production Ready (Must Have for 1.0.0)
 
 ### 22. Create Migration Guide
+
 - **File:** `MIGRATION.md` (new file)
 - **Issue:** Breaking changes need clear migration path from 0.1.1 to 1.0.0
 - **Content to include:**
@@ -406,6 +440,7 @@ override fun onTagDiscovered(tag: Tag?) {
 - **Time:** 15 min
 
 **Migration Guide Structure:**
+
 ```markdown
 # Migration Guide: v0.1.1 → v1.0.0
 
@@ -424,6 +459,7 @@ override fun onTagDiscovered(tag: Tag?) {
 ---
 
 ### 23. Add GitHub Actions CI/CD
+
 - **File:** `.github/workflows/ci.yml` (new file)
 - **Issue:** No automated testing, analysis, or publishing
 - **Workflow to include:**
@@ -437,6 +473,7 @@ override fun onTagDiscovered(tag: Tag?) {
 - **Time:** 30 min
 
 **CI/CD Features:**
+
 - Run on: push, pull_request, release
 - Matrix testing: Multiple Flutter versions
 - Coverage badges
@@ -445,6 +482,7 @@ override fun onTagDiscovered(tag: Tag?) {
 ---
 
 ### 24. Create Pub.dev Publishing Checklist
+
 - **File:** `PUBLISHING.md` (new file)
 - **Issue:** No formalized process for publishing to pub.dev
 - **Checklist to include:**
@@ -460,6 +498,7 @@ override fun onTagDiscovered(tag: Tag?) {
 - **Time:** 10 min
 
 **Key Checks:**
+
 - [ ] Version bumped correctly
 - [ ] CHANGELOG updated
 - [ ] All tests passing
@@ -470,6 +509,7 @@ override fun onTagDiscovered(tag: Tag?) {
 ---
 
 ### 25. Enhance Example App + Add Screenshots
+
 - **File:** `example/lib/main.dart` and `example/screenshots/` (new directory)
 - **Issue:** Example app is basic, no visual documentation
 - **Enhancements:**
@@ -488,6 +528,7 @@ override fun onTagDiscovered(tag: Tag?) {
 - **Time:** 20 min
 
 **Screenshot Requirements:**
+
 - iOS and Android screenshots
 - Light/dark mode if applicable
 - Error state examples
@@ -496,6 +537,7 @@ override fun onTagDiscovered(tag: Tag?) {
 ---
 
 ### 26. Security & Privacy Review
+
 - **File:** `SECURITY.md` (new file) + update `ios/Resources/PrivacyInfo.xcprivacy`
 - **Issue:** NFC handling can be security-sensitive, no formal security documentation
 - **Review areas:**
@@ -515,6 +557,7 @@ override fun onTagDiscovered(tag: Tag?) {
 - **Time:** 20 min
 
 **Security Checklist:**
+
 - [ ] No sensitive data in logs
 - [ ] Proper token cleanup
 - [ ] Privacy manifest accurate
@@ -526,11 +569,13 @@ override fun onTagDiscovered(tag: Tag?) {
 ## �📋 Implementation Checklist
 
 ### Pre-Implementation
+
 - [ ] Create feature branch: `git checkout -b improvements/v1.0.0-fixes`
 - [ ] Review all issues in detail
 - [ ] Set up test environment
 
 ### Phase 1 - Critical (30-45 min)
+
 - [ ] Task 1: Fix library exports
 - [ ] Task 2: Fix iOS token management
 - [ ] Task 3: Fix Android state persistence
@@ -540,6 +585,7 @@ override fun onTagDiscovered(tag: Tag?) {
 - [ ] Commit: "fix: critical issues for v1.0.0"
 
 ### Phase 2 - High Priority (45-60 min)
+
 - [ ] Task 6: Add comprehensive API docs
 - [ ] Task 7: Replace print() calls
 - [ ] Task 8: Add platform capability check
@@ -549,6 +595,7 @@ override fun onTagDiscovered(tag: Tag?) {
 - [ ] Commit: "feat: improve documentation and add capability checks"
 
 ### Phase 3 - Polish (30 min)
+
 - [ ] Task 11: Remove dead code
 - [ ] Task 12: Fix README formatting
 - [ ] Task 13: Clarify Android permissions
@@ -558,6 +605,7 @@ override fun onTagDiscovered(tag: Tag?) {
 - [ ] Commit: "chore: polish and cleanup for v1.0.0"
 
 ### Phase 4 - Comprehensive Testing (60-90 min)
+
 - [ ] Task 16: Write iOS token management tests (TDD)
 - [ ] Task 17: Write Android state persistence tests (TDD)
 - [ ] Task 18: Write platform support tests for `isSupported()`
@@ -570,6 +618,7 @@ override fun onTagDiscovered(tag: Tag?) {
 - [ ] Commit: "test: add comprehensive test coverage for v1.0.0"
 
 ### Phase 5 - Production Ready (95 min)
+
 - [ ] Task 22: Create MIGRATION.md guide for 0.1.1 → 1.0.0
 - [ ] Task 23: Add GitHub Actions CI/CD workflow
 - [ ] Task 24: Create PUBLISHING.md checklist
@@ -582,6 +631,7 @@ override fun onTagDiscovered(tag: Tag?) {
 - [ ] Commit: "chore: add production-ready infrastructure for v1.0.0"
 
 ### Post-Implementation
+
 - [ ] Update version to 1.0.0 in `pubspec.yaml` and `podspec`
 - [ ] Update CHANGELOG with all changes (follow Keep a Changelog format)
 - [ ] Run full test suite: `flutter test`
@@ -606,7 +656,9 @@ override fun onTagDiscovered(tag: Tag?) {
 ## 🧪 Testing Strategy
 
 ### TDD Workflow
+
 For each fix in Phase 1-3, follow this pattern:
+
 1. **Write failing test** that demonstrates the bug/missing feature
 2. **Run test** to confirm it fails: `flutter test`
 3. **Implement fix** to make test pass
@@ -615,6 +667,7 @@ For each fix in Phase 1-3, follow this pattern:
 6. **Commit** with test + implementation
 
 ### Unit Tests
+
 ```bash
 cd /Users/teklund/git/teklund/nfc_wallet_suppression
 flutter test
@@ -622,18 +675,21 @@ flutter test --coverage
 ```
 
 **Expected Coverage Targets:**
+
 - Overall: > 80%
 - Core API (`nfc_wallet_suppression.dart`): 100%
 - Platform interface: 100%
 - Method channel: > 90%
 
 ### Integration Tests
+
 ```bash
 cd example
 flutter test integration_test/
 ```
 
 **Platform-Specific Integration Tests:**
+
 ```bash
 # iOS Simulator
 flutter test integration_test/ -d "iPhone 15 Pro"
@@ -646,6 +702,7 @@ flutter test integration_test/ -d <device-id>
 ```
 
 ### Manual Testing Checklist
+
 - [ ] **iOS Device Testing** (with PassKit entitlement)
   - [ ] Request suppression near NFC reader
   - [ ] Verify wallet doesn't appear
@@ -677,6 +734,7 @@ flutter test integration_test/ -d <device-id>
 ## 📈 Success Metrics
 
 ### Code Quality
+
 - [ ] All unit tests pass (100% pass rate)
 - [ ] All integration tests pass
 - [ ] No analyzer warnings
@@ -687,6 +745,7 @@ flutter test integration_test/ -d <device-id>
 - [ ] CI/CD pipeline green
 
 ### Pub.dev Score
+
 - [ ] Score > 130/140 (target: 140/140)
 - [ ] All static analysis passing (pana)
 - [ ] Documentation score at 100%
@@ -696,6 +755,7 @@ flutter test integration_test/ -d <device-id>
 - [ ] Screenshots uploaded to pub.dev
 
 ### Functional
+
 - [ ] Works reliably on iOS 12.0+
 - [ ] Works reliably on Android API 21+
 - [ ] No memory leaks
@@ -705,6 +765,7 @@ flutter test integration_test/ -d <device-id>
 - [ ] Platform capability detection working correctly
 
 ### Testing Metrics
+
 - [ ] **Unit Tests:** Minimum 30 tests (currently 4)
 - [ ] **Integration Tests:** Minimum 10 tests (currently 1)
 - [ ] **Code Coverage:** > 80% overall
@@ -714,6 +775,7 @@ flutter test integration_test/ -d <device-id>
 - [ ] **CI/CD Tests:** Automated testing on every commit
 
 ### Production Readiness
+
 - [ ] Migration guide complete and clear
 - [ ] Security review passed
 - [ ] Privacy policy documented
@@ -727,34 +789,40 @@ flutter test integration_test/ -d <device-id>
 ## 🚀 Release Notes (Draft for v1.0.0)
 
 ### Breaking Changes
+
 - Removed internal API exports (`MethodChannelNfcWalletSuppression`, `NfcWalletSuppressionPlatform`)
   - **Migration:** Use only the public `NfcWalletSuppression` API
 
 ### New Features
+
 - Added `isSupported()` method to check platform capability
 - Improved error handling and state management
 - Enhanced API documentation with examples
 - Comprehensive test suite with >80% coverage
 
 ### Bug Fixes
+
 - Fixed iOS token management race condition
 - Fixed Android state persistence across activity recreation
 - Fixed integration tests expecting wrong default state
 - Fixed duplicate test names in test suite
 
 ### Improvements
+
 - Better logging using `debugPrint()`
 - Cleaned up dead code and comments
 - Updated metadata and documentation
 - Improved example app with better error handling
 
 ### Documentation
+
 - Comprehensive API documentation added
 - README code examples improved
 - CHANGELOG formatting fixed
 - Privacy manifest documented
 
 ### Testing
+
 - Added 25+ new unit tests
 - Added 10+ integration tests
 - Test coverage increased from ~30% to >80%
@@ -763,6 +831,7 @@ flutter test integration_test/ -d <device-id>
 - CI/CD with automated testing
 
 ### Production Infrastructure
+
 - Migration guide for smooth upgrades
 - GitHub Actions CI/CD pipeline
 - Publishing checklist for quality releases
@@ -774,6 +843,7 @@ flutter test integration_test/ -d <device-id>
 ## 📞 Support & Questions
 
 If you have questions about this plan:
+
 1. Review the original analysis document
 2. Check Flutter plugin best practices
 3. Consult platform-specific documentation:
@@ -796,6 +866,7 @@ If you have questions about this plan:
 ## 🎯 Quality & Completeness Goals
 
 ### Current State (v0.1.1)
+
 ```
 Unit Tests: 4 tests
 Integration Tests: 1 test (broken)
@@ -808,6 +879,7 @@ Security Review: None
 ```
 
 ### Target State (v1.0.0)
+
 ```
 Unit Tests: 30+ tests
 Integration Tests: 10+ tests
@@ -823,6 +895,7 @@ Pub.dev Score: 140/140 (target)
 ```
 
 ### Project File Structure (v1.0.0)
+
 ```
 .github/
 └── workflows/
@@ -855,6 +928,7 @@ IMPROVEMENT_PLAN.md (this file)
 ## 🔄 Continuous Testing & Development Workflow
 
 ### Local Development Commands
+
 ```bash
 # Run tests on every change
 flutter test --watch
@@ -886,7 +960,9 @@ pana --no-warning
 ```
 
 ### CI/CD Automation (GitHub Actions)
+
 The CI pipeline will automatically:
+
 - Run tests on every push and PR
 - Generate and upload coverage reports
 - Run analyzer and format checks
@@ -895,6 +971,7 @@ The CI pipeline will automatically:
 - Create GitHub releases with changelog
 
 ### Pre-Release Checklist
+
 ```bash
 # 1. Run full test suite
 flutter test
