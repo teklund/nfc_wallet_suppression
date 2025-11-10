@@ -204,7 +204,7 @@ Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## Additional Resources
 
-📖 [API Docs](https://pub.dev/documentation/nfc_wallet_suppression/latest/) •  [Report Issues](https://github.com/teklund/nfc_wallet_suppression/issues) • 📝 [CHANGELOG](CHANGELOG.md) • [Apple PassKit](https://developer.apple.com/documentation/passkit) • [Android NFC](https://developer.android.com/guide/topics/connectivity/nfc)
+[API Docs](https://pub.dev/documentation/nfc_wallet_suppression/latest/) • [Report Issues](https://github.com/teklund/nfc_wallet_suppression/issues) • [CHANGELOG](CHANGELOG.md) • [Apple PassKit](https://developer.apple.com/documentation/passkit) • [Android NFC](https://developer.android.com/guide/topics/connectivity/nfc)
 
 ---
 
