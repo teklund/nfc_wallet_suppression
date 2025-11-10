@@ -27,7 +27,6 @@ jobs:
       - name: Setup Flutter ${{ matrix.flutter }}
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ matrix.flutter }}
           channel: ${{ matrix.flutter }}
           cache: true
       
