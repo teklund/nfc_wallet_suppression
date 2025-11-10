@@ -82,12 +82,6 @@ jobs:
           fatal-infos: true
           fatal-warnings: true
           annotate-only: ${{ matrix.flutter-version != '3.16.0' }}
-      
-      - name: Print Flutter version
-        run: |
-          echo "## 📦 Analysis Environment" >> $GITHUB_STEP_SUMMARY
-          echo "**Flutter:** $(flutter --version | head -n 1)" >> $GITHUB_STEP_SUMMARY
-          echo "**Dart:** $(dart --version)" >> $GITHUB_STEP_SUMMARY
 
   test:
     name: Run Tests & Coverage (${{ matrix.flutter-version }})
@@ -115,13 +109,6 @@ jobs:
       
       - name: Run tests with coverage and formatting
         run: flutter test --coverage --reporter=github --test-randomize-ordering-seed=random
-      
-      - name: Print test environment
-        run: |
-          echo "## 🧪 Test Environment" >> $GITHUB_STEP_SUMMARY
-          echo "**Flutter:** $(flutter --version | head -n 1)" >> $GITHUB_STEP_SUMMARY
-          echo "**Dart:** $(dart --version)" >> $GITHUB_STEP_SUMMARY
-          echo "**Test Seed:** random" >> $GITHUB_STEP_SUMMARY
       
       - name: Upload coverage reports to Codecov
         if: matrix.flutter-version == 'stable'
@@ -176,12 +163,6 @@ jobs:
             cat publish-output.txt >> $GITHUB_STEP_SUMMARY
             echo '```' >> $GITHUB_STEP_SUMMARY
           fi
-      
-      - name: Print environment info
-        run: |
-          echo "**Environment:** Ubuntu Latest" >> $GITHUB_STEP_SUMMARY
-          echo "**Flutter:** $(flutter --version | head -n 1)" >> $GITHUB_STEP_SUMMARY
-          echo "**Dart:** $(dart --version)" >> $GITHUB_STEP_SUMMARY
 
   pana:
     name: Pub Score Check
@@ -219,12 +200,6 @@ jobs:
           else
             echo "✅ Score meets recommended threshold" >> $GITHUB_STEP_SUMMARY
           fi
-      
-      - name: Print environment info
-        run: |
-          echo "**Environment:** Ubuntu Latest" >> $GITHUB_STEP_SUMMARY
-          echo "**Flutter:** $(flutter --version | head -n 1)" >> $GITHUB_STEP_SUMMARY
-          echo "**Dart:** $(dart --version)" >> $GITHUB_STEP_SUMMARY
   
   dependency-review:
     name: Dependency Review
