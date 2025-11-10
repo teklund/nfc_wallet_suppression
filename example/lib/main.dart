@@ -97,15 +97,15 @@ class _MyAppState extends State<MyApp> {
               ),
               FilledButton(
                 onPressed: _onRequestSuppression,
-                child: Text('Request suppression'),
+                child: const Text('Request suppression'),
               ),
               FilledButton(
                 onPressed: _onReleaseSuppression,
-                child: Text('Release suppression'),
+                child: const Text('Release suppression'),
               ),
               FilledButton(
                 onPressed: _checkIsSuppressed,
-                child: Text('Check suppression'),
+                child: const Text('Check suppression'),
               ),
             ],
           ),
