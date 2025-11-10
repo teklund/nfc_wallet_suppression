@@ -23,7 +23,7 @@ This document outlines improvements needed for the GitHub Actions workflows to f
 - `example/ios/Podfile` - Set minimum iOS platform to `13.0` (required by modern Flutter)
 - `example/ios/Runner.xcodeproj/project.pbxproj` - Updated `IPHONEOS_DEPLOYMENT_TARGET` from `12.0` to `13.0`
 - `android/src/main/AndroidManifest.xml` - Added `flutterEmbedding` v2 declaration
-- `.github/workflows/pull_request.yml` - Changed test matrix from 3.27.0 to 3.16.0
+- `.github/workflows/pull_request.yml` - Changed test matrix from 3.27.0 to 3.22.x and stable
 
 ---
 
