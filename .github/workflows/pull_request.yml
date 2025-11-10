@@ -36,7 +36,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          flutter-version: 'stable'
           cache: true
       
       - name: Print environment info
@@ -53,23 +53,23 @@ jobs:
         run: dart format --output=none --set-exit-if-changed .
 
   analyze:
-    name: Analyze Code (${{ matrix.flutter }})
+    name: Analyze Code (${{ matrix.flutter-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: format
     strategy:
       fail-fast: true
       matrix:
-        flutter: ['3.24.0', 'stable']
+        flutter-version: ['3.22.0', 'stable']
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
       
-      - name: Setup Flutter ${{ matrix.flutter }}
+      - name: Setup Flutter ${{ matrix.flutter-version }}
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ matrix.flutter }}
+          flutter-version: ${{ matrix.flutter-version }}
           cache: true
       
       - name: Install dependencies
@@ -80,7 +80,7 @@ jobs:
         with:
           fatal-infos: true
           fatal-warnings: true
-          annotate-only: ${{ matrix.flutter != '3.24.0' }}
+          annotate-only: ${{ matrix.flutter-version != '3.22.0' }}
       
       - name: Print Flutter version
         run: |
@@ -89,23 +89,23 @@ jobs:
           echo "**Dart:** $(dart --version)" >> $GITHUB_STEP_SUMMARY
 
   test:
-    name: Run Tests & Coverage (${{ matrix.flutter }})
+    name: Run Tests & Coverage (${{ matrix.flutter-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: analyze
     strategy:
       fail-fast: false
       matrix:
-        flutter: ['3.24.0', 'stable']
+        flutter-version: ['3.22.0', 'stable']
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
       
-      - name: Setup Flutter ${{ matrix.flutter }}
+      - name: Setup Flutter ${{ matrix.flutter-version }}
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ matrix.flutter }}
+          flutter-version: ${{ matrix.flutter-version }}
           cache: true
       
       - name: Install dependencies
@@ -117,7 +117,7 @@ jobs:
       - name: Extract and display test results
         if: always()
         run: |
-          echo "## 🧪 Test Results (${{ matrix.flutter }})" >> $GITHUB_STEP_SUMMARY
+          echo "## 🧪 Test Results (${{ matrix.flutter-version }})" >> $GITHUB_STEP_SUMMARY
           if [ -f "test_results.json" ]; then
             TOTAL=$(grep -o '"total":' test_results.json | wc -l)
             PASSED=$(grep -o '"success":true' test_results.json | wc -l)
@@ -139,7 +139,7 @@ jobs:
           echo "**Test Seed:** random" >> $GITHUB_STEP_SUMMARY
       
       - name: Upload coverage reports to Codecov
-        if: matrix.flutter == 'stable'
+        if: matrix.flutter-version == 'stable'
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -153,7 +153,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.flutter }}
+          name: test-results-${{ matrix.flutter-version }}
           path: |
             coverage/
             **/*.log
@@ -172,7 +172,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          flutter-version: 'stable'
           cache: true
       
       - name: Install dependencies
@@ -210,7 +210,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          flutter-version: 'stable'
           cache: true
       
       - name: Install dependencies
