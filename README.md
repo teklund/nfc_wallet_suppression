@@ -2,55 +2,49 @@
 
 [![pub package](https://img.shields.io/pub/v/nfc_wallet_suppression.svg)](https://pub.dev/packages/nfc_wallet_suppression)
 [![Pub Points](https://img.shields.io/pub/points/nfc_wallet_suppression?color=2E8B57&logo=dart)](https://pub.dev/packages/nfc_wallet_suppression/score)
-[![Popularity](https://img.shields.io/pub/popularity/nfc_wallet_suppression?logo=dart)](https://pub.dev/packages/nfc_wallet_suppression/score)
-[![GitHub stars](https://img.shields.io/github/stars/teklund/nfc_wallet_suppression.svg?style=social)](https://github.com/teklund/nfc_wallet_suppression)
 [![Flutter Platform](https://img.shields.io/badge/platform-flutter-blue.svg)](https://flutter.dev)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Supported Platforms](https://img.shields.io/badge/platforms-iOS%20%7C%20Android-blue.svg)](https://flutter.dev)
 
-This lightweight Flutter plugin provides a way to temporarily suppress the automatic presentation of
-payment apps. This is particularly useful in scenarios where you want to prevent the Wallet app from
-automatically appearing when the user is near an NFC reader.
+A lightweight Flutter plugin that **suppresses NFC wallet presentation** — preventing Apple Wallet, Google Wallet, and other payment apps from automatically popping up when your NFC-enabled device detects contactless payment terminals or NFC tags.
+
+**🎯 Problem This Solves:** When users with NFC-enabled phones (iPhone 7+, most modern Android devices) approach an NFC reader while your app is open, the system automatically shows wallet/payment apps. This plugin gives your app exclusive control over NFC interactions instead.
+
+**⚠️ Important Notes:**
+
+- **Only needed for NFC-enabled devices** - Phones without NFC hardware don't have this issue
+- **Suppression only** - This plugin does NOT read or write NFC tags
+- **Best for:** Loyalty cards, ticketing, access control, and custom NFC experiences
 
 ## 📋 Table of Contents
 
-- [Status](#status)
 - [Key Features](#key-features)
 - [Installation](#installation)
-- [Prerequisites](#prerequisites)
+- [Platform Setup](#platform-setup)
 - [API Usage](#api-usage)
-- [Platform Support & Limitations](#platform-support--limitations)
-- [How It Works](#how-it-works)
-- [Use Cases](#use-cases)
 - [Troubleshooting](#troubleshooting)
+- [Example App](#example-app)
 - [Contributing](#contributing)
-- [Resources](#resources)
 - [License](#license)
-
----
-
-## Status
-
-[![Pull Request](https://github.com/teklund/nfc_wallet_suppression/workflows/Pull%20Request/badge.svg)](https://github.com/teklund/nfc_wallet_suppression/actions/workflows/pull_request.yml)
-[![Platform Builds](https://github.com/teklund/nfc_wallet_suppression/workflows/Platform%20Builds/badge.svg)](https://github.com/teklund/nfc_wallet_suppression/actions/workflows/platform_builds.yml)
-[![Integration Tests](https://github.com/teklund/nfc_wallet_suppression/workflows/Integration%20Tests/badge.svg)](https://github.com/teklund/nfc_wallet_suppression/actions/workflows/integration_tests.yml)
-[![SDK Compatibility Check](https://github.com/teklund/nfc_wallet_suppression/workflows/SDK%20Compatibility%20Check/badge.svg)](https://github.com/teklund/nfc_wallet_suppression/actions/workflows/sdk_compatibility.yml)
-[![codecov](https://codecov.io/gh/teklund/nfc_wallet_suppression/branch/main/graph/badge.svg)](https://codecov.io/gh/teklund/nfc_wallet_suppression)
 
 ---
 
 ## Key Features
 
-- **iOS (PassKit):**
-  - **NFC Wallet Suppression:** Temporarily prevent the automatic display of passes from the Apple
-      Wallet app when the user is near an NFC reader.
-  - **Suppression Control:** Request and release NFC wallet suppression programmatically.
-  - **Suppression Status:** Check if NFC wallet suppression is currently active.
-- **Android (NFC Adapter):**
-  - **NFC Wallet Suppression:** Temporarily prevent payment apps from automatically appearing when
-      the user's device is near an NFC reader.
-  - **Suppression Control:** Request and release NFC wallet suppression programmatically.
-  - **Suppression Status:** Check if NFC wallet suppression is currently active.
+- ✅ **Suppress NFC wallet presentation** - Stop Apple Wallet/Google Wallet from auto-appearing on NFC-enabled devices
+- ✅ **Simple API** - Three methods: request, release, and check suppression status
+- ✅ **Cross-platform** - Works on both iOS (PassKit) and Android (NFC Adapter)
+- ✅ **Lifecycle-aware** - Automatic cleanup when app backgrounds
+- ✅ **Type-safe status** - Detailed status enum for handling different scenarios
+
+---
+
+## Build Status
+
+[![Pull Request](https://github.com/teklund/nfc_wallet_suppression/workflows/Pull%20Request/badge.svg)](https://github.com/teklund/nfc_wallet_suppression/actions/workflows/pull_request.yml)
+[![Platform Builds](https://github.com/teklund/nfc_wallet_suppression/workflows/Platform%20Builds/badge.svg)](https://github.com/teklund/nfc_wallet_suppression/actions/workflows/platform_builds.yml)
+[![Integration Tests](https://github.com/teklund/nfc_wallet_suppression/workflows/Integration%20Tests/badge.svg)](https://github.com/teklund/nfc_wallet_suppression/actions/workflows/integration_tests.yml)
+[![SDK Compatibility Check](https://github.com/teklund/nfc_wallet_suppression/workflows/SDK%20Compatibility%20Check/badge.svg)](https://github.com/teklund/nfc_wallet_suppression/actions/workflows/sdk_compatibility.yml)
+[![codecov](https://codecov.io/gh/teklund/nfc_wallet_suppression/graph/badge.svg?token=JRPE6FQF2T)](https://codecov.io/gh/teklund/nfc_wallet_suppression)
 
 ---
 
@@ -62,49 +56,47 @@ flutter pub add nfc_wallet_suppression
 
 ---
 
-## Prerequisites
-
-This plugin requires platform-specific setup on iOS. Android setup is automatic.
+## Platform Setup
 
 ### Android
 
-NFC permission is automatically included when you add this plugin. No additional configuration needed.
+**Minimum:** Android 5.0+ (API 21)
+
+**Setup:** None required! NFC permission is automatically added. App must be in foreground when requesting suppression.
+
+**Note:** Only suppresses wallet on devices with NFC hardware. Non-NFC devices don't need suppression.
 
 ### iOS
 
-For iOS it is a bit more complicated. You need to have the entitlement
-`com.apple.developer.passkit.pass-presentation-suppression` but before you can use it you need
-special permission from Apple and the only way to get it is to contact
-[`apple-pay-inquiries@apple.com`](mailto:apple-pay-inquiries@apple.com). Then update the app id and provisioning profiles AppleDeveloper
-portal before you can use the entitlement in the app.
+**Minimum:** iOS 12.0+ / iPhone 7+
 
-#### Apple Developer Portal
+**Note:** Only suppresses wallet on devices with NFC hardware (iPhone 7+). Older iPhones without NFC don't need suppression.
 
-After you have the permission from Apple you will find
-`com.apple.developer.passkit.pass-presentation-suppression` under **Additional Capabilities** in the
-Apple Developer portal for you App Identifier. Then you need to update your provisioning profiles to
-get this entitlement added (it will be added automatically when editing)
+**Setup Required:**
 
-#### Apple Pay Pass Presentation Suppression Entitlement
+1. **Request Apple Entitlement**
+   - Email <apple-pay-inquiries@apple.com>
+   - Request `com.apple.developer.passkit.pass-presentation-suppression`
+   - Explain your use case (may take several days for approval)
 
-Use this entitlement to keep your app in the foreground when operating near NFC or other RF readers.
-This entitlement enables the requestAutomaticPassPresentationSuppressionWithResponseHandler: method.
+2. **Configure Developer Portal**
+   - Enable `Pass Presentation Suppression` in your App ID
+   - Regenerate provisioning profiles
 
-In the entitlement's file, add the `com.apple.developer.passkit.pass-presentation-suppression` key
-with a Boolean value of `YES`. You need special permission from Apple to submit apps with this key
-enabled. For more information, contact [`apple-pay-inquiries@apple.com`](mailto:apple-pay-inquiries@apple.com).
+3. **Add Entitlement File** (`ios/Runner/Runner.entitlements`):
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
-    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-    <dict>
-        <!-- You need to add following permissions to your Entitlements file -->
-        <key>com.apple.developer.passkit.pass-presentation-suppression</key>
-        <true />
-    </dict>
-</plist>
-```
+   ```xml
+   <?xml version="1.0" encoding="UTF-8"?>
+   <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+   <plist version="1.0">
+   <dict>
+       <key>com.apple.developer.passkit.pass-presentation-suppression</key>
+       <true/>
+   </dict>
+   </plist>
+   ```
+
+⚠️ Without the approved entitlement, calls will fail on real iOS devices.
 
 ---
 
@@ -118,159 +110,104 @@ import 'package:nfc_wallet_suppression/nfc_wallet_suppression.dart';
 // Request NFC wallet suppression
 try {
   SuppressionStatus status = await NfcWalletSuppression.requestSuppression();
-  print('NFC wallet suppression request status: $status');
-} catch(error) {
+  
+  if (status == SuppressionStatus.suppressed) {
+    print('✓ Suppression active - you can now handle NFC interactions');
+  } else {
+    print('⚠ Suppression status: ${status.name}');
+  }
+} catch (error) {
   print('Error requesting NFC wallet suppression: $error');
 }
 
-// Release NFC wallet suppression
-try {
-  SuppressionStatus status = await NfcWalletSuppression.releaseSuppression();
-  print('NFC wallet suppression release status: $status');
-} catch (e) {
-  print('Error releasing NFC wallet suppression: $e');
-}
-
-// Check if NFC wallet is suppressed
+// Check if NFC wallet is currently suppressed
 try {
   bool isSuppressed = await NfcWalletSuppression.isSuppressed();
   print('Is NFC wallet suppressed? $isSuppressed');
 } catch (e) {
-  print('Error checking NFC wallet suppression status: $e');
+  print('Error checking suppression status: $e');
+}
+
+// Release NFC wallet suppression when done
+try {
+  SuppressionStatus status = await NfcWalletSuppression.releaseSuppression();
+  print('Suppression released: ${status.name}');
+} catch (e) {
+  print('Error releasing NFC wallet suppression: $e');
 }
 ```
 
 ### API Methods
 
-- **`requestSuppression()`** - Request NFC wallet suppression
-  - Returns: `Future<SuppressionStatus>`
-  - Throws: Exception if suppression cannot be requested
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `requestSuppression()` | `Future<SuppressionStatus>` | Request wallet suppression |
+| `releaseSuppression()` | `Future<SuppressionStatus>` | Release suppression |
+| `isSuppressed()` | `Future<bool>` | Check if currently suppressed |
 
-- **`releaseSuppression()`** - Release NFC wallet suppression
-  - Returns: `Future<SuppressionStatus>`
-  - Throws: Exception if suppression cannot be released
+### SuppressionStatus Values
 
-- **`isSuppressed()`** - Check if suppression is active
-  - Returns: `Future<bool>`
-  - Throws: Exception if status cannot be determined
+The `SuppressionStatus` enum represents the result of suppression operations:
 
----
+| Status | Description |
+|--------|-------------|
+| `suppressed` | Suppression is successfully active |
+| `notSuppressed` | Suppression is not active |
+| `unavailable` | Suppression feature is unavailable on this device |
+| `denied` | Suppression request was denied (missing entitlements or permissions) |
+| `cancelled` | Suppression was cancelled by the system |
+| `notSupported` | The platform doesn't support this feature |
+| `alreadyPresenting` | Wallet is already presenting (iOS-specific) |
+| `unknown` | Status could not be determined |
 
-## Platform Support & Limitations
+**Important Notes:**
 
-⚠️ **Important Notes:**
-
-- **iOS**: Requires special entitlement from Apple. Contact [`apple-pay-inquiries@apple.com`](mailto:apple-pay-inquiries@apple.com) to request the `com.apple.developer.passkit.pass-presentation-suppression` entitlement.
-- **iOS**: Suppression is temporary and tied to app lifecycle. It will be automatically released when your app goes to background.
-- **Android**: Requires app to have NFC permission and to be in foreground.
-- **Android**: Suppression ends when your app is closed or suppression is explicitly released.
-- Suppression is **not** a guarantee - system behavior may vary based on device and OS version.
-
-## How It Works
-
-This plugin uses platform-specific APIs to achieve NFC wallet suppression:
-
-### iOS (PassKit)
-
-On iOS, the plugin leverages Apple's **PassKit framework** to control the automatic presentation of
-passes.
-
-1. **Requesting Suppression:** When you call `requestSuppression()` from your Flutter app, the
-   plugin uses `PKPassLibrary.requestAutomaticPassPresentationSuppression(responseHandler:)` to
-   request a temporary suppression of automatic pass presentation.
-2. **Suppression Token:** If the request is successful, PassKit returns a
-   `PKSuppressionRequestToken`. The plugin stores this token to maintain the suppression.
-3. **NFC Wallet Suppressed:** While the suppression token is held, the Apple Wallet app will *not*
-   automatically display passes when the user is near an NFC reader. This gives your app the
-   opportunity to handle the NFC interaction instead.
-4. **Releasing Suppression:** When you call `releaseSuppression()`, the plugin uses
-   `PKPassLibrary.endAutomaticPassPresentationSuppression(withRequestToken:)` and provides the
-   stored token. This tells PassKit to release the suppression, and the Wallet app will resume its
-   normal behavior.
-5. **Check Suppression Status**: The plugin uses
-   `PKPassLibrary.isSuppressingAutomaticPassPresentation()` to check if the pass presentation is
-   currently suppressed.
-
-### Android (NFC Adapter)
-
-On Android, the plugin uses the **NFC Adapter** to manage NFC interactions.
-
-1. **Requesting Suppression:** When you call `requestSuppression()` from your Flutter app, the
-   plugin uses `NfcAdapter.enableForegroundDispatch()` to gain priority over other NFC-listening
-   apps. This effectively suppresses the automatic launch of payment apps when an NFC tag is
-   detected.
-2. **Suppression Active:** While suppression is active, payment apps will not automatically appear
-   when the user is near an NFC reader. Your app will have the opportunity to handle the NFC
-   interaction instead.
-3. **Releasing Suppression:** When you call `releaseSuppression()`, the plugin uses
-   `NfcAdapter.disableForegroundDispatch()` to release the suppression. This allows other
-   NFC-listening apps, including payment apps, to resume their normal behavior.
-4. **Checking Suppression Status:** The `isSuppressed()` method checks if the suppression is
-   currently active.
+- ✅ Only affects NFC-enabled devices (iPhone 7+, most modern Android phones)
+- ✅ Auto-releases when app backgrounds or closes
+- ❌ Does NOT read/write NFC tags
+- ❌ Does NOT persist across app restarts
+- ⚠️ Best-effort (not guaranteed on all devices due to manufacturer customizations)
 
 ## Troubleshooting
 
-### iOS Issues
+**Common Issues:**
 
-#### Entitlement not found error
+| Issue | Platform | Solution |
+|-------|----------|----------|
+| Entitlement not found | iOS | Ensure Apple approved the entitlement and it's in your provisioning profile |
+| NFC not available | Android | Enable NFC in device settings |
+| Auto-released | Both | Use `WidgetsBindingObserver` to re-request on app resume |
+| Doesn't work on device | iOS | Test on physical iPhone 7+, verify entitlement in Xcode |
+| Payment apps still appear | Android | Some manufacturers override behavior, test on multiple devices |
 
-You need special permission from Apple. Contact [`apple-pay-inquiries@apple.com`](mailto:apple-pay-inquiries@apple.com) and request the entitlement.
+**FAQ:**
 
-#### Suppression doesn't work on device
-
-Ensure you've added the entitlement to your provisioning profile and it's loaded on the device.
-
-#### Works in simulator but not on real device
-
-The entitlement is required on real devices. Simulators may have different behavior.
-
-### Android Issues
-
-#### NFC not available error
-
-Ensure your device has NFC hardware and NFC is enabled in settings.
-
-#### Suppression doesn't work
-
-Ensure your app has NFC permission and is in the foreground (not backgrounded).
-
-### General Issues
-
-#### Why do I need to handle exceptions?
-
-Platform availability, permissions, and state can change. Always wrap calls in try-catch.
-
-#### How long does suppression last?
-
-On iOS: Until your app releases it or goes to background. On Android: Until your app releases it or is closed.
+- **Does this read NFC tags?** No, it only suppresses wallet presentation.
+- **How long does suppression last?** Until released or app backgrounds.
+- **Works in simulator?** Limited - always test on physical devices with NFC.
 
 ---
 
-## Use Cases
+## Example App
 
-- **Loyalty Programs:** Prevent payment apps from interfering with your app's own loyalty card functionality when using NFC.
-- **Event Ticketing:** Ensure that your app is the primary interface for event ticket interactions using NFC.
-- **Access Control:** Manage NFC-based access control systems without payment apps automatically taking over.
-- **Custom NFC Interactions:** Build unique NFC experiences without payment apps automatically taking over.
+See the [`example/`](https://github.com/teklund/nfc_wallet_suppression/tree/main/example) directory for a complete working example with lifecycle management and error handling.
+
+```bash
+cd example && flutter run
+```
 
 ---
 
 ## Contributing
 
-For guidelines on contributing, see [CONTRIBUTING.md](CONTRIBUTING.md).
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-Contributions are welcome! Please feel free to submit pull requests or open issues on [GitHub](https://github.com/teklund/nfc_wallet_suppression).
+## Additional Resources
 
-## Resources
-
-- 📖 [API Documentation](https://pub.dev/documentation/nfc_wallet_suppression/latest/)
-- 🐛 [Report Issues](https://github.com/teklund/nfc_wallet_suppression/issues)
-- 📝 [CHANGELOG](CHANGELOG.md)
-- 🤝 [Contributing Guide](CONTRIBUTING.md)
-- ⚖️ [License](LICENSE)
+📖 [API Docs](https://pub.dev/documentation/nfc_wallet_suppression/latest/) •  [Report Issues](https://github.com/teklund/nfc_wallet_suppression/issues) • 📝 [CHANGELOG](CHANGELOG.md) • [Apple PassKit](https://developer.apple.com/documentation/passkit) • [Android NFC](https://developer.android.com/guide/topics/connectivity/nfc)
 
 ---
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) for details.
+BSD 3-Clause License - See [LICENSE](LICENSE) for details.

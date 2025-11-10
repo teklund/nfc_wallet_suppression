@@ -5,13 +5,14 @@
 Pod::Spec.new do |s|
   s.name             = 'nfc_wallet_suppression'
   s.version          = '0.0.1'
-  s.summary          = 'Plugin to handle NFC wallet suppression in Flutter'
+  s.summary          = 'iOS implementation for suppressing Apple Wallet NFC presentation'
   s.description      = <<-DESC
-Plugin to handle NFC wallet suppression in Flutter
+iOS implementation of the nfc_wallet_suppression Flutter plugin. Uses PassKit to suppress 
+automatic Apple Wallet presentation when detecting NFC readers.
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'https://github.com/teklund/nfc_wallet_suppression'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Your Company' => 'email@example.com' }
+  s.author           = { 'TEklund' => 'teklund@users.noreply.github.com' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'
