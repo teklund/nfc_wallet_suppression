@@ -90,19 +90,21 @@ class _MyAppState extends State<MyApp> {
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            spacing: 8,
             children: [
               Text(
                 'Suppression status: ${_suppressionStatus.name}\n${_error ?? ''}',
               ),
+              const SizedBox(height: 8),
               FilledButton(
                 onPressed: _onRequestSuppression,
                 child: const Text('Request suppression'),
               ),
+              const SizedBox(height: 8),
               FilledButton(
                 onPressed: _onReleaseSuppression,
                 child: const Text('Release suppression'),
               ),
+              const SizedBox(height: 8),
               FilledButton(
                 onPressed: _checkIsSuppressed,
                 child: const Text('Check suppression'),
