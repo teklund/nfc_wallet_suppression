@@ -91,7 +91,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        flutter-version: ['3.27.0', 'stable']
+        flutter-version: ['3.16.0', 'stable']
     
     steps:
       - name: Checkout code

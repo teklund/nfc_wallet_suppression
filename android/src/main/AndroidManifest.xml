@@ -2,9 +2,4 @@
   package="dev.teklund.nfc_wallet_suppression">
     <uses-permission android:name="android.permission.NFC" />
     <uses-feature android:name="android.hardware.nfc" android:required="false" />
-    <application>
-        <meta-data
-            android:name="flutterEmbedding"
-            android:value="2" />
-    </application>
 </manifest>
