@@ -18,8 +18,10 @@ This document outlines improvements needed for the GitHub Actions workflows to f
 
 **Files Updated**:
 
-- `pubspec.yaml` - Changed from `sdk: ^3.7.0` to `sdk: ^3.0.0`, Flutter from `>=3.22.0` to `>=3.16.0`
+- `pubspec.yaml` - Changed from `sdk: ^3.7.0` to `sdk: ^3.0.0`, Flutter from `>=3.22.0` to `>=3.16.0`, `flutter_lints` from `^5.0.0` to `^4.0.0`
 - `example/pubspec.yaml` - Changed from `sdk: ^3.7.0` to `sdk: ^3.0.0`, added `flutter: '>=3.16.0'`
+- `example/ios/Podfile` - Set minimum iOS platform to `13.0` (required by modern Flutter)
+- `example/ios/Runner.xcodeproj/project.pbxproj` - Updated `IPHONEOS_DEPLOYMENT_TARGET` from `12.0` to `13.0`
 - `.github/workflows/pull_request.yml` - Changed matrix from 3.27.0 to 3.16.0
 
 ---
