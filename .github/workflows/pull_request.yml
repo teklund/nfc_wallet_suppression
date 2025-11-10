@@ -60,10 +60,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        flutter-version: ['3.27.0']
-        include:
-          - flutter-version: 'stable'
-            use-channel: true
+        flutter-version: ['3.27.0', 'stable']
     
     steps:
       - name: Checkout code
@@ -72,8 +69,8 @@ jobs:
       - name: Setup Flutter ${{ matrix.flutter-version }}
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ !matrix.use-channel && matrix.flutter-version || '' }}
-          channel: ${{ matrix.use-channel && 'stable' || '' }}
+          flutter-version: ${{ matrix.flutter-version != 'stable' && matrix.flutter-version || '' }}
+          channel: stable
           cache: true
       
       - name: Install dependencies
@@ -100,10 +97,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        flutter-version: ['3.27.0']
-        include:
-          - flutter-version: 'stable'
-            use-channel: true
+        flutter-version: ['3.27.0', 'stable']
     
     steps:
       - name: Checkout code
@@ -112,8 +106,8 @@ jobs:
       - name: Setup Flutter ${{ matrix.flutter-version }}
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ !matrix.use-channel && matrix.flutter-version || '' }}
-          channel: ${{ matrix.use-channel && 'stable' || '' }}
+          flutter-version: ${{ matrix.flutter-version != 'stable' && matrix.flutter-version || '' }}
+          channel: stable
           cache: true
       
       - name: Install dependencies
