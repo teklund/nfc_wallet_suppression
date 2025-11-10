@@ -79,7 +79,7 @@ jobs:
         run: flutter build appbundle --debug
       
       - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: android-apk
           path: example/build/app/outputs/flutter-apk/app-debug.apk
@@ -125,7 +125,7 @@ jobs:
         run: flutter build ios --debug --no-codesign
       
       - name: Upload iOS artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: ios-build
           path: example/build/ios/iphoneos/Runner.app
