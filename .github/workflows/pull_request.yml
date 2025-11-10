@@ -1,0 +1,238 @@
+name: Pull Request
+
+on:
+  pull_request:
+    branches: [ main, master ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitignore'
+  push:
+    branches: [ main, master ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitignore'
+
+concurrency:
+  group: pull-request-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  format:
+    name: Check Formatting
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      
+      - name: Print environment info
+        run: |
+          echo "## 🔧 Environment Information" >> $GITHUB_STEP_SUMMARY
+          echo "**OS:** $(uname -s)" >> $GITHUB_STEP_SUMMARY
+          echo "**Flutter:** $(flutter --version | head -n 1)" >> $GITHUB_STEP_SUMMARY
+          echo "**Dart:** $(dart --version)" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+  analyze:
+    name: Analyze Code (${{ matrix.flutter-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: format
+    strategy:
+      fail-fast: true
+      matrix:
+        flutter-version: ['3.22.x', 'stable']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Flutter ${{ matrix.flutter-version }}
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ matrix.flutter-version != 'stable' && matrix.flutter-version || '' }}
+          channel: stable
+          cache: true
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Analyze project
+        uses: invertase/github-action-dart-analyzer@v3
+        with:
+          fatal-infos: true
+          fatal-warnings: true
+          annotate-only: ${{ matrix.flutter-version != '3.22.x' }}
+
+  test:
+    name: Run Tests & Coverage (${{ matrix.flutter-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: analyze
+    strategy:
+      fail-fast: false
+      matrix:
+        flutter-version: ['3.22.x', 'stable']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Flutter ${{ matrix.flutter-version }}
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ matrix.flutter-version != 'stable' && matrix.flutter-version || '' }}
+          channel: stable
+          cache: true
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Run tests with coverage and formatting
+        run: flutter test --coverage --reporter=github --test-randomize-ordering-seed=random
+      
+      - name: Generate test summary
+        if: always()
+        run: |
+          echo "## 🧪 Test Results (${{ matrix.flutter-version }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f "coverage/lcov.info" ]; then
+            echo "✅ **Coverage:** Generated" >> $GITHUB_STEP_SUMMARY
+            LINES=$(grep -c "^" coverage/lcov.info || echo "0")
+            echo "   - Coverage file size: $LINES lines" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ **Coverage:** Not generated" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Test Configuration:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Randomization Seed: random" >> $GITHUB_STEP_SUMMARY
+          echo "- Reporter: GitHub annotations" >> $GITHUB_STEP_SUMMARY
+          echo "- Flutter Version: ${{ matrix.flutter-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Dart: $(dart --version)" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Upload coverage reports to Codecov
+        if: matrix.flutter-version == 'stable'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage/lcov.info
+          fail_ci_if_error: false
+          flags: unittests
+          name: flutter-coverage
+          verbose: true
+      
+      - name: Upload test results as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.flutter-version }}
+          path: |
+            coverage/
+            **/*.log
+          retention-days: 7
+
+  publish-dry-run:
+    name: Publish Dry Run
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: format
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Validate package
+        run: |
+          flutter pub publish --dry-run 2>&1 | tee publish-output.txt
+          echo "## 📦 Publish Validation" >> $GITHUB_STEP_SUMMARY
+          if grep -q "Package has 0 warnings" publish-output.txt; then
+            echo "✅ Package validation passed with no warnings" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Package validation completed with warnings" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat publish-output.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+  pana:
+    name: Pub Score Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: format
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Install pana
+        run: dart pub global activate pana
+      
+      - name: Run pana
+        run: |
+          dart pub global run pana --no-warning | tee pana-output.txt
+          SCORE=$(grep -o 'Score: [0-9]*' pana-output.txt | grep -o '[0-9]*' | tail -1 || echo "0")
+          echo "## 🎯 Pana Score: ${SCORE}/160" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat pana-output.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          if [ "$SCORE" -lt 130 ]; then
+            echo "⚠️ Score is below recommended threshold of 130" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ Score meets recommended threshold" >> $GITHUB_STEP_SUMMARY
+          fi
+  
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+          comment-summary-in-pr: on-failure

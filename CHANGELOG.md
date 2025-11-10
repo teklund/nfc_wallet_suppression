@@ -1,6 +1,10 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
 ## 0.1.1
 
-* **FIX** Don't require nfc permission on Android
+* **DOCS** Clarified that NFC permission is automatically included via plugin manifest (no app-level declaration needed)
 
 * First stable release of the `nfc_wallet_suppression` plugin.
 * **DOCS** Updated readme

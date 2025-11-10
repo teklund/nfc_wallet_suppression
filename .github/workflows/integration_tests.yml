@@ -1,0 +1,159 @@
+name: Integration Tests
+
+on:
+  # Disabled temporarily - see IMPROVEMENT_PLAN.md Task 23.b
+  # pull_request:
+  #   branches: [ main, master ]
+  #   paths-ignore:
+  #     - '**.md'
+  #     - 'docs/**'
+  #     - 'LICENSE'
+  #     - '.gitignore'
+  # push:
+  #   branches: [ main, master ]
+  #   paths-ignore:
+  #     - '**.md'
+  #     - 'docs/**'
+  #     - 'LICENSE'
+  #     - '.gitignore'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration-tests-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  integration-test-android:
+    name: Integration Tests (Android)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      
+      - name: Print environment info
+        run: |
+          echo "## 🔧 Android Test Environment" >> $GITHUB_STEP_SUMMARY
+          echo "**OS:** $(uname -s)" >> $GITHUB_STEP_SUMMARY
+          echo "**Flutter:** $(flutter --version | head -n 1)" >> $GITHUB_STEP_SUMMARY
+          echo "**Java:** $(java -version 2>&1 | head -n 1)" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('example/android/**/*.gradle*', 'example/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      
+      - name: Install dependencies
+        working-directory: example
+        run: flutter pub get
+      
+      - name: Enable KVM (for faster emulator)
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      
+      - name: Run integration tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          arch: x86_64
+          profile: pixel_5
+          disable-animations: true
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          script: cd example && flutter test integration_test/
+      
+      - name: Retry integration tests on failure
+        if: failure()
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          arch: x86_64
+          profile: pixel_5
+          disable-animations: true
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          script: cd example && flutter test integration_test/
+      
+      - name: Display test summary
+        if: success()
+        run: |
+          echo "## ✅ Android Integration Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "All integration tests passed on Android emulator" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Flutter doctor (on failure)
+        if: failure()
+        run: flutter doctor -v
+      
+  integration-test-ios:
+    name: Integration Tests (iOS)
+    runs-on: macos-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      
+      - name: Install dependencies
+        working-directory: example
+        run: flutter pub get
+      
+      - name: Start iOS Simulator
+        run: |
+          # Get the first available iPhone simulator
+          DEVICE_ID=$(xcrun simctl list devices available --json | grep -o '"udid" : "[^"]*"' | head -1 | grep -o '[^"]*$' | head -c 36)
+          if [ -z "$DEVICE_ID" ]; then
+            echo "No iPhone simulator found, creating one..."
+            xcrun simctl create "iPhone 15" com.apple.CoreSimulator.CoreSimulatorService --type=com.apple.dt.iPhone15
+            DEVICE_ID=$(xcrun simctl list devices available --json | grep -o '"udid" : "[^"]*"' | head -1 | grep -o '[^"]*$' | head -c 36)
+          fi
+          echo "Device ID: $DEVICE_ID"
+          xcrun simctl boot "$DEVICE_ID" || true
+          xcrun simctl bootstatus "$DEVICE_ID" -b
+      
+      - name: Run integration tests
+        working-directory: example
+        run: flutter test integration_test/ -d iPhone
+      
+      - name: Retry integration tests on failure
+        if: failure()
+        working-directory: example
+        run: |
+          echo "First attempt failed, retrying..."
+          flutter test integration_test/ -d iPhone
+      
+      - name: Display test summary
+        if: success()
+        run: |
+          echo "## ✅ iOS Integration Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "All integration tests passed on iOS simulator" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Flutter doctor (on failure)
+        if: failure()
+        run: flutter doctor -v

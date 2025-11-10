@@ -71,10 +71,9 @@ class _MyAppState extends State<MyApp> {
       if (!mounted) return;
       setState(() {
         _error = null;
-        _suppressionStatus =
-            result
-                ? SuppressionStatus.suppressed
-                : SuppressionStatus.notSuppressed;
+        _suppressionStatus = result
+            ? SuppressionStatus.suppressed
+            : SuppressionStatus.notSuppressed;
       });
     } catch (error, _) {
       setState(() {
@@ -91,22 +90,24 @@ class _MyAppState extends State<MyApp> {
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            spacing: 8,
             children: [
               Text(
                 'Suppression status: ${_suppressionStatus.name}\n${_error ?? ''}',
               ),
+              const SizedBox(height: 8),
               FilledButton(
                 onPressed: _onRequestSuppression,
-                child: Text('Request suppression'),
+                child: const Text('Request suppression'),
               ),
+              const SizedBox(height: 8),
               FilledButton(
                 onPressed: _onReleaseSuppression,
-                child: Text('Release suppression'),
+                child: const Text('Release suppression'),
               ),
+              const SizedBox(height: 8),
               FilledButton(
                 onPressed: _checkIsSuppressed,
-                child: Text('Check suppression'),
+                child: const Text('Check suppression'),
               ),
             ],
           ),
