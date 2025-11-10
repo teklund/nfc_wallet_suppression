@@ -12,22 +12,22 @@ permissions:
 
 jobs:
   test-latest-sdks:
-    name: Test on ${{ matrix.flutter-version }} Flutter
+    name: Test on ${{ matrix.channel }} Flutter
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        flutter-version: ['3.22.0', '3.28.0', '3.32.0', 'stable']
+        channel: ['stable', 'beta']
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
       
-      - name: Setup Flutter ${{ matrix.flutter-version }}
+      - name: Setup Flutter ${{ matrix.channel }}
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ matrix.flutter-version }}
+          channel: ${{ matrix.channel }}
           cache: true
       
       - name: Get Flutter version
@@ -60,13 +60,13 @@ jobs:
       - name: Display test summary
         if: success()
         run: |
-          echo "## ✅ Test Results - ${{ matrix.flutter-version }} Flutter" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ Test Results - ${{ matrix.channel }} Flutter" >> $GITHUB_STEP_SUMMARY
           echo "All tests passed successfully" >> $GITHUB_STEP_SUMMARY
       
       - name: Report success
         if: success()
         run: |
-          echo "✅ All checks passed on ${{ matrix.flutter-version }} Flutter"
+          echo "✅ All checks passed on ${{ matrix.channel }} Flutter"
           echo "Flutter version: ${{ steps.flutter-version.outputs.version }}"
 
   create-issue-on-failure:
