@@ -42,7 +42,7 @@ void main() {
     expect(await platform.isSuppressed(), isFalse);
   });
 
-  test('requestSuppression_returnsSupressedOnSuccess', () async {
+  test('requestSuppression_returnsSuppressedOnSuccess', () async {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
       return 'Success';
