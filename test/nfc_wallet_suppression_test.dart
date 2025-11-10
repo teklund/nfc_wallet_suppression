@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nfc_wallet_suppression/nfc_wallet_suppression.dart';
+import 'package:nfc_wallet_suppression/src/nfc_wallet_suppression_method_channel.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 class MockNfcWalletSuppressionPlatform
@@ -48,7 +49,7 @@ void main() {
     await NfcWalletSuppression.requestSuppression();
     expect(await NfcWalletSuppression.isSuppressed(), isTrue);
   });
-  test('isSuppressed_defaultFalse', () async {
+  test('isSuppressed_falseAfterRelease', () async {
     MockNfcWalletSuppressionPlatform fakePlatform =
         MockNfcWalletSuppressionPlatform();
     NfcWalletSuppressionPlatform.instance = fakePlatform;
@@ -57,5 +58,24 @@ void main() {
     expect(await NfcWalletSuppression.isSuppressed(), isTrue);
     await NfcWalletSuppression.releaseSuppression();
     expect(await NfcWalletSuppression.isSuppressed(), isFalse);
+  });
+
+  test('requestSuppression_returnsSuppressedStatus', () async {
+    MockNfcWalletSuppressionPlatform fakePlatform =
+        MockNfcWalletSuppressionPlatform();
+    NfcWalletSuppressionPlatform.instance = fakePlatform;
+
+    final status = await NfcWalletSuppression.requestSuppression();
+    expect(status, SuppressionStatus.suppressed);
+  });
+
+  test('releaseSuppression_returnsNotSuppressedStatus', () async {
+    MockNfcWalletSuppressionPlatform fakePlatform =
+        MockNfcWalletSuppressionPlatform();
+    NfcWalletSuppressionPlatform.instance = fakePlatform;
+
+    await NfcWalletSuppression.requestSuppression();
+    final status = await NfcWalletSuppression.releaseSuppression();
+    expect(status, SuppressionStatus.notSuppressed);
   });
 }
