@@ -60,7 +60,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        flutter-version: ['3.27.0', 'stable']
+        flutter-version: ['3.16.0', 'stable']
     
     steps:
       - name: Checkout code
@@ -81,7 +81,7 @@ jobs:
         with:
           fatal-infos: true
           fatal-warnings: true
-          annotate-only: ${{ matrix.flutter-version != '3.27.0' }}
+          annotate-only: ${{ matrix.flutter-version != '3.16.0' }}
       
       - name: Print Flutter version
         run: |
@@ -115,23 +115,6 @@ jobs:
       
       - name: Run tests with coverage and formatting
         run: flutter test --coverage --reporter=github --test-randomize-ordering-seed=random
-      
-      - name: Extract and display test results
-        if: always()
-        run: |
-          echo "## 🧪 Test Results (${{ matrix.flutter-version }})" >> $GITHUB_STEP_SUMMARY
-          if [ -f "test_results.json" ]; then
-            TOTAL=$(grep -o '"total":' test_results.json | wc -l)
-            PASSED=$(grep -o '"success":true' test_results.json | wc -l)
-            FAILED=$(grep -o '"success":false' test_results.json | wc -l)
-          else
-            # Parse from stdout if json not available
-            PASSED=$(grep -o "✓" <<< "$(flutter test 2>&1)" | wc -l || echo "N/A")
-            FAILED=$(grep -o "✗" <<< "$(flutter test 2>&1)" | wc -l || echo "N/A")
-          fi
-          echo "**Status:** Tests executed" >> $GITHUB_STEP_SUMMARY
-          echo "**Randomization Seed:** random" >> $GITHUB_STEP_SUMMARY
-          echo "**Coverage Collected:** ✅" >> $GITHUB_STEP_SUMMARY
       
       - name: Print test environment
         run: |
@@ -224,7 +207,7 @@ jobs:
       - name: Run pana
         run: |
           dart pub global run pana --no-warning | tee pana-output.txt
-          SCORE=$(grep -oP 'Score: \K[0-9]+' pana-output.txt || echo "0")
+          SCORE=$(grep -o 'Score: [0-9]*' pana-output.txt | grep -o '[0-9]*' | tail -1 || echo "0")
           echo "## 🎯 Pana Score: ${SCORE}/160" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           cat pana-output.txt >> $GITHUB_STEP_SUMMARY
