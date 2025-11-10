@@ -60,7 +60,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        flutter-version: ['3.22.0']
+        flutter-version: ['3.27.0']
         include:
           - flutter-version: 'stable'
             use-channel: true
@@ -84,7 +84,7 @@ jobs:
         with:
           fatal-infos: true
           fatal-warnings: true
-          annotate-only: ${{ matrix.flutter-version != '3.22.0' }}
+          annotate-only: ${{ matrix.flutter-version != '3.27.0' }}
       
       - name: Print Flutter version
         run: |
@@ -100,7 +100,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        flutter-version: ['3.22.0']
+        flutter-version: ['3.27.0']
         include:
           - flutter-version: 'stable'
             use-channel: true
