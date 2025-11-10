@@ -47,15 +47,12 @@ jobs:
       
       - name: Check formatting
         run: dart format --output=none --set-exit-if-changed .
-        continue-on-error: false
       
       - name: Analyze project
         run: flutter analyze --fatal-infos --fatal-warnings
-        continue-on-error: false
       
       - name: Run tests
         run: flutter test
-        continue-on-error: false
       
       - name: Display test summary
         if: success()
