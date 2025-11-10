@@ -16,13 +16,13 @@ on:
       - 'LICENSE'
       - '.gitignore'
 
+concurrency:
+  group: pull-request-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pull-requests: write
-
-concurrency:
-  group: nfc_wallet_suppression_${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: true
 
 jobs:
   format:
@@ -148,7 +148,8 @@ jobs:
     name: Publish Dry Run
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: analyze
+    needs: format
+    if: github.event_name == 'pull_request'
     
     steps:
       - name: Checkout code
@@ -186,7 +187,8 @@ jobs:
     name: Pub Score Check
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: analyze
+    needs: format
+    if: github.event_name == 'pull_request'
     
     steps:
       - name: Checkout code

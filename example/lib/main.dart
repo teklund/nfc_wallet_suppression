@@ -71,10 +71,9 @@ class _MyAppState extends State<MyApp> {
       if (!mounted) return;
       setState(() {
         _error = null;
-        _suppressionStatus =
-            result
-                ? SuppressionStatus.suppressed
-                : SuppressionStatus.notSuppressed;
+        _suppressionStatus = result
+            ? SuppressionStatus.suppressed
+            : SuppressionStatus.notSuppressed;
       });
     } catch (error, _) {
       setState(() {

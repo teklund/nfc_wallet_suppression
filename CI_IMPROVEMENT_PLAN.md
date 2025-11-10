@@ -1,6 +1,7 @@
 # CI/CD Pipeline Improvement Plan
 
 ## Overview
+
 This document outlines improvements needed for the GitHub Actions workflows to fix issues, optimize performance, and follow best practices.
 
 ---
@@ -8,6 +9,7 @@ This document outlines improvements needed for the GitHub Actions workflows to f
 ## Critical Issues (Must Fix)
 
 ### 1. Dart SDK Version Compatibility ✅ COMPLETED
+
 **Problem**: `pubspec.yaml` required Dart `^3.7.0`, but this was more restrictive than popular packages use.
 
 **Impact**: Workflows would fail with older Flutter versions, limiting adoption
@@ -15,6 +17,7 @@ This document outlines improvements needed for the GitHub Actions workflows to f
 **Solution Implemented**: Updated to Dart `^3.0.0` and Flutter `>=3.16.0` to match modern package standards
 
 **Files Updated**:
+
 - `pubspec.yaml` - Changed from `sdk: ^3.7.0` to `sdk: ^3.0.0`, Flutter from `>=3.22.0` to `>=3.16.0`
 - `example/pubspec.yaml` - Changed from `sdk: ^3.7.0` to `sdk: ^3.0.0`, added `flutter: '>=3.16.0'`
 - `.github/workflows/pull_request.yml` - Changed matrix from 3.27.0 to 3.16.0
@@ -24,65 +27,71 @@ This document outlines improvements needed for the GitHub Actions workflows to f
 ## High Priority Issues
 
 ### 2. Broken Test Result Extraction ✅ COMPLETED
+
 **Problem**: The "Extract and display test results" step in `pull_request.yml` re-ran tests instead of parsing actual output. The conditional logic never found the files it was looking for.
 
 **Solution Implemented**: Removed the wasteful step entirely since:
+
 - Test results are already shown via `--reporter=github`
 - Re-running tests was wasteful and didn't capture original results
 - Coverage is already uploaded separately
 
 **Files Updated**:
+
 - `.github/workflows/pull_request.yml` (removed lines 116-127)
 
 ---
 
 ### 3. Pana Score Regex Not Cross-Platform ✅ COMPLETED
+
 **Problem**: `grep -oP` uses Perl regex, which isn't available on macOS or BSD systems by default.
 
 **Solution Implemented**: Changed to POSIX-compliant grep:
+
 ```bash
 SCORE=$(grep -o 'Score: [0-9]*' pana-output.txt | grep -o '[0-9]*' | tail -1 || echo "0")
 ```
 
 **Files Updated**:
+
 - `.github/workflows/pull_request.yml` (line 210)
 
 ---
 
 ## Medium Priority Optimizations
 
-### 4. Optimize Job Dependencies
-**Problem**: `publish-dry-run` and `pana` both wait for `analyze` to complete, but could run in parallel with `test`.
+### 4. Optimize Job Dependencies ✅ COMPLETED
 
-**Current Flow**:
-```
-format → analyze → test (parallel)
-              ↓
-         publish-dry-run
-              ↓
-            pana
-```
+**Problem**: `publish-dry-run` and `pana` both waited for `analyze` to complete, but could run in parallel with `test`.
 
-**Optimized Flow**:
+**Solution Implemented**: Changed both jobs to depend on `format` instead of `analyze`, allowing them to run in parallel with both `analyze` and `test`.
+
+**New Flow**:
+
 ```
-format → analyze → test
-              ↓      ↓     ↓
-         publish-dry-run  pana  (all parallel)
+format → analyze (parallel with below)
+    ↓ → test
+    ↓ → publish-dry-run
+    ↓ → pana
 ```
 
 **Benefits**:
+
 - Reduces overall workflow time by ~5-10 minutes
 - Provides faster feedback on package quality issues
 
-**Files to Update**:
-- `.github/workflows/pull_request.yml` (change `needs:` for publish-dry-run and pana jobs)
+**Files Updated**:
+
+- `.github/workflows/pull_request.yml` (changed `needs: analyze` to `needs: format` for both jobs)
 
 ---
 
-### 5. Run Package Validation Only on PRs
-**Problem**: `publish-dry-run` and `pana` run on every push to main/master, which is redundant since they already ran in the PR.
+### 5. Run Package Validation Only on PRs ✅ COMPLETED
 
-**Solution**: Add condition to only run on pull requests:
+**Problem**: `publish-dry-run` and `pana` ran on every push to main/master, which was redundant since they already ran in the PR.
+
+**Solution Implemented**: Added condition to only run on pull requests:
+
 ```yaml
 publish-dry-run:
   name: Publish Dry Run
@@ -96,18 +105,22 @@ pana:
 ```
 
 **Benefits**:
+
 - Saves CI minutes
 - Faster main branch builds
 
-**Files to Update**:
-- `.github/workflows/pull_request.yml` (add `if:` to both jobs)
+**Files Updated**:
+
+- `.github/workflows/pull_request.yml` (added `if: github.event_name == 'pull_request'` to both jobs)
 
 ---
 
 ### 6. Consolidate Environment Info Printing
+
 **Problem**: Every job prints similar environment info, creating noise in logs.
 
 **Current Pattern** (repeated ~10 times):
+
 ```yaml
 - name: Print environment info
   run: |
@@ -116,15 +129,18 @@ pana:
     echo "**Flutter:** $(flutter --version | head -n 1)" >> $GITHUB_STEP_SUMMARY
 ```
 
-**Solution**: 
+**Solution**:
+
 - Keep it only in first job (format)
 - Remove from other jobs or simplify to just Flutter version
 
 **Benefits**:
+
 - Cleaner logs
 - Faster job execution
 
 **Files to Update**:
+
 - `.github/workflows/pull_request.yml`
 - `.github/workflows/integration_tests.yml`
 - `.github/workflows/platform_builds.yml`
@@ -135,9 +151,11 @@ pana:
 ## Low Priority Improvements
 
 ### 7. Add Pub Cache Sharing
+
 **Problem**: Each job downloads dependencies separately, wasting time and bandwidth.
 
 **Solution**: Add pub cache to Flutter action or use separate caching:
+
 ```yaml
 - name: Cache Pub Dependencies
   uses: actions/cache@v4
@@ -151,6 +169,7 @@ pana:
 ```
 
 **Benefits**:
+
 - Faster `flutter pub get` (from ~30s to ~5s)
 - Reduced network usage
 
@@ -159,9 +178,11 @@ pana:
 ---
 
 ### 8. Remove Redundant `continue-on-error: false`
+
 **Problem**: `sdk_compatibility.yml` explicitly sets `continue-on-error: false`, which is already the default.
 
 **Current Code** (lines 51, 55, 59):
+
 ```yaml
 continue-on-error: false
 ```
@@ -169,14 +190,17 @@ continue-on-error: false
 **Solution**: Remove these lines entirely.
 
 **Files to Update**:
+
 - `.github/workflows/sdk_compatibility.yml`
 
 ---
 
 ### 9. Improve Test Summary Display
+
 **Problem**: "Print test environment" step runs after tests complete but doesn't show actual test results.
 
 **Current Code** (lines 129-134):
+
 ```yaml
 - name: Print test environment
   run: |
@@ -185,18 +209,22 @@ continue-on-error: false
 ```
 
 **Solution**: Either:
+
 - Remove this step (redundant with earlier env info)
 - Replace with actual test metrics if available
 
 **Files to Update**:
+
 - `.github/workflows/pull_request.yml`
 
 ---
 
 ### 10. Add Workflow Status Badges
+
 **Problem**: No visibility into CI status from README.
 
 **Solution**: Add status badges to `README.md`:
+
 ```markdown
 [![Pull Request](https://github.com/teklund/nfc_wallet_suppression/actions/workflows/pull_request.yml/badge.svg)](https://github.com/teklund/nfc_wallet_suppression/actions/workflows/pull_request.yml)
 [![Platform Builds](https://github.com/teklund/nfc_wallet_suppression/actions/workflows/platform_builds.yml/badge.svg)](https://github.com/teklund/nfc_wallet_suppression/actions/workflows/platform_builds.yml)
@@ -204,6 +232,7 @@ continue-on-error: false
 ```
 
 **Files to Update**:
+
 - `README.md`
 
 ---
@@ -211,16 +240,19 @@ continue-on-error: false
 ## Implementation Priority
 
 ### Phase 1: Critical Fixes (Do First)
+
 1. ✅ Fix Dart SDK version compatibility
 2. ✅ Remove broken test result extraction
 3. ✅ Fix pana regex for cross-platform
 
 ### Phase 2: Performance Optimizations (Next)
+
 4. ✅ Optimize job dependencies (parallel execution)
 5. ✅ Run package validation only on PRs
 6. ✅ Consolidate environment info printing
 
 ### Phase 3: Nice-to-Have Improvements (Optional)
+
 7. ⬜ Add pub cache sharing
 8. ⬜ Remove redundant continue-on-error
 9. ⬜ Improve test summary display
