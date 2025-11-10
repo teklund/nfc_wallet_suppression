@@ -71,7 +71,7 @@ jobs:
         with:
           flutter-version: ${{ matrix.flutter-version != 'stable' && matrix.flutter-version || '' }}
           channel: stable
-          cache: true
+          #cache: true
       
       - name: Install dependencies
         run: flutter pub get

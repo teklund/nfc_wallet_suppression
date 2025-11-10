@@ -10,19 +10,20 @@ This document outlines improvements needed for the GitHub Actions workflows to f
 
 ### 1. Dart SDK Version Compatibility ✅ COMPLETED
 
-**Problem**: `pubspec.yaml` required Dart `^3.7.0`, but this was more restrictive than popular packages use.
+**Problem**: `pubspec.yaml` required Dart `^3.7.0`, but this was more restrictive than ecosystem standards and incompatible with older Flutter versions.
 
-**Impact**: Workflows would fail with older Flutter versions, limiting adoption
+**Impact**: Workflows failed with older Flutter versions, limiting adoption and compatibility
 
-**Solution Implemented**: Updated to Dart `^3.0.0` and Flutter `>=3.16.0` to match modern package standards
+**Solution Implemented**: Updated to Dart `^3.2.0` and Flutter `>=3.16.0` to match the actual Dart version shipped with Flutter 3.16.0
 
 **Files Updated**:
 
-- `pubspec.yaml` - Changed from `sdk: ^3.7.0` to `sdk: ^3.0.0`, Flutter from `>=3.22.0` to `>=3.16.0`, `flutter_lints` from `^5.0.0` to `^4.0.0`
-- `example/pubspec.yaml` - Changed from `sdk: ^3.7.0` to `sdk: ^3.0.0`, added `flutter: '>=3.16.0'`
+- `pubspec.yaml` - Changed from `sdk: ^3.7.0` to `sdk: ^3.2.0`, Flutter from `>=3.22.0` to `>=3.16.0`, `flutter_lints` from `^5.0.0` to `^4.0.0`
+- `example/pubspec.yaml` - Changed from `sdk: ^3.7.0` to `sdk: ^3.2.0`, added `flutter: '>=3.16.0'`, `flutter_lints` from `^5.0.0` to `^4.0.0`
 - `example/ios/Podfile` - Set minimum iOS platform to `13.0` (required by modern Flutter)
 - `example/ios/Runner.xcodeproj/project.pbxproj` - Updated `IPHONEOS_DEPLOYMENT_TARGET` from `12.0` to `13.0`
-- `.github/workflows/pull_request.yml` - Changed matrix from 3.27.0 to 3.16.0
+- `android/src/main/AndroidManifest.xml` - Added `flutterEmbedding` v2 declaration
+- `.github/workflows/pull_request.yml` - Changed test matrix from 3.27.0 to 3.16.0
 
 ---
 
