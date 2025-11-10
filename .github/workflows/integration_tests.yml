@@ -1,0 +1,162 @@
+name: Integration Tests
+
+on:
+  pull_request:
+    branches: [ main, master ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitignore'
+  push:
+    branches: [ main, master ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitignore'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: integration-tests-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  integration-test-android:
+    name: Integration Tests (Android)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+          channel: 'stable'
+          cache: true
+      
+      - name: Print environment info
+        run: |
+          echo "## 🔧 Android Test Environment" >> $GITHUB_STEP_SUMMARY
+          echo "**OS:** $(uname -s)" >> $GITHUB_STEP_SUMMARY
+          echo "**Flutter:** $(flutter --version | head -n 1)" >> $GITHUB_STEP_SUMMARY
+          echo "**Java:** $(java -version 2>&1 | head -n 1)" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('example/android/**/*.gradle*', 'example/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      
+      - name: Install dependencies
+        working-directory: example
+        run: flutter pub get
+      
+      - name: Enable KVM (for faster emulator)
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      
+      - name: Run integration tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          arch: x86_64
+          profile: pixel_5
+          disable-animations: true
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          script: cd example && flutter test integration_test/
+      
+      - name: Retry integration tests on failure
+        if: failure()
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          arch: x86_64
+          profile: pixel_5
+          disable-animations: true
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          script: cd example && flutter test integration_test/
+      
+      - name: Display test summary
+        if: success()
+        run: |
+          echo "## ✅ Android Integration Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "All integration tests passed on Android emulator" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Flutter doctor (on failure)
+        if: failure()
+        run: flutter doctor -v
+      
+  integration-test-ios:
+    name: Integration Tests (iOS)
+    runs-on: macos-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+          channel: 'stable'
+          cache: true
+      
+      - name: Print environment info
+        run: |
+          echo "## 🔧 iOS Test Environment" >> $GITHUB_STEP_SUMMARY
+          echo "**OS:** $(uname -s) $(sw_vers -productVersion)" >> $GITHUB_STEP_SUMMARY
+          echo "**Flutter:** $(flutter --version | head -n 1)" >> $GITHUB_STEP_SUMMARY
+          echo "**Xcode:** $(xcode-select -p | sed 's|.*/||; s|Contents/Developer||')" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Install dependencies
+        working-directory: example
+        run: flutter pub get
+      
+      - name: Start iOS Simulator
+        run: |
+          DEVICE_ID=$(xcrun simctl list devices available iPhone | grep -m 1 "iPhone 15" | sed 's/.*(\(.*\)).*/\1/' || xcrun simctl list devices available iPhone | grep -m 1 "iPhone" | sed 's/.*(\(.*\)).*/\1/')
+          echo "Booting device: $DEVICE_ID"
+          xcrun simctl boot "$DEVICE_ID" || true
+          # Wait for simulator to be ready
+          xcrun simctl bootstatus "$DEVICE_ID" -b
+      
+      - name: Run integration tests
+        working-directory: example
+        run: flutter test integration_test/ -d iPhone
+      
+      - name: Retry integration tests on failure
+        if: failure()
+        working-directory: example
+        run: |
+          echo "First attempt failed, retrying..."
+          flutter test integration_test/ -d iPhone
+      
+      - name: Display test summary
+        if: success()
+        run: |
+          echo "## ✅ iOS Integration Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "All integration tests passed on iOS simulator" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Flutter doctor (on failure)
+        if: failure()
+        run: flutter doctor -v

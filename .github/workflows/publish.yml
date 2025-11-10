@@ -1,0 +1,83 @@
+name: Publish to pub.dev
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'  # Matches v1.0.0, v1.0.0-beta, etc.
+
+permissions:
+  contents: write
+  id-token: write  # Required for pub.dev publishing
+
+jobs:
+  publish:
+    name: Publish to pub.dev
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # Fetch all history for proper tag validation and release notes
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+          channel: 'stable'
+          cache: true
+      
+      - name: Print environment info
+        run: |
+          echo "## 🔧 Environment Information" >> $GITHUB_STEP_SUMMARY
+          echo "**OS:** $(uname -s)" >> $GITHUB_STEP_SUMMARY
+          echo "**Flutter:** $(flutter --version | head -n 1)" >> $GITHUB_STEP_SUMMARY
+          echo "**Dart:** $(dart --version)" >> $GITHUB_STEP_SUMMARY
+          echo "**Git Tag:** ${GITHUB_REF#refs/tags/}" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Verify package version matches tag
+        run: |
+          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+          PUBSPEC_VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          echo "Tag version: $TAG_VERSION"
+          echo "Pubspec version: $PUBSPEC_VERSION"
+          if [ "$TAG_VERSION" != "$PUBSPEC_VERSION" ]; then
+            echo "❌ Version mismatch! Tag: $TAG_VERSION, pubspec.yaml: $PUBSPEC_VERSION"
+            exit 1
+          fi
+          echo "✅ Version matches: $TAG_VERSION"
+      
+      - name: Run tests
+        run: flutter test
+      
+      - name: Display test summary
+        if: success()
+        run: |
+          echo "## ✅ Pre-Publish Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "All tests passed before publishing" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Flutter doctor (on failure)
+        if: failure()
+        run: flutter doctor -v
+      
+      - name: Analyze package quality
+        run: |
+          flutter pub global activate pana
+          flutter pub global run pana --no-warning --exit-code-threshold 0
+      
+      - name: Verify package
+        run: flutter pub publish --dry-run
+      
+      - name: Publish to pub.dev
+        run: flutter pub publish
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ contains(github.ref, '-') }}

@@ -64,23 +64,11 @@ flutter pub add nfc_wallet_suppression
 
 ## Prerequisites
 
-This plugin requires platform-specific setup on iOS and Android.
+This plugin requires platform-specific setup on iOS. Android setup is automatic.
 
 ### Android
 
-For Android the only thing you need is the following permission, these permissions is already added
-in the plugins AndroidManifest.xml file.
-
-#### NFC Permission (if you need it)
-
-```xml
-
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- You need to add following permissions to your AndroidManifest.xml file -->
-    <uses-permission android:name="android.permission.NFC" />
-    <uses-feature android:name="android.hardware.nfc" android:required="false" />
-</manifest>
-```
+NFC permission is automatically included when you add this plugin. No additional configuration needed.
 
 ### iOS
 

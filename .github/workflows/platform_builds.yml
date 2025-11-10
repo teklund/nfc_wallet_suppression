@@ -1,0 +1,145 @@
+name: Platform Builds
+
+on:
+  pull_request:
+    branches: [ main, master ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitignore'
+  push:
+    branches: [ main, master ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitignore'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: platform-builds-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  # Note: Builds run in parallel with tests for speed
+  # In production, add a status check that requires PR workflow to pass first
+  
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+          channel: 'stable'
+          cache: true
+      
+      - name: Print environment info
+        run: |
+          echo "## 🔧 Android Build Environment" >> $GITHUB_STEP_SUMMARY
+          echo "**OS:** $(uname -s)" >> $GITHUB_STEP_SUMMARY
+          echo "**Flutter:** $(flutter --version | head -n 1)" >> $GITHUB_STEP_SUMMARY
+          echo "**Java:** $(java -version 2>&1 | head -n 1)" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('example/android/**/*.gradle*', 'example/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      
+      - name: Install dependencies
+        working-directory: example
+        run: flutter pub get
+      
+      - name: Build Android APK
+        working-directory: example
+        run: flutter build apk --debug
+      
+      - name: Build Android App Bundle
+        working-directory: example
+        run: flutter build appbundle --debug
+      
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: example/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 7
+      
+      - name: Flutter doctor (on failure)
+        if: failure()
+        run: flutter doctor -v
+  
+  build-ios:
+    name: Build iOS
+    runs-on: macos-latest
+    timeout-minutes: 20
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'
+          channel: 'stable'
+          cache: true
+      
+      - name: Print environment info
+        run: |
+          echo "## 🔧 iOS Build Environment" >> $GITHUB_STEP_SUMMARY
+          echo "**OS:** $(uname -s) $(sw_vers -productVersion)" >> $GITHUB_STEP_SUMMARY
+          echo "**Flutter:** $(flutter --version | head -n 1)" >> $GITHUB_STEP_SUMMARY
+          echo "**Xcode:** $(xcode-select -p | sed 's|.*/||; s|Contents/Developer||')" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Install dependencies
+        working-directory: example
+        run: flutter pub get
+      
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: example/ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('example/ios/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
+      
+      - name: Install CocoaPods dependencies
+        working-directory: example/ios
+        run: pod install
+      
+      - name: Build iOS (no codesign)
+        working-directory: example
+        run: flutter build ios --debug --no-codesign
+      
+      - name: Upload iOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build
+          path: example/build/ios/iphoneos/Runner.app
+          retention-days: 7
+      
+      - name: Flutter doctor (on failure)
+        if: failure()
+        run: flutter doctor -v

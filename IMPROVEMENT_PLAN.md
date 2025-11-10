@@ -252,16 +252,18 @@ override fun onTagDiscovered(tag: Tag?) {
 
 ### 13. Document or Clarify Android NFC Permission
 
-- **File:** `android/src/main/AndroidManifest.xml` and `CHANGELOG.md`
-- **Issue:** Changelog says "Don't require" but permission still exists
-- **Fix:** Either remove permission or clarify it's optional
+- **File:** `CHANGELOG.md` and `README.md`
+- **Issue:** Changelog says "Don't require" but permission is declared in plugin manifest
+- **Fix:** Clarify in documentation that NFC permission is automatically merged from plugin manifest (required)
 - **Impact:** Clearer documentation, accurate changelog
 - **Time:** 5 min
 
-**Decision needed:**
+**Resolution:**
 
-- If permission truly not needed: Remove from manifest
-- If permission helps: Keep but update changelog to say "optional"
+- Permission **IS needed** and declared in plugin's `AndroidManifest.xml`
+- Permission is automatically merged into host app when plugin is added as dependency
+- Update CHANGELOG to clarify: "NFC permission is automatically included via plugin manifest (no app-level declaration needed)"
+- Update README Android prerequisites to note this automatic inclusion
 
 ---
 
@@ -614,7 +616,7 @@ override fun onTagDiscovered(tag: Tag?) {
 ### Phase 5 - Production Ready (95 min)
 
 - [ ] Task 22: Create MIGRATION.md guide for 0.1.1 → 1.0.0
-- [ ] Task 23: Add GitHub Actions CI/CD workflow
+- [x] Task 23: Add GitHub Actions CI/CD workflow
 - [ ] Task 24: Create PUBLISHING.md checklist
 - [ ] Task 25: Enhance example app with screenshots
 - [ ] Task 26: Security & privacy review + SECURITY.md
@@ -861,7 +863,7 @@ If you have questions about this plan:
 
 ### Current State (v0.1.1)
 
-```
+```text
 Unit Tests: 4 tests
 Integration Tests: 1 test (broken)
 Coverage: ~30% (estimated)
@@ -874,7 +876,7 @@ Security Review: None
 
 ### Target State (v1.0.0)
 
-```
+```text
 Unit Tests: 30+ tests
 Integration Tests: 10+ tests
 Coverage: >80%
@@ -890,7 +892,7 @@ Pub.dev Score: 140/140 (target)
 
 ### Project File Structure (v1.0.0)
 
-```
+```text
 .github/
 └── workflows/
     └── ci.yml (new - CI/CD automation)
