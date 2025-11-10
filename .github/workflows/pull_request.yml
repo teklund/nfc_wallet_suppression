@@ -74,7 +74,7 @@ jobs:
           cache: true
       
       - name: Install dependencies
-        run: flutter pub get -v
+        run: flutter pub get
       
       - name: Analyze project
         uses: invertase/github-action-dart-analyzer@v3
@@ -109,6 +109,25 @@ jobs:
       
       - name: Run tests with coverage and formatting
         run: flutter test --coverage --reporter=github --test-randomize-ordering-seed=random
+      
+      - name: Generate test summary
+        if: always()
+        run: |
+          echo "## 🧪 Test Results (${{ matrix.flutter-version }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f "coverage/lcov.info" ]; then
+            echo "✅ **Coverage:** Generated" >> $GITHUB_STEP_SUMMARY
+            LINES=$(grep -c "^" coverage/lcov.info || echo "0")
+            echo "   - Coverage file size: $LINES lines" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ **Coverage:** Not generated" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Test Configuration:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Randomization Seed: random" >> $GITHUB_STEP_SUMMARY
+          echo "- Reporter: GitHub annotations" >> $GITHUB_STEP_SUMMARY
+          echo "- Flutter Version: ${{ matrix.flutter-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Dart: $(dart --version)" >> $GITHUB_STEP_SUMMARY
       
       - name: Upload coverage reports to Codecov
         if: matrix.flutter-version == 'stable'

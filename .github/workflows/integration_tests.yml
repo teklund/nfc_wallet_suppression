@@ -1,20 +1,21 @@
 name: Integration Tests
 
 on:
-  pull_request:
-    branches: [ main, master ]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'LICENSE'
-      - '.gitignore'
-  push:
-    branches: [ main, master ]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'LICENSE'
-      - '.gitignore'
+  # Disabled temporarily - see IMPROVEMENT_PLAN.md Task 23.b
+  # pull_request:
+  #   branches: [ main, master ]
+  #   paths-ignore:
+  #     - '**.md'
+  #     - 'docs/**'
+  #     - 'LICENSE'
+  #     - '.gitignore'
+  # push:
+  #   branches: [ main, master ]
+  #   paths-ignore:
+  #     - '**.md'
+  #     - 'docs/**'
+  #     - 'LICENSE'
+  #     - '.gitignore'
   workflow_dispatch:
 
 permissions:
@@ -125,10 +126,15 @@ jobs:
       
       - name: Start iOS Simulator
         run: |
-          DEVICE_ID=$(xcrun simctl list devices available iPhone | grep -m 1 "iPhone 15" | sed 's/.*(\(.*\)).*/\1/' || xcrun simctl list devices available iPhone | grep -m 1 "iPhone" | sed 's/.*(\(.*\)).*/\1/')
-          echo "Booting device: $DEVICE_ID"
+          # Get the first available iPhone simulator
+          DEVICE_ID=$(xcrun simctl list devices available --json | grep -o '"udid" : "[^"]*"' | head -1 | grep -o '[^"]*$' | head -c 36)
+          if [ -z "$DEVICE_ID" ]; then
+            echo "No iPhone simulator found, creating one..."
+            xcrun simctl create "iPhone 15" com.apple.CoreSimulator.CoreSimulatorService --type=com.apple.dt.iPhone15
+            DEVICE_ID=$(xcrun simctl list devices available --json | grep -o '"udid" : "[^"]*"' | head -1 | grep -o '[^"]*$' | head -c 36)
+          fi
+          echo "Device ID: $DEVICE_ID"
           xcrun simctl boot "$DEVICE_ID" || true
-          # Wait for simulator to be ready
           xcrun simctl bootstatus "$DEVICE_ID" -b
       
       - name: Run integration tests

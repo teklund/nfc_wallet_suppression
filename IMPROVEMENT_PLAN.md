@@ -483,6 +483,39 @@ override fun onTagDiscovered(tag: Tag?) {
 
 ---
 
+### 23.b Fix Integration Tests Workflow
+
+- **File:** `.github/workflows/integration_tests.yml`
+- **Issue:** iOS simulator device detection failing; Android emulator needs optimization
+- **Status:** Temporarily disabled until fixed
+- **Fixes needed:**
+  - Replace fragile shell-based device ID extraction with robust `xcrun simctl list devices --json` parsing for iOS
+  - Add fallback simulator creation if none available
+  - Ensure Android emulator integration test compatibility
+  - Test on actual CI environment (GitHub Actions macOS runners)
+  - Verify timeout settings are adequate for slow emulators
+- **Testing approach:**
+  - Run on self-hosted runner or GitHub's ubuntu-latest/macos-latest
+  - Verify both Android and iOS integration tests pass
+  - Document any hardware requirements or limitations
+  - Consider adding manual trigger option for on-demand testing
+- **Impact:** Reliable automated integration testing on CI
+- **Time:** 30 min (once simulator issues are resolved)
+
+**Known Issues:**
+
+- iOS: `xcrun simctl list devices available iPhone` grep-based parsing fails silently
+- Android: May need emulator-specific configurations for CI environment
+- Both: May require specific hardware/VM capabilities on CI runners
+
+**Re-enable Steps:**
+
+1. Fix device ID extraction in iOS step
+2. Test locally in similar CI environment
+3. Verify both platforms pass 5+ consecutive runs
+4. Uncomment `pull_request` and `push` triggers
+5. Monitor for failures in early CI runs
+
 ### 24. Create Pub.dev Publishing Checklist
 
 - **File:** `PUBLISHING.md` (new file)
