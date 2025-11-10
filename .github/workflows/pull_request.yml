@@ -60,7 +60,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        flutter-version: ['3.19.0', 'stable']
+        flutter-version: ['3.16.x', 'stable']
     
     steps:
       - name: Checkout code
@@ -81,7 +81,7 @@ jobs:
         with:
           fatal-infos: true
           fatal-warnings: true
-          annotate-only: ${{ matrix.flutter-version != '3.19.0' }}
+          annotate-only: ${{ matrix.flutter-version != '3.16.x' }}
 
   test:
     name: Run Tests & Coverage (${{ matrix.flutter-version }})
@@ -91,7 +91,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        flutter-version: ['3.16.0', 'stable']
+        flutter-version: ['3.16.x', 'stable']
     
     steps:
       - name: Checkout code
