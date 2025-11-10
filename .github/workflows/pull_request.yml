@@ -114,7 +114,7 @@ jobs:
         if: matrix.flutter-version == 'stable'
         uses: codecov/codecov-action@v5
         with:
-          #token: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/lcov.info
           fail_ci_if_error: false
           flags: unittests
