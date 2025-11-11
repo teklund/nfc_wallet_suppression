@@ -149,4 +149,28 @@ void main() {
     final status = await platform.releaseSuppression();
     expect(status, SuppressionStatus.unknown);
   });
+
+  test('isSupported_returnsTrue', () async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+      return true;
+    });
+    expect(await platform.isSupported(), isTrue);
+  });
+
+  test('isSupported_returnsFalse', () async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+      return false;
+    });
+    expect(await platform.isSupported(), isFalse);
+  });
+
+  test('isSupported_handlesNull', () async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+      return null;
+    });
+    expect(await platform.isSupported(), isFalse);
+  });
 }

@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -20,15 +22,17 @@ class MethodChannelNfcWalletSuppression extends NfcWalletSuppressionPlatform {
         'requestSuppression',
       );
 
-      if (msg != null) {
-        if (kDebugMode) {
-          print(msg);
-        }
+      if (msg != null && kDebugMode) {
+        developer.log(msg, name: 'nfc_wallet_suppression');
       }
       return SuppressionStatus.suppressed;
     } on PlatformException catch (e) {
       if (kDebugMode) {
-        print(e.message ?? "No error message supplied");
+        developer.log(
+          'Request suppression error: ${e.message ?? "No error message"}',
+          name: 'nfc_wallet_suppression',
+          error: e,
+        );
       }
       return _suppressionStatus(e.code);
     }
@@ -44,15 +48,17 @@ class MethodChannelNfcWalletSuppression extends NfcWalletSuppressionPlatform {
         'releaseSuppression',
       );
 
-      if (msg != null) {
-        if (kDebugMode) {
-          print(msg);
-        }
+      if (msg != null && kDebugMode) {
+        developer.log(msg, name: 'nfc_wallet_suppression');
       }
       return SuppressionStatus.notSuppressed;
     } on PlatformException catch (e) {
       if (kDebugMode) {
-        print(e.message ?? "No error message supplied");
+        developer.log(
+          'Release suppression error: ${e.message ?? "No error message"}',
+          name: 'nfc_wallet_suppression',
+          error: e,
+        );
       }
       return _suppressionStatus(e.code);
     }
@@ -73,7 +79,10 @@ class MethodChannelNfcWalletSuppression extends NfcWalletSuppressionPlatform {
       case "UNKNOWN":
       default:
         if (kDebugMode) {
-          print("Unknown code: $code");
+          developer.log(
+            'Unknown suppression status code: $code',
+            name: 'nfc_wallet_suppression',
+          );
         }
         return SuppressionStatus.unknown;
     }
@@ -86,5 +95,14 @@ class MethodChannelNfcWalletSuppression extends NfcWalletSuppressionPlatform {
   Future<bool> isSuppressed() async {
     final success = await methodChannel.invokeMethod<bool>('isSuppressed');
     return success ?? false;
+  }
+
+  /// Checks if the device supports NFC wallet suppression.
+  ///
+  /// Returns `true` if the device has NFC hardware and OS support, `false` otherwise.
+  @override
+  Future<bool> isSupported() async {
+    final supported = await methodChannel.invokeMethod<bool>('isSupported');
+    return supported ?? false;
   }
 }

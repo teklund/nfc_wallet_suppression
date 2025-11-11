@@ -44,6 +44,9 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, MethodCallHandler, ActivityAwar
       "releaseSuppression" -> {
         releaseSuppression(result)
       }
+      "isSupported" -> {
+        result.success(isSupported())
+      }
       else -> {
         result.notImplemented()
       }
@@ -154,5 +157,11 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, MethodCallHandler, ActivityAwar
     nfcAdapter.disableReaderMode(activity)
     suppressionActive = false
     result.success("Not suppressed anymore")
+  }
+
+  private fun isSupported(): Boolean {
+    // Check if device has NFC hardware (requires API 21+)
+    val nfcAdapter = NfcAdapter.getDefaultAdapter(activity)
+    return nfcAdapter != null
   }
 }

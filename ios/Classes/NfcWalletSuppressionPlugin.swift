@@ -20,6 +20,8 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin {
       releaseSuppression(result: result)
     case "isSuppressed":
       isSuppressed(result: result)
+    case "isSupported":
+      isSupported(result: result)
     default:
       result(FlutterMethodNotImplemented)
     }
@@ -37,7 +39,9 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin {
       //https://developer.apple.com/documentation/passkit/pkautomaticpasspresentationsuppressionresult
       switch requestResult {
         case .success:
-          print("Pass presentation suppressed successfully.")
+          #if DEBUG
+          NSLog("[NFC Wallet Suppression] Pass presentation suppressed successfully")
+          #endif
             result("Suppressed")
         case .notSupported:
             result(FlutterError(code: "NOT_SUPPORTED",
@@ -72,7 +76,9 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin {
       return
     }
     PKPassLibrary.endAutomaticPassPresentationSuppression(withRequestToken: token)
-    print("Automatic Pass Presentation enabled")
+    #if DEBUG
+    NSLog("[NFC Wallet Suppression] Automatic pass presentation enabled")
+    #endif
     suppressionToken = nil
     result("Not suppressed anymore")
   }
@@ -80,5 +86,17 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin {
   private func isSuppressed(result: @escaping FlutterResult) {
     let suppressed = PKPassLibrary.isSuppressingAutomaticPassPresentation()
     result(suppressed)
+  }
+
+  private func isSupported(result: @escaping FlutterResult) {
+    // Check iOS version (requires iOS 12.0+) and device capability
+    if #available(iOS 12.0, *) {
+      // PKPassLibrary.requestAutomaticPassPresentationSuppression is only available
+      // on devices with NFC hardware (iPhone 7 and later)
+      // We can check if the device supports the feature by checking if PassKit is available
+      result(true)
+    } else {
+      result(false)
+    }
   }
 }

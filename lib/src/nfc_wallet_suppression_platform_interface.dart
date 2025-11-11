@@ -48,9 +48,20 @@ abstract class NfcWalletSuppressionPlatform extends PlatformInterface {
 
   /// Check if the NFC wallet is currently suppressed.
   ///
-  /// Returns `true` if the wallet is suppressed, `false` if it is not, and `null`
-  /// if the platform does not support this method.
+  /// Returns `true` if the wallet is currently suppressed, `false` if it is not,
+  /// and `null` if the platform does not support this method.
   Future<bool> isSuppressed() {
     throw UnimplementedError('isSuppressed() has not been implemented.');
+  }
+
+  /// Check if the device supports NFC wallet suppression.
+  ///
+  /// Returns `true` if the device has the necessary hardware and OS support
+  /// for wallet suppression, `false` otherwise.
+  ///
+  /// This is useful to check before attempting to request suppression,
+  /// allowing you to provide appropriate UI or fallback behavior.
+  Future<bool> isSupported() {
+    throw UnimplementedError('isSupported() has not been implemented.');
   }
 }

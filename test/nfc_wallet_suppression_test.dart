@@ -24,6 +24,11 @@ class MockNfcWalletSuppressionPlatform
   Future<bool> isSuppressed() {
     return Future.value(_isSuppressing);
   }
+
+  @override
+  Future<bool> isSupported() {
+    return Future.value(true);
+  }
 }
 
 void main() {
