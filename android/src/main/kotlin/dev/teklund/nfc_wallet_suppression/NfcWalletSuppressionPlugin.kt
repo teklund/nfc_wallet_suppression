@@ -91,9 +91,30 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, MethodCallHandler, ActivityAwar
   }
 
   private fun isSuppressed(): Boolean {
-    val suppressed = activity != null && suppressionActive
-    if (isDebug) Log.d(TAG, "isSuppressed called: $suppressed (activity: ${activity != null}, suppressionActive: $suppressionActive)")
-    return suppressed
+    // Return false if no activity
+    val activity = activity ?: return false
+    
+    // Return false if flag not set
+    if (!suppressionActive) return false
+    
+    // Check if NFC is actually available and enabled
+    // This matches iOS behavior where isSuppressingAutomaticPassPresentation()
+    // returns false if the system can't actually suppress (e.g., NFC disabled)
+    val nfcAdapter = NfcAdapter.getDefaultAdapter(activity)
+    val actuallySupressed = nfcAdapter != null && nfcAdapter.isEnabled
+    
+    if (isDebug) {
+      Log.d(TAG, "isSuppressed called: $actuallySupressed (activity: true, " +
+              "suppressionActive: $suppressionActive, nfcEnabled: ${nfcAdapter?.isEnabled ?: false})")
+    }
+    
+    // If NFC was disabled after we set suppressionActive, clear the flag
+    if (!actuallySupressed && suppressionActive) {
+      if (isDebug) Log.w(TAG, "NFC was disabled - clearing suppressionActive flag")
+      suppressionActive = false
+    }
+    
+    return actuallySupressed
   }
 
   private fun reestablishSuppression() {

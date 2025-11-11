@@ -21,6 +21,7 @@ A lightweight Flutter plugin that **suppresses NFC wallet presentation** — pre
 - [Installation](#installation)
 - [Platform Setup](#platform-setup)
 - [API Usage](#api-usage)
+- [Testing](#testing)
 - [Troubleshooting](#troubleshooting)
 - [Example App](#example-app)
 - [Contributing](#contributing)
@@ -185,6 +186,28 @@ The `SuppressionStatus` enum represents the result of suppression operations:
 - **Does this read NFC tags?** No, it only suppresses wallet presentation.
 - **How long does suppression last?** Until released or app backgrounds.
 - **Works in simulator?** Limited - always test on physical devices with NFC.
+
+---
+
+## Testing
+
+This plugin includes comprehensive testing utilities. See the [TESTING.md](TESTING.md) guide for:
+
+- Using `FakeNfcWalletSuppression` for unit tests
+- Pre-configured test scenarios
+- Widget testing examples
+- Integration testing guidance
+
+Quick example:
+
+```dart
+import 'package:nfc_wallet_suppression/testing.dart';
+
+final fake = NfcWalletSuppressionTestScenarios.supportedDevice();
+NfcWalletSuppressionPlatform.instance = fake;
+
+// Now your tests use the fake implementation
+```
 
 ---
 
