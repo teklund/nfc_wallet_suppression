@@ -150,6 +150,156 @@ jobs:
             **/*.log
           retention-days: 7
 
+  native-tests-android:
+    name: Android Native Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: analyze
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      
+      - name: Install dependencies
+        working-directory: example
+        run: flutter pub get
+      
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('example/android/**/*.gradle*', 'example/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      
+      - name: Run Android unit tests
+        working-directory: example/android
+        run: ./gradlew testDebugUnitTest --console=plain
+      
+      - name: Generate test summary
+        if: always()
+        run: |
+          echo "## 🤖 Android Native Tests" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -d "example/build/nfc_wallet_suppression/reports/tests/testDebugUnitTest" ]; then
+            echo "✅ Tests completed" >> $GITHUB_STEP_SUMMARY
+            if [ -f "example/build/nfc_wallet_suppression/reports/tests/testDebugUnitTest/index.html" ]; then
+              echo "📊 Test report generated" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ Test reports not found" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Upload Android test results
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: android-test-results
+          path: |
+            example/build/nfc_wallet_suppression/reports/tests/
+            example/build/nfc_wallet_suppression/test-results/
+          retention-days: 7
+
+  native-tests-ios:
+    name: iOS Native Tests
+    runs-on: macos-latest
+    timeout-minutes: 15
+    needs: analyze
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      
+      - name: Print environment info
+        run: |
+          echo "## 🔧 iOS Test Environment" >> $GITHUB_STEP_SUMMARY
+          echo "**OS:** $(sw_vers -productVersion)" >> $GITHUB_STEP_SUMMARY
+          echo "**Xcode:** $(xcodebuild -version | head -n 1)" >> $GITHUB_STEP_SUMMARY
+          echo "**Flutter:** $(flutter --version | head -n 1)" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Install dependencies
+        working-directory: example
+        run: flutter pub get
+      
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: example/ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('example/ios/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
+      
+      - name: Install CocoaPods dependencies
+        working-directory: example/ios
+        run: pod install
+      
+      - name: Install xcpretty (for better output)
+        run: gem install xcpretty
+      
+      - name: Run iOS tests
+        working-directory: example/ios
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+            -only-testing:RunnerTests \
+            -resultBundlePath TestResults.xcresult \
+            | xcpretty --color --simple || xcodebuild test \
+            -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+            -only-testing:RunnerTests \
+            -resultBundlePath TestResults.xcresult
+      
+      - name: Parse test results
+        if: always()
+        working-directory: example/ios
+        run: |
+          echo "## 🍎 iOS Native Tests" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -d "TestResults.xcresult" ]; then
+            echo "✅ Test bundle created" >> $GITHUB_STEP_SUMMARY
+            # Extract test results using xcresulttool
+            xcrun xcresulttool get --format json --path TestResults.xcresult > results.json 2>/dev/null || true
+            if [ -f "results.json" ]; then
+              echo "📊 Test results extracted" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ Test results not found" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Upload iOS test results
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: ios-test-results
+          path: |
+            example/ios/TestResults.xcresult
+            example/ios/results.json
+          retention-days: 7
+
   publish-dry-run:
     name: Publish Dry Run
     runs-on: ubuntu-latest

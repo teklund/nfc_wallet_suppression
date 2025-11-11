@@ -173,4 +173,46 @@ void main() {
     });
     expect(await platform.isSupported(), isFalse);
   });
+
+  test('isSuppressed_handlesPlatformException', () async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+      throw PlatformException(
+        code: 'ERROR',
+        message: 'Test error',
+      );
+    });
+    // Should return false on error instead of throwing
+    expect(await platform.isSuppressed(), isFalse);
+  });
+
+  test('isSuppressed_handlesPlatformExceptionWithoutMessage', () async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+      throw PlatformException(code: 'ERROR');
+    });
+    // Should return false on error with null message
+    expect(await platform.isSuppressed(), isFalse);
+  });
+
+  test('isSupported_handlesPlatformException', () async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+      throw PlatformException(
+        code: 'NOT_SUPPORTED',
+        message: 'Platform not supported',
+      );
+    });
+    // Should return false on error instead of throwing
+    expect(await platform.isSupported(), isFalse);
+  });
+
+  test('isSupported_handlesPlatformExceptionWithoutMessage', () async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+      throw PlatformException(code: 'NOT_SUPPORTED');
+    });
+    // Should return false on error with null message
+    expect(await platform.isSupported(), isFalse);
+  });
 }

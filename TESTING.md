@@ -263,6 +263,83 @@ void main() {
 4. **Reset between tests if reusing a fake** - Prevents test pollution
 5. **Use real integration tests for device validation** - Complements unit tests
 
+## Running Tests
+
+### Unit Tests (Dart)
+
+Run all Dart unit tests:
+
+```bash
+flutter test
+```
+
+Run with coverage:
+
+```bash
+flutter test --coverage
+```
+
+Run a specific test file:
+
+```bash
+flutter test test/nfc_wallet_suppression_test.dart
+```
+
+### Native Tests
+
+**iOS Tests (XCTest):**
+
+```bash
+cd example/ios
+xcodebuild test -workspace Runner.xcworkspace -scheme Runner \
+  -destination 'platform=iOS Simulator,name=iPhone 15'
+```
+
+Or open `example/ios/Runner.xcworkspace` in Xcode and press `Cmd+U`.
+
+**Android Tests (JUnit):**
+
+```bash
+cd example/android
+./gradlew testDebugUnitTest
+```
+
+Or run tests from Android Studio's test runner.
+
+### Integration Tests
+
+Run integration tests on a connected device or simulator:
+
+```bash
+cd example
+flutter test integration_test/
+```
+
+Run comprehensive integration tests:
+
+```bash
+cd example
+flutter test integration_test/comprehensive_integration_test.dart
+```
+
+## Test Coverage
+
+The plugin maintains **100% code coverage** for all Dart source files:
+
+- `nfc_wallet_suppression_platform_interface.dart`: 100%
+- `nfc_wallet_suppression_method_channel.dart`: 100%
+- `nfc_wallet_suppression.dart`: 100%
+- `nfc_wallet_suppression_testing.dart`: 100%
+
+To view detailed coverage:
+
+```bash
+flutter test --coverage
+# Install lcov if needed: brew install lcov (macOS)
+genhtml coverage/lcov.info -o coverage/html
+open coverage/html/index.html
+```
+
 ## See Also
 
 - [Example test file](../test/nfc_wallet_suppression_testing_test.dart) - Complete examples

@@ -3,14 +3,22 @@ import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-import 'nfc_wallet_suppression_status.dart';
 import 'nfc_wallet_suppression_platform_interface.dart';
+import 'nfc_wallet_suppression_status.dart';
 
 /// An implementation of [NfcWalletSuppressionPlatform] that uses method channels.
 class MethodChannelNfcWalletSuppression extends NfcWalletSuppressionPlatform {
+  /// Creates a method channel implementation.
+  ///
+  /// The [channel] parameter allows injecting a custom MethodChannel for testing.
+  /// If not provided, uses the default channel name.
+  MethodChannelNfcWalletSuppression({MethodChannel? channel})
+      : methodChannel =
+            channel ?? const MethodChannel('nfc_wallet_suppression');
+
   /// The method channel used to interact with the native platform.
   @visibleForTesting
-  final methodChannel = const MethodChannel('nfc_wallet_suppression');
+  final MethodChannel methodChannel;
 
   /// Requests suppression of the NFC wallet.
   ///
