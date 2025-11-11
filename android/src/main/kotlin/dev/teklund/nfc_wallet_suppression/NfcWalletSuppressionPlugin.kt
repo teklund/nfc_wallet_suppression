@@ -25,6 +25,8 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, MethodCallHandler, ActivityAwar
   private var suppressionActive : Boolean = false
   private var activity : Activity? = null
 
+  // Empty implementation - we only need ReaderCallback for reader mode flags,
+  // not for actual tag processing. The goal is to suppress wallet apps, not to read tags.
   override fun onTagDiscovered(tag: Tag?) {}
 
   override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
@@ -59,7 +61,6 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, MethodCallHandler, ActivityAwar
 
   override fun onAttachedToActivity(binding: ActivityPluginBinding) {
     activity = binding.activity
-    //binding.addOnNewIntentListener(this)
   }
 
   override fun onDetachedFromActivityForConfigChanges() {

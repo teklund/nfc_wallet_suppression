@@ -198,6 +198,19 @@ cd example && flutter run
 
 ---
 
+## Privacy
+
+This plugin includes a privacy manifest (`ios/Resources/PrivacyInfo.xcprivacy`) that declares:
+
+- **No tracking** (NSPrivacyTracking: false)
+- **No data collection** (NSPrivacyCollectedDataTypes: empty)
+- **No required reason APIs** (NSPrivacyAccessedAPITypes: empty)
+- **No tracking domains** (NSPrivacyTrackingDomains: empty)
+
+The PassKit APIs used for NFC wallet suppression do not access sensitive user data, do not track users, and do not fall under Apple's required reason API categories. The privacy manifest is included as a best practice for App Store compliance.
+
+---
+
 ## Contributing
 
 Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
