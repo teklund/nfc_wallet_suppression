@@ -60,12 +60,17 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, MethodCallHandler, ActivityAwar
   }
 
   override fun onDetachedFromActivityForConfigChanges() {
-    println("detached")
-    onDetachedFromActivity()
+    // Don't clear activity reference during config changes to preserve state
+    // Activity will be updated in onReattachedToActivityForConfigChanges
   }
 
   override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
-    onAttachedToActivity(binding)
+    activity = binding.activity
+    
+    // Re-establish suppression if it was active before the configuration change
+    if (suppressionActive) {
+      reestablishSuppression()
+    }
   }
 
   override fun onDetachedFromActivity() {
@@ -74,6 +79,37 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, MethodCallHandler, ActivityAwar
 
   private fun isSuppressed(): Boolean {
     return activity != null && suppressionActive
+  }
+
+  private fun reestablishSuppression() {
+    val activity = activity
+    val nfcAdapter = NfcAdapter.getDefaultAdapter(activity)
+    if (nfcAdapter == null || activity == null || !nfcAdapter.isEnabled()) {
+      // NFC not available, clear suppression state
+      suppressionActive = false
+      return
+    }
+
+    val intent = Intent(activity, activity.javaClass).apply {
+      addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+    }
+    val pendingIntent: PendingIntent = PendingIntent.getActivity(
+      activity,
+      0,
+      intent,
+      PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+    )
+
+    nfcAdapter.enableForegroundDispatch(activity, pendingIntent, null, null)
+
+    // Read all techs, skip NDEF to skip P2P
+    val flags: Int = NfcAdapter.FLAG_READER_NFC_A or
+            NfcAdapter.FLAG_READER_NFC_B or
+            NfcAdapter.FLAG_READER_NFC_F or
+            NfcAdapter.FLAG_READER_NFC_V or
+            NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK
+
+    nfcAdapter.enableReaderMode(activity, this, flags, null)
   }
 
   private fun requestSuppression(result: Result) {
