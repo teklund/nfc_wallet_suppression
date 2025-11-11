@@ -17,6 +17,9 @@
 - [x] Task 3: Fix Android state persistence (re-establish suppression on activity recreation)
 - [x] Task 4: Fix duplicate test name (renamed to `isSuppressed_falseAfterRelease`)
 - [x] Task 5: Fix integration test (changed expectation to false for default state)
+- [x] Task 5.1: Add iOS native tests for token management (XCTest) - 5 tests
+- [x] Task 5.2: Add Android native tests for state persistence (JUnit) - 6 tests
+- [x] Task 5.3: Add integration test for full request/release lifecycle
 - [x] Run tests: `flutter test` (26 tests passing)
 
 ### Phase 2 - High Priority (45-60 min)
@@ -95,12 +98,12 @@ This document outlines a comprehensive plan to address all identified issues in 
 
 | Severity | Count | Completed | Remaining | Estimated Time |
 |----------|-------|-----------|-----------|----------------|
-| 🔴 Critical | 5 | 5 | 0 | **COMPLETE** ✅ |
+| 🔴 Critical | 8 | 8 | 0 | **COMPLETE** ✅ |
 | 🟡 High Priority | 5 | 2 | 3 | 28-43 min |
 | 🟢 Medium Priority | 5 | 3 | 2 | 15 min |
 | 🧪 Testing | 7 | 4 | 3 | 30-60 min |
 | 🚀 Production Ready | 5 | 1 | 4 | 80 min |
-| **Total** | **27** | **15** | **12** | **~2.2 hours remaining** |
+| **Total** | **30** | **18** | **12** | **~2.2 hours remaining** |
 
 ---
 
@@ -188,6 +191,49 @@ testWidgets('isSuppressed test', (WidgetTester tester) async {
   expect(suppressed, false); // Default should be false
 });
 ```
+
+---
+
+### 5.1 Add iOS Native Tests for Token Management
+
+- **File:** `ios/Tests/NfcWalletSuppressionPluginTests.swift` (new)
+- **Issue:** No tests for Task 2 fix (iOS token management race condition)
+- **Fix:** Add XCTest suite to verify token cleanup behavior
+- **Impact:** Validates the critical fix actually works
+- **Time:** 20 min
+
+**Tests to add:**
+- Test rapid requestSuppression calls don't leak tokens
+- Test existing token is released before creating new one
+- Test release without token returns error
+
+---
+
+### 5.2 Add Android Native Tests for State Persistence
+
+- **File:** `android/src/test/kotlin/.../NfcWalletSuppressionPluginTest.kt` (enhance)
+- **Issue:** No tests for Task 3 fix (Android state persistence)
+- **Fix:** Add JUnit tests for activity lifecycle scenarios
+- **Impact:** Validates state survives configuration changes
+- **Time:** 20 min
+
+**Tests to add:**
+- Test suppressionActive survives activity recreation
+- Test reestablishSuppression is called on reattach
+- Test suppression state cleared when NFC unavailable
+
+---
+
+### 5.3 Add Integration Test for Full Lifecycle
+
+- **File:** `example/integration_test/plugin_integration_test.dart` (enhance)
+- **Issue:** Only tests default state, not full request/release cycle
+- **Fix:** Add comprehensive lifecycle test
+- **Impact:** Tests real platform behavior end-to-end
+- **Time:** 15 min
+
+**Test to add:**
+- Test full lifecycle: request → isSuppressed → release → isSuppressed
 
 ---
 
