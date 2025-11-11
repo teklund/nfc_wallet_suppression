@@ -93,8 +93,20 @@ class MethodChannelNfcWalletSuppression extends NfcWalletSuppressionPlatform {
   /// Returns `true` if the wallet is suppressed, `false` otherwise.
   @override
   Future<bool> isSuppressed() async {
-    final success = await methodChannel.invokeMethod<bool>('isSuppressed');
-    return success ?? false;
+    try {
+      final success = await methodChannel.invokeMethod<bool>('isSuppressed');
+      return success ?? false;
+    } on PlatformException catch (e) {
+      if (kDebugMode) {
+        developer.log(
+          'Error checking suppression status: ${e.message ?? "No error message"}',
+          name: 'nfc_wallet_suppression',
+          error: e,
+        );
+      }
+      // Return false on error - assume not suppressed if we can't determine state
+      return false;
+    }
   }
 
   /// Checks if the device supports NFC wallet suppression.
@@ -102,7 +114,19 @@ class MethodChannelNfcWalletSuppression extends NfcWalletSuppressionPlatform {
   /// Returns `true` if the device has NFC hardware and OS support, `false` otherwise.
   @override
   Future<bool> isSupported() async {
-    final supported = await methodChannel.invokeMethod<bool>('isSupported');
-    return supported ?? false;
+    try {
+      final supported = await methodChannel.invokeMethod<bool>('isSupported');
+      return supported ?? false;
+    } on PlatformException catch (e) {
+      if (kDebugMode) {
+        developer.log(
+          'Error checking platform support: ${e.message ?? "No error message"}',
+          name: 'nfc_wallet_suppression',
+          error: e,
+        );
+      }
+      // Return false on error - assume not supported if we can't determine capability
+      return false;
+    }
   }
 }
