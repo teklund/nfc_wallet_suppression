@@ -352,7 +352,7 @@ jobs:
     name: Publish Dry Run
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: format
+    needs: analyze
     if: github.event_name == 'pull_request'
     
     steps:
@@ -385,7 +385,7 @@ jobs:
     name: Pub Score Check
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: format
+    needs: analyze
     if: github.event_name == 'pull_request'
     
     steps:
