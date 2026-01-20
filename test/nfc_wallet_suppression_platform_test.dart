@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nfc_wallet_suppression/nfc_wallet_suppression.dart';
+import 'package:nfc_wallet_suppression/testing.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 class MockSupportedPlatform extends NfcWalletSuppressionPlatform
@@ -74,8 +75,7 @@ void main() {
       expect(supported, false);
     });
 
-    test(
-        'requestSuppression on supported platform returns suppressed status',
+    test('requestSuppression on supported platform returns suppressed status',
         () async {
       final platform = MockSupportedPlatform();
       NfcWalletSuppressionPlatform.instance = platform;
@@ -112,7 +112,7 @@ void main() {
       NfcWalletSuppressionPlatform.instance = platform;
 
       final supported = await NfcWalletSuppression.isSupported();
-      
+
       if (!supported) {
         final status = await NfcWalletSuppression.requestSuppression();
         expect(status, SuppressionStatus.notSupported);

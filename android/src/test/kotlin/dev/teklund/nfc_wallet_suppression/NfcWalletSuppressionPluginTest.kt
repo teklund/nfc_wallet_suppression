@@ -17,41 +17,41 @@ import org.mockito.Mockito.mock
 internal class NfcWalletSuppressionPluginTest {
 
   @Test
-  fun onMethodCall_isSuppressed_returnsExpectedValue() {
-    val plugin = NfcWalletSuppressionPlugin()
-
-    val call = MethodCall("isSuppressed", null)
-    val mockResult: MethodChannel.Result = mock(MethodChannel.Result::class.java)
-    plugin.onMethodCall(call, mockResult)
-
-    Mockito.verify(mockResult).success(false)
-  }
-
-  @Test
   fun isSuppressed_returnsFalseWhenNoActivity() {
     val plugin = NfcWalletSuppressionPlugin()
+    // No activity attached, so isSuppressed should be false
     
-    val call = MethodCall("isSuppressed", null)
-    val mockResult: MethodChannel.Result = mock(MethodChannel.Result::class.java)
-    plugin.onMethodCall(call, mockResult)
-    
-    // Should return false when activity is null
-    Mockito.verify(mockResult).success(false)
+    plugin.isSuppressed { result ->
+        // In Kotlin Result success is checked via exceptionOrNull() or similar, 
+        // relying on the callback value being Result.success(false)
+        assert(result.isSuccess)
+        assert(result.getOrNull() == false)
+    }
   }
 
-  // Note: requestSuppression and releaseSuppression tests require NFC hardware
-  // and proper Android Context/Activity setup which cannot be easily mocked
-  // in unit tests. These should be tested via integration tests on real devices.
-
   @Test
-  fun unknownMethod_returnsNotImplemented() {
+  fun requestSuppression_returnsUnavailableWhenNoActivity() {
     val plugin = NfcWalletSuppressionPlugin()
     
-    val call = MethodCall("unknownMethod", null)
-    val mockResult: MethodChannel.Result = mock(MethodChannel.Result::class.java)
-    plugin.onMethodCall(call, mockResult)
+    plugin.requestSuppression { result ->
+        assert(result.isSuccess)
+        val suppressionResult = result.getOrNull()
+        assert(suppressionResult != null)
+        assert(suppressionResult?.status == SuppressionStatusCode.UNAVAILABLE)
+        assert(suppressionResult?.message == "Activity not available")
+    }
+  }
+  
+  @Test
+  fun releaseSuppression_returnsUnavailableWhenNoActivity() {
+    val plugin = NfcWalletSuppressionPlugin()
     
-    // Should return not implemented for unknown methods
-    Mockito.verify(mockResult).notImplemented()
+    plugin.releaseSuppression { result ->
+        assert(result.isSuccess)
+        val suppressionResult = result.getOrNull()
+        assert(suppressionResult != null)
+        assert(suppressionResult?.status == SuppressionStatusCode.UNAVAILABLE)
+        assert(suppressionResult?.message == "Activity not available")
+    }
   }
 }

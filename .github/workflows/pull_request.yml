@@ -186,23 +186,39 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
       
-      - name: Run Android unit tests
+      - name: Run Android tests with coverage
         working-directory: example/android
-        run: ./gradlew testDebugUnitTest --console=plain
+        run: ./gradlew :nfc_wallet_suppression:testDebugUnitTest :nfc_wallet_suppression:jacocoTestReport --console=plain
       
       - name: Generate test summary
         if: always()
+        working-directory: example/android
         run: |
           echo "## 🤖 Android Native Tests" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          if [ -d "example/build/nfc_wallet_suppression/reports/tests/testDebugUnitTest" ]; then
-            echo "✅ Tests completed" >> $GITHUB_STEP_SUMMARY
+          if [ -d "example/build/nfc_wallet_suppression/reports/tests" ]; then
+            echo "✅ Test reports generated" >> $GITHUB_STEP_SUMMARY
             if [ -f "example/build/nfc_wallet_suppression/reports/tests/testDebugUnitTest/index.html" ]; then
               echo "📊 Test report generated" >> $GITHUB_STEP_SUMMARY
             fi
           else
             echo "⚠️ Test reports not found" >> $GITHUB_STEP_SUMMARY
           fi
+          if [ -f "example/build/nfc_wallet_suppression/reports/jacoco/test/jacocoTestReport.xml" ]; then
+            echo "✅ Coverage report generated" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Coverage report not found" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Upload Android coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: example/build/nfc_wallet_suppression/reports/jacoco/test/jacocoTestReport.xml
+          flags: android
+          name: android-coverage
+          fail_ci_if_error: false
       
       - name: Upload Android test results
         if: always()
@@ -256,7 +272,7 @@ jobs:
       - name: Install xcpretty (for better output)
         run: gem install xcpretty
       
-      - name: Run iOS tests
+      - name: Run iOS tests with coverage
         working-directory: example/ios
         run: |
           set -o pipefail
@@ -265,13 +281,31 @@ jobs:
             -scheme Runner \
             -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
             -only-testing:RunnerTests \
+            -enableCodeCoverage YES \
             -resultBundlePath TestResults.xcresult \
             | xcpretty --color --simple || xcodebuild test \
             -workspace Runner.xcworkspace \
             -scheme Runner \
             -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
             -only-testing:RunnerTests \
+            -enableCodeCoverage YES \
             -resultBundlePath TestResults.xcresult
+      
+      - name: Convert iOS coverage to lcov
+        if: always()
+        working-directory: example/ios
+        run: |
+          # Install xcov for coverage conversion
+          gem install slather
+          
+          # Extract coverage from xcresult
+          xcrun xccov view --report --json TestResults.xcresult > coverage.json || true
+          
+          # Convert to lcov format using xcresult
+          if command -v xcresultparser &> /dev/null; then
+            xcresultparser --output-format cobertura TestResults.xcresult > coverage.xml || true
+          fi
+        continue-on-error: true
       
       - name: Parse test results
         if: always()
@@ -289,6 +323,20 @@ jobs:
           else
             echo "⚠️ Test results not found" >> $GITHUB_STEP_SUMMARY
           fi
+          if [ -f "coverage.json" ]; then
+            echo "✅ Coverage data extracted" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Upload iOS coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: example/ios/coverage.json
+          flags: ios
+          name: ios-coverage
+          fail_ci_if_error: false
+        continue-on-error: true
       
       - name: Upload iOS test results
         if: always()

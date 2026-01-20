@@ -9,22 +9,22 @@
 ///
 /// void main() {
 ///   late FakeNfcWalletSuppression fake;
-///   
+///
 ///   setUp(() {
 ///     fake = FakeNfcWalletSuppression();
 ///     NfcWalletSuppressionPlatform.instance = fake;
 ///   });
-///   
+///
 ///   test('my test', () async {
 ///     fake.setSupported(true);
 ///     fake.setRequestResult(SuppressionStatus.suppressed);
-///     
+///
 ///     final result = await NfcWalletSuppression.requestSuppression();
 ///     expect(result, SuppressionStatus.suppressed);
 ///   });
 /// }
 /// ```
-library nfc_wallet_suppression_testing;
+library;
 
 import 'nfc_wallet_suppression_platform_interface.dart';
 import 'nfc_wallet_suppression_status.dart';
@@ -40,30 +40,30 @@ class FakeNfcWalletSuppression extends NfcWalletSuppressionPlatform {
   bool _isSupported = true;
   SuppressionStatus _requestResult = SuppressionStatus.suppressed;
   SuppressionStatus _releaseResult = SuppressionStatus.notSuppressed;
-  
+
   /// Track method calls for verification in tests
   final List<String> methodCalls = [];
-  
+
   /// Set whether the device supports NFC wallet suppression
   void setSupported(bool supported) {
     _isSupported = supported;
   }
-  
+
   /// Set the result that [requestSuppression] will return
   void setRequestResult(SuppressionStatus result) {
     _requestResult = result;
   }
-  
+
   /// Set the result that [releaseSuppression] will return
   void setReleaseResult(SuppressionStatus result) {
     _releaseResult = result;
   }
-  
+
   /// Manually set the suppressed state (simulates external state change)
   void setSuppressed(bool suppressed) {
     _isCurrentlySuppressed = suppressed;
   }
-  
+
   /// Reset all state and call history
   void reset() {
     _isCurrentlySuppressed = false;
@@ -114,7 +114,7 @@ class NfcWalletSuppressionTestScenarios {
     fake.setReleaseResult(SuppressionStatus.notSuppressed);
     return fake;
   }
-  
+
   /// Scenario: Device does not support NFC
   static FakeNfcWalletSuppression unsupportedDevice() {
     final fake = FakeNfcWalletSuppression();
@@ -123,7 +123,7 @@ class NfcWalletSuppressionTestScenarios {
     fake.setReleaseResult(SuppressionStatus.notSupported);
     return fake;
   }
-  
+
   /// Scenario: NFC is available but currently unavailable (e.g., disabled)
   static FakeNfcWalletSuppression nfcUnavailable() {
     final fake = FakeNfcWalletSuppression();
@@ -132,7 +132,7 @@ class NfcWalletSuppressionTestScenarios {
     fake.setReleaseResult(SuppressionStatus.unavailable);
     return fake;
   }
-  
+
   /// Scenario: User denied permission (iOS)
   static FakeNfcWalletSuppression userDenied() {
     final fake = FakeNfcWalletSuppression();
@@ -140,7 +140,7 @@ class NfcWalletSuppressionTestScenarios {
     fake.setRequestResult(SuppressionStatus.denied);
     return fake;
   }
-  
+
   /// Scenario: Already presenting passes (iOS)
   static FakeNfcWalletSuppression alreadyPresenting() {
     final fake = FakeNfcWalletSuppression();

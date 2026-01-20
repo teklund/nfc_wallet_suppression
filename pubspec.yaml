@@ -1,6 +1,6 @@
 name: nfc_wallet_suppression
-description: "Lightweight plugin to handle NFC wallet suppression in Flutter"
-version: 0.1.1
+description: 'Lightweight plugin to handle NFC wallet suppression in Flutter'
+version: 1.0.0
 homepage: https://github.com/teklund/nfc_wallet_suppression
 repository: https://github.com/teklund/nfc_wallet_suppression
 issue_tracker: https://github.com/teklund/nfc_wallet_suppression/issues
@@ -13,7 +13,7 @@ topics:
 
 environment:
   sdk: ^3.4.0
-  flutter: '>=3.22.0'
+  flutter: ">=3.22.0"
 
 dependencies:
   flutter:
@@ -23,7 +23,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: ^6.0.0
+  pigeon: ^26.1.5
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

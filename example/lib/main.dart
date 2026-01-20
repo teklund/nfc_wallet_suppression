@@ -31,7 +31,7 @@ class _MyAppState extends State<MyApp> {
       // Check platform support first
       final supported = await NfcWalletSuppression.isSupported();
       await _checkIsSuppressed();
-      
+
       if (!mounted) return;
       setState(() {
         _isSupported = supported;
@@ -46,12 +46,12 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _onRequestSuppression() async {
     if (_isLoading) return;
-    
+
     setState(() {
       _isLoading = true;
       _error = null;
     });
-    
+
     try {
       final result = await NfcWalletSuppression.requestSuppression();
       if (!mounted) return;
@@ -70,12 +70,12 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _onReleaseSuppression() async {
     if (_isLoading) return;
-    
+
     setState(() {
       _isLoading = true;
       _error = null;
     });
-    
+
     try {
       final result = await NfcWalletSuppression.releaseSuppression();
       if (!mounted) return;
@@ -94,12 +94,12 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _checkIsSuppressed() async {
     if (_isLoading) return;
-    
+
     setState(() {
       _isLoading = true;
       _error = null;
     });
-    
+
     try {
       final result = await NfcWalletSuppression.isSuppressed();
       if (!mounted) return;
@@ -150,7 +150,7 @@ class _MyAppState extends State<MyApp> {
         ),
       );
     }
-    
+
     return const Card(
       margin: EdgeInsets.all(16),
       color: Colors.green,
@@ -178,7 +178,7 @@ class _MyAppState extends State<MyApp> {
     final color = _suppressionStatus == SuppressionStatus.suppressed
         ? Colors.blue
         : Colors.grey;
-    
+
     return Card(
       margin: const EdgeInsets.all(16),
       child: Padding(
@@ -188,9 +188,10 @@ class _MyAppState extends State<MyApp> {
           children: [
             Row(
               children: [
-                Icon(_suppressionStatus == SuppressionStatus.suppressed
-                    ? Icons.block
-                    : Icons.nfc,
+                Icon(
+                    _suppressionStatus == SuppressionStatus.suppressed
+                        ? Icons.block
+                        : Icons.nfc,
                     color: color),
                 const SizedBox(width: 8),
                 const Text(
@@ -222,7 +223,8 @@ class _MyAppState extends State<MyApp> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.error_outline, color: Colors.red.shade700, size: 20),
+                    Icon(Icons.error_outline,
+                        color: Colors.red.shade700, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -260,8 +262,10 @@ class _MyAppState extends State<MyApp> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     FilledButton.icon(
-                      onPressed: _isLoading || !_isSupported ? null : _onRequestSuppression,
-                      icon: _isLoading 
+                      onPressed: _isLoading || !_isSupported
+                          ? null
+                          : _onRequestSuppression,
+                      icon: _isLoading
                           ? const SizedBox(
                               width: 16,
                               height: 16,
@@ -275,8 +279,10 @@ class _MyAppState extends State<MyApp> {
                     ),
                     const SizedBox(height: 8),
                     FilledButton.icon(
-                      onPressed: _isLoading || !_isSupported ? null : _onReleaseSuppression,
-                      icon: _isLoading 
+                      onPressed: _isLoading || !_isSupported
+                          ? null
+                          : _onReleaseSuppression,
+                      icon: _isLoading
                           ? const SizedBox(
                               width: 16,
                               height: 16,

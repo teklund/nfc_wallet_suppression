@@ -22,7 +22,7 @@ By participating in this project, you agree to maintain a respectful and inclusi
 ### Prerequisites
 
 - [Flutter SDK](https://flutter.dev/docs/get-started/install) 3.22.0 or higher
-- [Dart SDK](https://dart.dev/get-dart) ^3.7.0 or higher
+- [Dart SDK](https://dart.dev/get-dart) ^3.4.0 or higher
 - Git
 - Xcode (for iOS development on macOS)
 - Android Studio or Android SDK (for Android development)
@@ -159,6 +159,18 @@ void main() {
   ```bash
   flutter analyze
   ```
+
+### Platform Interface Changes (Pigeon)
+
+This plugin uses [Pigeon](https://pub.dev/packages/pigeon) for type-safe communication between Flutter and native platforms.
+
+1. **Do not** edit the generated files directly.
+2. Edit the interface definition in `pigeons/nfc_wallet_suppression_api.dart`.
+3. Run the generation command:
+
+    ```bash
+    dart run pigeon --input pigeons/nfc_wallet_suppression_api.dart
+    ```
 
 ### Code Organization
 

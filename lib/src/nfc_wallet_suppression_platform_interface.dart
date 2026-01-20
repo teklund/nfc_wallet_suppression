@@ -1,6 +1,6 @@
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
-import 'nfc_wallet_suppression_method_channel.dart';
+import 'nfc_wallet_suppression_pigeon_impl.dart';
 import 'nfc_wallet_suppression_status.dart';
 
 /// An interface for a platform-specific implementation of the `nfc_wallet_suppression` plugin.
@@ -14,12 +14,11 @@ abstract class NfcWalletSuppressionPlatform extends PlatformInterface {
 
   static final Object _token = Object();
 
-  static NfcWalletSuppressionPlatform _instance =
-      MethodChannelNfcWalletSuppression();
+  static NfcWalletSuppressionPlatform _instance = PigeonNfcWalletSuppression();
 
   /// The default instance of [NfcWalletSuppressionPlatform] to use.
   ///
-  /// Defaults to [MethodChannelNfcWalletSuppression].
+  /// Defaults to [PigeonNfcWalletSuppression].
   static NfcWalletSuppressionPlatform get instance => _instance;
 
   /// Platform-specific implementations should set this with their own

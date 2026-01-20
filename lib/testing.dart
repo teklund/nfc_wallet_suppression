@@ -5,8 +5,9 @@
 /// ```dart
 /// import 'package:nfc_wallet_suppression/testing.dart';
 /// ```
-library nfc_wallet_suppression_testing;
+library;
 
-export 'src/nfc_wallet_suppression_testing.dart';
+export 'src/nfc_wallet_suppression_pigeon_impl.dart';
 export 'src/nfc_wallet_suppression_platform_interface.dart';
 export 'src/nfc_wallet_suppression_status.dart';
+export 'src/nfc_wallet_suppression_testing.dart';
