@@ -315,17 +315,18 @@ jobs:
         working-directory: example/ios
         run: |
           set -o pipefail
+          rm -rf TestResults.xcresult || true
           xcodebuild test \
             -workspace Runner.xcworkspace \
             -scheme Runner \
-            -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=latest' \
             -only-testing:RunnerTests \
             -enableCodeCoverage YES \
             -resultBundlePath TestResults.xcresult \
             | xcpretty --color --simple || xcodebuild test \
             -workspace Runner.xcworkspace \
             -scheme Runner \
-            -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=latest' \
             -only-testing:RunnerTests \
             -enableCodeCoverage YES \
             -resultBundlePath TestResults.xcresult
