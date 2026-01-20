@@ -41,10 +41,11 @@ A lightweight Flutter plugin that **suppresses NFC wallet presentation** — pre
 
 ## Build Status
 
-[![Pull Request](https://github.com/teklund/nfc_wallet_suppression/workflows/Pull%20Request/badge.svg)](https://github.com/teklund/nfc_wallet_suppression/actions/workflows/pull_request.yml)
-[![Platform Builds](https://github.com/teklund/nfc_wallet_suppression/workflows/Platform%20Builds/badge.svg)](https://github.com/teklund/nfc_wallet_suppression/actions/workflows/platform_builds.yml)
+[![CI](https://github.com/teklund/nfc_wallet_suppression/workflows/CI/badge.svg)](https://github.com/teklund/nfc_wallet_suppression/actions/workflows/ci.yml)
+
 [![Integration Tests](https://github.com/teklund/nfc_wallet_suppression/workflows/Integration%20Tests/badge.svg)](https://github.com/teklund/nfc_wallet_suppression/actions/workflows/integration_tests.yml)
 [![SDK Compatibility Check](https://github.com/teklund/nfc_wallet_suppression/workflows/SDK%20Compatibility%20Check/badge.svg)](https://github.com/teklund/nfc_wallet_suppression/actions/workflows/sdk_compatibility.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/teklund/nfc_wallet_suppression/badge)](https://securityscorecards.dev/viewer/?uri=github.com/teklund/nfc_wallet_suppression)
 [![codecov](https://codecov.io/gh/teklund/nfc_wallet_suppression/graph/badge.svg?token=JRPE6FQF2T)](https://codecov.io/gh/teklund/nfc_wallet_suppression)
 
 ---
@@ -141,7 +142,7 @@ try {
 ### API Methods
 
 | Method | Returns | Description |
-|--------|---------|-------------|
+| :--- | :--- | :--- |
 | `requestSuppression()` | `Future<SuppressionStatus>` | Request wallet suppression |
 | `releaseSuppression()` | `Future<SuppressionStatus>` | Release suppression |
 | `isSuppressed()` | `Future<bool>` | Check if currently suppressed |
@@ -151,7 +152,7 @@ try {
 The `SuppressionStatus` enum represents the result of suppression operations:
 
 | Status | Description |
-|--------|-------------|
+| :--- | :--- |
 | `suppressed` | Suppression is successfully active |
 | `notSuppressed` | Suppression is not active |
 | `unavailable` | Suppression feature is unavailable on this device |
@@ -174,7 +175,7 @@ The `SuppressionStatus` enum represents the result of suppression operations:
 **Common Issues:**
 
 | Issue | Platform | Solution |
-|-------|----------|----------|
+| :--- | :--- | :--- |
 | Entitlement not found | iOS | Ensure Apple approved the entitlement and it's in your provisioning profile |
 | NFC not available | Android | Enable NFC in device settings |
 | Auto-released | Both | Use `WidgetsBindingObserver` to re-request on app resume |

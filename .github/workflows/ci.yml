@@ -1,4 +1,4 @@
-name: Pull Request
+name: CI
 
 on:
   pull_request:
@@ -15,6 +15,7 @@ on:
       - 'docs/**'
       - 'LICENSE'
       - '.gitignore'
+  workflow_dispatch:
 
 concurrency:
   group: pull-request-${{ github.head_ref || github.ref }}
@@ -25,6 +26,42 @@ permissions:
   pull-requests: write
 
 jobs:
+  check_changes:
+    name: Check Changes
+    runs-on: ubuntu-latest
+    outputs:
+      android: ${{ steps.filter.outputs.android }}
+      ios: ${{ steps.filter.outputs.ios }}
+      dart: ${{ steps.filter.outputs.dart }}
+    steps:
+      - name: Filter Paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            android:
+              - 'android/**'
+              - 'example/android/**'
+              - 'lib/**'
+              - 'test/**'
+              - 'pigeons/**'
+              - 'pubspec.yaml'
+            ios:
+              - 'ios/**'
+              - 'example/ios/**'
+              - 'lib/**'
+              - 'test/**'
+              - 'pigeons/**'
+              - 'pubspec.yaml'
+            dart:
+              - 'lib/**'
+              - 'test/**'
+              - 'example/lib/**'
+              - 'example/test/**'
+              - 'pigeons/**'
+              - 'pubspec.yaml'
+              - 'analysis_options.yaml'
+
   format:
     name: Check Formatting
     runs-on: ubuntu-latest
@@ -154,7 +191,8 @@ jobs:
     name: Android Native Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: analyze
+    needs: [analyze, check_changes]
+    if: needs.check_changes.outputs.android == 'true'
     
     steps:
       - name: Checkout code
@@ -234,7 +272,8 @@ jobs:
     name: iOS Native Tests
     runs-on: macos-latest
     timeout-minutes: 15
-    needs: analyze
+    needs: [analyze, check_changes]
+    if: needs.check_changes.outputs.ios == 'true'
     
     steps:
       - name: Checkout code
@@ -434,3 +473,89 @@ jobs:
         with:
           fail-on-severity: moderate
           comment-summary-in-pr: on-failure
+
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [analyze, check_changes]
+    if: needs.check_changes.outputs.android == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      
+      - name: Install dependencies
+        working-directory: example
+        run: flutter pub get
+      
+      - name: Build Android APK
+        working-directory: example
+        run: flutter build apk --debug
+      
+      - name: Build Android App Bundle
+        working-directory: example
+        run: flutter build appbundle --debug
+      
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: android-apk
+          path: example/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 7
+
+  build-ios:
+    name: Build iOS
+    runs-on: macos-latest
+    timeout-minutes: 20
+    needs: [analyze, check_changes]
+    if: needs.check_changes.outputs.ios == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      
+      - name: Install dependencies
+        working-directory: example
+        run: flutter pub get
+      
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: example/ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('example/ios/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
+      
+      - name: Install CocoaPods dependencies
+        working-directory: example/ios
+        run: pod install
+      
+      - name: Build iOS (no codesign)
+        working-directory: example
+        run: flutter build ios --debug --no-codesign
+      
+      - name: Upload iOS artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: ios-build
+          path: example/build/ios/iphoneos/Runner.app
+          retention-days: 7
