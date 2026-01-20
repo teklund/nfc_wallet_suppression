@@ -136,8 +136,6 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, ActivityAware,
 
   override fun requestSuppression(callback: (Result<SuppressionResult>) -> Unit) {
     val activity = activity
-    val nfcAdapter = NfcAdapter.getDefaultAdapter(activity)
-    
     if (activity == null) {
       if (isDebug) Log.e(TAG, "Request suppression failed: Activity is null")
       callback(Result.success(SuppressionResult(
@@ -146,6 +144,8 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, ActivityAware,
       )))
       return
     }
+    
+    val nfcAdapter = NfcAdapter.getDefaultAdapter(activity)
     
     if (nfcAdapter == null) {
       if (isDebug) Log.e(TAG, "Request suppression failed: No NFC hardware")
@@ -209,8 +209,6 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, ActivityAware,
 
   override fun releaseSuppression(callback: (Result<SuppressionResult>) -> Unit) {
     val activity = activity
-    val nfcAdapter = NfcAdapter.getDefaultAdapter(activity)
-    
     if (activity == null) {
       if (isDebug) Log.e(TAG, "Release suppression failed: Activity is null")
       callback(Result.success(SuppressionResult(
@@ -219,6 +217,8 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, ActivityAware,
       )))
       return
     }
+    
+    val nfcAdapter = NfcAdapter.getDefaultAdapter(activity)
     
     if (nfcAdapter == null) {
       if (isDebug) Log.w(TAG, "Release suppression: No NFC adapter (already released or device has no NFC)")
