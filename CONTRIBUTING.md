@@ -110,6 +110,14 @@ flutter test --coverage
 # Run integration tests
 cd example
 flutter test integration_test/
+
+# Run Android native unit tests
+cd example/android
+./gradlew testDebugUnitTest
+
+# Run iOS native unit tests (requires Xcode)
+cd example/ios
+xcodebuild test -workspace Runner.xcworkspace -scheme Runner -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' -only-testing:RunnerTests
 ```
 
 ### Writing Tests
