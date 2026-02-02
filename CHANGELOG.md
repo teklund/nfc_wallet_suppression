@@ -4,13 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## 1.0.0
 
-**Major release with Pigeon migration for type-safe platform channels**
+Major release with Pigeon migration for type-safe platform channels.
 
 ### Added
 
 - ✨ **Pigeon Integration**: Migrated from manual method channels to Pigeon-generated type-safe platform communication
 - 🛡️ **Compile-time Safety**: Eliminated string-based error code matching - all status codes are now type-checked enums
-- 📚 **MIGRATION.md**: Comprehensive migration guide for upgrading from 0.1.x
+- 🌐 **Multi-platform support**: Added stub implementations for web, macOS, Linux, and Windows that gracefully return `SuppressionStatus.notSupported`
 - 📚 **PUBLISHING.md**: Complete publishing checklist and procedures
 - 🔒 **SECURITY.md**: Security policy and vulnerability reporting guidelines
 
@@ -31,23 +31,7 @@ All notable changes to this project will be documented in this file.
 - Uses Pigeon v22.7+ for code generation
 - Generated platform channel code for iOS (Swift) and Android (Kotlin)
 - Maintains 100% backward compatibility for public API
-- All 69 tests passing with comprehensive edge case coverage
-
-### Migration Notes
-
-**Public API is fully backward compatible** - no code changes required for most users.
-
-If you were directly using internal classes:
-
-```dart
-// ❌ Old (no longer exported)
-import 'package:nfc_wallet_suppression/src/nfc_wallet_suppression_method_channel.dart';
-
-// ✅ New (use public API)
-import 'package:nfc_wallet_suppression/nfc_wallet_suppression.dart';
-```
-
-See [MIGRATION.md](MIGRATION.md) for complete migration guide.
+- All 81 tests passing with comprehensive edge case coverage
 
 ## 0.1.1
 

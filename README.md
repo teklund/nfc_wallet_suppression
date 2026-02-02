@@ -3,7 +3,7 @@
 [![pub package](https://img.shields.io/pub/v/nfc_wallet_suppression.svg)](https://pub.dev/packages/nfc_wallet_suppression)
 [![Pub Points](https://img.shields.io/pub/points/nfc_wallet_suppression?color=2E8B57&logo=dart)](https://pub.dev/packages/nfc_wallet_suppression/score)
 [![Flutter Platform](https://img.shields.io/badge/platform-flutter-blue.svg)](https://flutter.dev)
-[![Supported Platforms](https://img.shields.io/badge/platforms-iOS%20%7C%20Android-blue.svg)](https://flutter.dev)
+[![Supported Platforms](https://img.shields.io/badge/platforms-iOS%20%7C%20Android%20%7C%20Web%20%7C%20Desktop-blue.svg)](https://flutter.dev)
 
 A lightweight Flutter plugin that **suppresses NFC wallet presentation** — preventing Apple Wallet, Google Wallet, and other payment apps from automatically popping up when your NFC-enabled device detects contactless payment terminals or NFC tags.
 
@@ -33,7 +33,8 @@ A lightweight Flutter plugin that **suppresses NFC wallet presentation** — pre
 
 - ✅ **Suppress NFC wallet presentation** - Stop Apple Wallet/Google Wallet from auto-appearing on NFC-enabled devices
 - ✅ **Simple API** - Three methods: request, release, and check suppression status
-- ✅ **Cross-platform** - Works on both iOS (PassKit) and Android (NFC Adapter)
+- ✅ **Cross-platform** - Works on iOS (PassKit) and Android (NFC Adapter)
+- ✅ **All platforms supported** - Graceful fallback on web/desktop (returns `notSupported`)
 - ✅ **Lifecycle-aware** - Automatic cleanup when app backgrounds
 - ✅ **Type-safe status** - Detailed status enum for handling different scenarios
 

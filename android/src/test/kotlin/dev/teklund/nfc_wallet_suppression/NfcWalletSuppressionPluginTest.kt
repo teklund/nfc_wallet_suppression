@@ -1,10 +1,6 @@
 package dev.teklund.nfc_wallet_suppression
 
-import io.flutter.plugin.common.MethodCall
-import io.flutter.plugin.common.MethodChannel
 import kotlin.test.Test
-import org.mockito.Mockito
-import org.mockito.Mockito.mock
 
 /*
  * Unit tests for NfcWalletSuppressionPlugin focusing on state persistence

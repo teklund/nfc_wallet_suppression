@@ -14,28 +14,77 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   SuppressionStatus _suppressionStatus = SuppressionStatus.notSuppressed;
   String? _error;
   bool _isLoading = false;
   bool _isSupported = false;
 
+  // Track if we should try to restore suppression when app resumes
+  bool _shouldRestoreSuppression = true;
+  // Track if suppression was active before we were backgrounded
+  bool _wasSuppressedBeforeBackground = false;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     initPlatformState();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      // App is going to background
+      _wasSuppressedBeforeBackground =
+          _suppressionStatus == SuppressionStatus.suppressed;
+    } else if (state == AppLifecycleState.resumed) {
+      // App is returning to foreground
+      if (_shouldRestoreSuppression && _wasSuppressedBeforeBackground) {
+        _restoreSuppression();
+      }
+    }
+  }
+
+  Future<void> _restoreSuppression() async {
+    // Only attempt if supported
+    if (!_isSupported) return;
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Restoring NFC suppression...')),
+    );
+
+    await _onRequestSuppression();
   }
 
   Future<void> initPlatformState() async {
     try {
       // Check platform support first
       final supported = await NfcWalletSuppression.isSupported();
-      await _checkIsSuppressed();
 
       if (!mounted) return;
-      setState(() {
-        _isSupported = supported;
-      });
+
+      // If supported, check current status
+      if (supported) {
+        final isSuppressed = await NfcWalletSuppression.isSuppressed();
+        setState(() {
+          _isSupported = supported;
+          _suppressionStatus = isSuppressed
+              ? SuppressionStatus.suppressed
+              : SuppressionStatus.notSuppressed;
+        });
+      } else {
+        setState(() {
+          _isSupported = supported;
+        });
+      }
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -151,22 +200,38 @@ class _MyAppState extends State<MyApp> {
       );
     }
 
-    return const Card(
-      margin: EdgeInsets.all(16),
+    return Card(
+      margin: const EdgeInsets.all(16),
       color: Colors.green,
       child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Row(
+        padding: const EdgeInsets.all(16),
+        child: Column(
           children: [
-            Icon(Icons.check_circle, color: Colors.white),
-            SizedBox(width: 8),
-            Text(
-              'Platform supported',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                fontSize: 16,
-              ),
+            const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8),
+                Text(
+                  'Platform supported',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(color: Colors.white54),
+            SwitchListTile(
+              title: const Text('Auto-restore on resume',
+                  style: TextStyle(color: Colors.white)),
+              subtitle: const Text('Best practice for seamless UX',
+                  style: TextStyle(color: Colors.white70, fontSize: 12)),
+              value: _shouldRestoreSuppression,
+              onChanged: (value) =>
+                  setState(() => _shouldRestoreSuppression = value),
+              activeThumbColor: Colors.white,
+              activeTrackColor: Colors.green.shade800,
             ),
           ],
         ),
@@ -245,78 +310,80 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('NFC Wallet Suppression'),
-          centerTitle: true,
-        ),
-        body: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildPlatformInfo(),
-              _buildStatusCard(),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    FilledButton.icon(
-                      onPressed: _isLoading || !_isSupported
-                          ? null
-                          : _onRequestSuppression,
-                      icon: _isLoading
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.block),
-                      label: const Text('Request Suppression'),
-                    ),
-                    const SizedBox(height: 8),
-                    FilledButton.icon(
-                      onPressed: _isLoading || !_isSupported
-                          ? null
-                          : _onReleaseSuppression,
-                      icon: _isLoading
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Icon(Icons.nfc),
-                      label: const Text('Release Suppression'),
-                    ),
-                    const SizedBox(height: 8),
-                    OutlinedButton.icon(
-                      onPressed: _isLoading ? null : _checkIsSuppressed,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Check Status'),
-                    ),
-                  ],
+      home: Builder(
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            title: const Text('NFC Wallet Suppression'),
+            centerTitle: true,
+          ),
+          body: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildPlatformInfo(),
+                _buildStatusCard(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: _isLoading || !_isSupported
+                            ? null
+                            : _onRequestSuppression,
+                        icon: _isLoading
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.block),
+                        label: const Text('Request Suppression'),
+                      ),
+                      const SizedBox(height: 8),
+                      FilledButton.icon(
+                        onPressed: _isLoading || !_isSupported
+                            ? null
+                            : _onReleaseSuppression,
+                        icon: _isLoading
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.nfc),
+                        label: const Text('Release Suppression'),
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: _isLoading ? null : _checkIsSuppressed,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Check Status'),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'About NFC Wallet Suppression:\n\n'
-                  'This plugin temporarily disables Apple Pay and Google Pay '
-                  'during NFC tag reading to prevent wallet apps from interfering '
-                  'with your app\'s NFC operations.\n\n'
-                  'iOS: Uses PKPassLibrary (requires iOS 12.0+, iPhone 7+)\n'
-                  'Android: Uses NFC Reader Mode (requires API 21+, NFC hardware)',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                const SizedBox(height: 16),
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text(
+                    'About NFC Wallet Suppression:\n\n'
+                    'This plugin temporarily disables Apple Pay and Google Pay '
+                    'during NFC tag reading to prevent wallet apps from interfering '
+                    'with your app\'s NFC operations.\n\n'
+                    'iOS: Uses PKPassLibrary (requires iOS 12.0+, iPhone 7+)\n'
+                    'Android: Uses NFC Reader Mode (requires API 21+, NFC hardware)',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

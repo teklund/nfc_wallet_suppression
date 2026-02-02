@@ -13,7 +13,6 @@ This document provides a comprehensive checklist for publishing new versions of 
 - [ ] Update version number in `ios/nfc_wallet_suppression.podspec`
 - [ ] Update README.md if API has changed
 - [ ] Review and update API documentation in code
-- [ ] Update MIGRATION.md if there are breaking changes
 - [ ] Review all documentation for accuracy and completeness
 
 ### 🧪 Testing
@@ -338,4 +337,4 @@ Before running `dart pub publish`:
 
 ---
 
-**Last Updated:** January 20, 2026
+**Last Updated:** January 21, 2026

@@ -327,9 +327,10 @@ flutter test integration_test/comprehensive_integration_test.dart
 The plugin maintains **100% code coverage** for all Dart source files:
 
 - `nfc_wallet_suppression_platform_interface.dart`: 100%
-- `nfc_wallet_suppression_method_channel.dart`: 100%
+- `nfc_wallet_suppression_pigeon_impl.dart`: 100%
 - `nfc_wallet_suppression.dart`: 100%
 - `nfc_wallet_suppression_testing.dart`: 100%
+- `nfc_wallet_suppression_stub.dart`: 100%
 
 To view detailed coverage:
 

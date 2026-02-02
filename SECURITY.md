@@ -25,6 +25,7 @@ We provide security updates for the following versions:
 ### Data Privacy
 
 This plugin does **NOT**:
+
 - ❌ Collect any user data
 - ❌ Send data to external servers
 - ❌ Store sensitive information
@@ -33,6 +34,7 @@ This plugin does **NOT**:
 - ❌ Require network access
 
 This plugin **DOES**:
+
 - ✅ Only interact with system NFC APIs
 - ✅ Use local state management only
 - ✅ Operate entirely offline
@@ -62,6 +64,7 @@ The plugin includes a privacy manifest (`ios/Resources/PrivacyInfo.xcprivacy`) t
 ```
 
 **What this means:**
+
 - No tracking of users
 - No data collection
 - UserDefaults only used for plugin state management
@@ -77,6 +80,7 @@ The plugin requires only NFC permission:
 ```
 
 **What this means:**
+
 - No internet access
 - No storage access
 - No location access
@@ -303,6 +307,7 @@ dev_dependencies:
 ```
 
 All dependencies are:
+
 - ✅ Official Flutter/Dart packages
 - ✅ Actively maintained
 - ✅ Widely used (high confidence)
@@ -311,6 +316,7 @@ All dependencies are:
 ### Monitoring
 
 We monitor dependencies using:
+
 - GitHub Dependabot
 - `dart pub outdated`
 - Security advisories for Flutter/Dart ecosystem
@@ -353,6 +359,7 @@ We monitor dependencies using:
 ### Future Audits
 
 We plan to:
+
 - Conduct internal security reviews for each major release
 - Welcome community security researchers
 - Consider third-party audits for 2.0.0+
@@ -362,6 +369,7 @@ We plan to:
 ## Contact
 
 For security concerns:
+
 - **Security Issues:** Use [GitHub Security Advisories](https://github.com/teklund/nfc_wallet_suppression/security/advisories/new)
 - **General Issues:** [GitHub Issues](https://github.com/teklund/nfc_wallet_suppression/issues)
 
@@ -373,6 +381,6 @@ We appreciate responsible disclosure from security researchers. Contributors who
 
 ---
 
-**Last Updated:** January 20, 2026
+**Last Updated:** January 21, 2026
 
 **Note:** This security policy is subject to updates. Check the latest version in the repository.

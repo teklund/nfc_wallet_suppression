@@ -48,3 +48,19 @@ flutter:
         pluginClass: NfcWalletSuppressionPlugin
       ios:
         pluginClass: NfcWalletSuppressionPlugin
+      web:
+        pluginClass: none
+        dartPluginClass: StubNfcWalletSuppression
+        fileName: src/nfc_wallet_suppression_stub.dart
+      macos:
+        pluginClass: none
+        dartPluginClass: StubNfcWalletSuppression
+        fileName: src/nfc_wallet_suppression_stub.dart
+      linux:
+        pluginClass: none
+        dartPluginClass: StubNfcWalletSuppression
+        fileName: src/nfc_wallet_suppression_stub.dart
+      windows:
+        pluginClass: none
+        dartPluginClass: StubNfcWalletSuppression
+        fileName: src/nfc_wallet_suppression_stub.dart

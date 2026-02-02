@@ -14,7 +14,6 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
 
   func requestSuppression(completion: @escaping (Result<SuppressionResult, Error>) -> Void) {
     // Release any existing token to prevent race conditions and memory leaks
-    // Release any existing token to prevent race conditions and memory leaks
     if let existingToken = suppressionToken {
       #if DEBUG
       NSLog("[NFC Wallet Suppression] Releasing existing token before new request")
