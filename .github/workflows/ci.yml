@@ -311,6 +311,41 @@ jobs:
       - name: Install xcpretty (for better output)
         run: gem install xcpretty
       
+      - name: Select iOS simulator
+        id: simulator
+        run: |
+          SIMULATOR=$(xcrun simctl list devices available -j | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          devices = []
+          for runtime, device_list in data['devices'].items():
+              if 'iOS' in runtime:
+                  for d in device_list:
+                      if d['isAvailable'] and 'iPhone' in d['name']:
+                          devices.append((runtime, d['udid'], d['name']))
+          devices.sort(reverse=True)
+          if devices:
+              print(devices[0][1])
+          else:
+              print('')
+          ")
+          if [ -z \"$SIMULATOR\" ]; then
+            echo \"No available iPhone simulator found, creating one...\"
+            xcrun simctl create 'iPhone 15' 'iPhone 15' || true
+            SIMULATOR=$(xcrun simctl list devices available -j | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          for runtime, device_list in data['devices'].items():
+              if 'iOS' in runtime:
+                  for d in device_list:
+                      if d['isAvailable'] and 'iPhone 15' in d['name']:
+                          print(d['udid'])
+                          exit()
+            ")
+          fi
+          echo "udid=$SIMULATOR" >> $GITHUB_OUTPUT
+          echo "Selected simulator: $SIMULATOR"
+
       - name: Run iOS tests with coverage
         working-directory: example/ios
         run: |
@@ -319,14 +354,14 @@ jobs:
           xcodebuild test \
             -workspace Runner.xcworkspace \
             -scheme Runner \
-            -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=latest' \
+            -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}' \
             -only-testing:RunnerTests \
             -enableCodeCoverage YES \
             -resultBundlePath TestResults.xcresult \
             | xcpretty --color --simple || xcodebuild test \
             -workspace Runner.xcworkspace \
             -scheme Runner \
-            -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=latest' \
+            -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}' \
             -only-testing:RunnerTests \
             -enableCodeCoverage YES \
             -resultBundlePath TestResults.xcresult
