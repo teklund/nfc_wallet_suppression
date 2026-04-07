@@ -113,6 +113,10 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
       
+      - name: Install example dependencies
+        working-directory: example
+        run: flutter pub get
+      
       - name: Analyze project
         uses: invertase/github-action-dart-analyzer@v3
         with:
