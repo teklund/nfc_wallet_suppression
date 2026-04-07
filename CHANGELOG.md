@@ -30,8 +30,8 @@ Major release with Pigeon migration for type-safe platform channels.
 
 - Uses Pigeon v22.7+ for code generation
 - Generated platform channel code for iOS (Swift) and Android (Kotlin)
-- Maintains 100% backward compatibility for public API
-- All 81 tests passing with comprehensive edge case coverage
+- Maintains backward compatibility for the public Dart API (no breaking changes to Dart-level APIs)
+- All 88 tests passing with comprehensive edge case coverage (65 Dart + 8 Android + 15 iOS)
 
 ## 0.1.1
 

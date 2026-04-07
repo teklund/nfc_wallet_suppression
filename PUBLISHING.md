@@ -76,7 +76,7 @@ This document provides a comprehensive checklist for publishing new versions of 
 - [ ] Check minimum iOS version in podspec matches pubspec
 - [ ] Verify Swift version compatibility
 - [ ] Test on latest iOS version
-- [ ] Test on minimum supported iOS version (16.0)
+- [ ] Test on minimum supported iOS version (13.0)
 - [ ] Privacy manifest is included
 
 #### Android

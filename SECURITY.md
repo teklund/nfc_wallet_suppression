@@ -130,7 +130,7 @@ This plugin does NOT protect against:
 
 ### iOS
 
-1. **iOS 16.0+ Required:** Older versions don't support suppression API
+1. **iOS 13.0+ Required:** Plugin minimum (Flutter SDK floor); PassKit suppression API (`requestAutomaticPassPresentationSuppression`) available from iOS 9.0+
 2. **User Consent:** User can deny suppression request (by design)
 3. **Background Limitations:** Suppression releases when app backgrounds (OS behavior)
 4. **PassKit Dependency:** Requires PassKit framework availability

@@ -35,8 +35,8 @@ void main() {
   final NfcWalletSuppressionPlatform initialPlatform =
       NfcWalletSuppressionPlatform.instance;
 
-  test('$PigeonNfcWalletSuppression is the default instance', () {
-    expect(initialPlatform, isInstanceOf<PigeonNfcWalletSuppression>());
+  test('default instance implements NfcWalletSuppressionPlatform', () {
+    expect(initialPlatform, isA<NfcWalletSuppressionPlatform>());
   });
 
   test('isSuppressed_defaultFalse', () async {

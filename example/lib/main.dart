@@ -377,7 +377,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                     'This plugin temporarily disables Apple Pay and Google Pay '
                     'during NFC tag reading to prevent wallet apps from interfering '
                     'with your app\'s NFC operations.\n\n'
-                    'iOS: Uses PKPassLibrary (requires iOS 12.0+, iPhone 7+)\n'
+                    'iOS: Uses PKPassLibrary (requires iOS 13.0+, iPhone 7+)\n'
                     'Android: Uses NFC Reader Mode (requires API 21+, NFC hardware)',
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
