@@ -97,7 +97,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        flutter-version: ['3.22.x', 'stable']
+        flutter-version: ['3.35.x', 'stable']
     
     steps:
       - name: Checkout code
@@ -113,16 +113,12 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
       
-      - name: Install example dependencies
-        working-directory: example
-        run: flutter pub get
-      
       - name: Analyze project
         uses: invertase/github-action-dart-analyzer@v3
         with:
           fatal-infos: true
           fatal-warnings: true
-          annotate-only: ${{ matrix.flutter-version != '3.22.x' }}
+          annotate-only: ${{ matrix.flutter-version != '3.35.x' }}
 
   test:
     name: Run Tests & Coverage (${{ matrix.flutter-version }})
@@ -132,7 +128,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        flutter-version: ['3.22.x', 'stable']
+        flutter-version: ['3.35.x', 'stable']
     
     steps:
       - name: Checkout code

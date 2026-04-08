@@ -298,6 +298,6 @@ The workflow uses `fail_ci_if_error: false` so coverage upload failures won't bl
 
 ---
 
-*Last Updated: November 2024*  
+*Last Updated: April 2026*  
 *Plugin Version: 1.0.0*  
 *Branch: phase-4*

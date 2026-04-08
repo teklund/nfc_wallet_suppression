@@ -21,8 +21,8 @@ By participating in this project, you agree to maintain a respectful and inclusi
 
 ### Prerequisites
 
-- [Flutter SDK](https://flutter.dev/docs/get-started/install) 3.22.0 or higher
-- [Dart SDK](https://dart.dev/get-dart) ^3.4.0 or higher
+- [Flutter SDK](https://flutter.dev/docs/get-started/install) 3.35.0 or higher
+- [Dart SDK](https://dart.dev/get-dart) ^3.9.0 or higher
 - Git
 - Xcode (for iOS development on macOS)
 - Android Studio or Android SDK (for Android development)

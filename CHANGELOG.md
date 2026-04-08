@@ -16,6 +16,7 @@ Major release with Pigeon migration for type-safe platform channels.
 
 ### Changed
 
+- **Baseline Bump**: Minimum SDK requirements raised to Flutter 3.35.0+ and Dart 3.9.0+
 - **BREAKING (Internal)**: Platform interface now uses `PigeonNfcWalletSuppression` instead of `MethodChannelNfcWalletSuppression`
 - **Improved Error Handling**: Platform errors are now returned as structured `SuppressionResult` objects instead of thrown exceptions
 - **Enhanced Logging**: Better structured error messages with full context from platform code

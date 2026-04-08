@@ -113,8 +113,8 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
   }
 
   func isSupported(completion: @escaping (Result<Bool, Error>) -> Void) {
-    // Check iOS version (requires iOS 12.0+) and PassKit library availability
-    if #available(iOS 12.0, *) {
+    // Check iOS version (requires iOS 13.0+) and PassKit library availability
+    if #available(iOS 13.0, *) {
       // isPassLibraryAvailable() checks if the device supports PassKit (e.g. has Secure Element)
       // This is a robust check for NFC/Apple Pay capability
       completion(.success(PKPassLibrary.isPassLibraryAvailable()))

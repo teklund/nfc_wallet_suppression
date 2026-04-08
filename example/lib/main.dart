@@ -190,7 +190,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               SizedBox(height: 4),
               Text(
                 'This device does not support NFC wallet suppression.\n'
-                'iOS requires 12.0+ and iPhone 7+.\n'
+                'iOS requires 13.0+ and iPhone 7+.\n'
                 'Android requires NFC hardware.',
                 style: TextStyle(color: Colors.white),
               ),

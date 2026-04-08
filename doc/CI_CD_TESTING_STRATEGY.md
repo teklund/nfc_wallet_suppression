@@ -251,6 +251,6 @@ Manual Trigger → Integration Tests
 
 ---
 
-_Last Updated: November 2024_  
+_Last Updated: April 2026_  
 _Plugin Version: 1.0.0_  
 _Branch: phase-4_

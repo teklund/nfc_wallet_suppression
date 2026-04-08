@@ -10,7 +10,7 @@ import 'nfc_wallet_suppression_status.dart';
 ///
 /// ## Platform Support
 ///
-/// - **iOS**: Requires iOS 12.0+ on iPhone 7 or later with NFC hardware.
+/// - **iOS**: Requires iOS 13.0+ on iPhone 7 or later with NFC hardware.
 ///   Requires the `com.apple.developer.passkit.pass-presentation-suppression`
 ///   entitlement from Apple.
 ///
@@ -201,7 +201,7 @@ class NfcWalletSuppression {
   /// ## Platform Requirements
   ///
   /// **iOS:**
-  /// - Requires iOS 12.0 or later
+  /// - Requires iOS 13.0 or later
   /// - Requires iPhone 7 or later (NFC hardware)
   /// - Requires the PassKit entitlement
   ///
