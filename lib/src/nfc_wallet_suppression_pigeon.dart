@@ -44,10 +44,7 @@ enum SuppressionStatusCode {
 
 /// Result of a suppression operation with status and optional message
 class SuppressionResult {
-  SuppressionResult({
-    required this.status,
-    this.message,
-  });
+  SuppressionResult({required this.status, this.message});
 
   /// The status of the suppression operation
   SuppressionStatusCode status;
@@ -56,10 +53,7 @@ class SuppressionResult {
   String? message;
 
   Object encode() {
-    return <Object?>[
-      status,
-      message,
-    ];
+    return <Object?>[status, message];
   }
 
   static SuppressionResult decode(Object result) {
@@ -111,11 +105,13 @@ class NfcWalletSuppressionApi {
   /// Constructor for [NfcWalletSuppressionApi].  The [binaryMessenger] named argument is
   /// available for dependency injection.  If it is left null, the default
   /// BinaryMessenger will be used which routes to the host platform.
-  NfcWalletSuppressionApi(
-      {BinaryMessenger? binaryMessenger, String messageChannelSuffix = ''})
-      : pigeonVar_binaryMessenger = binaryMessenger,
-        pigeonVar_messageChannelSuffix =
-            messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
+  NfcWalletSuppressionApi({
+    BinaryMessenger? binaryMessenger,
+    String messageChannelSuffix = '',
+  }) : pigeonVar_binaryMessenger = binaryMessenger,
+       pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty
+           ? '.$messageChannelSuffix'
+           : '';
   final BinaryMessenger? pigeonVar_binaryMessenger;
 
   static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
@@ -132,10 +128,10 @@ class NfcWalletSuppressionApi {
         'dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.requestSuppression$pigeonVar_messageChannelSuffix';
     final BasicMessageChannel<Object?> pigeonVar_channel =
         BasicMessageChannel<Object?>(
-      pigeonVar_channelName,
-      pigeonChannelCodec,
-      binaryMessenger: pigeonVar_binaryMessenger,
-    );
+          pigeonVar_channelName,
+          pigeonChannelCodec,
+          binaryMessenger: pigeonVar_binaryMessenger,
+        );
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_channel.send(null) as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -165,10 +161,10 @@ class NfcWalletSuppressionApi {
         'dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.releaseSuppression$pigeonVar_messageChannelSuffix';
     final BasicMessageChannel<Object?> pigeonVar_channel =
         BasicMessageChannel<Object?>(
-      pigeonVar_channelName,
-      pigeonChannelCodec,
-      binaryMessenger: pigeonVar_binaryMessenger,
-    );
+          pigeonVar_channelName,
+          pigeonChannelCodec,
+          binaryMessenger: pigeonVar_binaryMessenger,
+        );
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_channel.send(null) as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -197,10 +193,10 @@ class NfcWalletSuppressionApi {
         'dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.isSuppressed$pigeonVar_messageChannelSuffix';
     final BasicMessageChannel<Object?> pigeonVar_channel =
         BasicMessageChannel<Object?>(
-      pigeonVar_channelName,
-      pigeonChannelCodec,
-      binaryMessenger: pigeonVar_binaryMessenger,
-    );
+          pigeonVar_channelName,
+          pigeonChannelCodec,
+          binaryMessenger: pigeonVar_binaryMessenger,
+        );
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_channel.send(null) as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -230,10 +226,10 @@ class NfcWalletSuppressionApi {
         'dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.isSupported$pigeonVar_messageChannelSuffix';
     final BasicMessageChannel<Object?> pigeonVar_channel =
         BasicMessageChannel<Object?>(
-      pigeonVar_channelName,
-      pigeonChannelCodec,
-      binaryMessenger: pigeonVar_binaryMessenger,
-    );
+          pigeonVar_channelName,
+          pigeonChannelCodec,
+          binaryMessenger: pigeonVar_binaryMessenger,
+        );
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_channel.send(null) as List<Object?>?;
     if (pigeonVar_replyList == null) {

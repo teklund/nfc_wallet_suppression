@@ -17,31 +17,19 @@ void main() {
     });
 
     test('requestSuppression throws UnimplementedError by default', () {
-      expect(
-        () => mockPlatform.requestSuppression(),
-        throwsUnimplementedError,
-      );
+      expect(() => mockPlatform.requestSuppression(), throwsUnimplementedError);
     });
 
     test('releaseSuppression throws UnimplementedError by default', () {
-      expect(
-        () => mockPlatform.releaseSuppression(),
-        throwsUnimplementedError,
-      );
+      expect(() => mockPlatform.releaseSuppression(), throwsUnimplementedError);
     });
 
     test('isSuppressed throws UnimplementedError by default', () {
-      expect(
-        () => mockPlatform.isSuppressed(),
-        throwsUnimplementedError,
-      );
+      expect(() => mockPlatform.isSuppressed(), throwsUnimplementedError);
     });
 
     test('isSupported throws UnimplementedError by default', () {
-      expect(
-        () => mockPlatform.isSupported(),
-        throwsUnimplementedError,
-      );
+      expect(() => mockPlatform.isSupported(), throwsUnimplementedError);
     });
 
     test('instance can be set and retrieved', () {

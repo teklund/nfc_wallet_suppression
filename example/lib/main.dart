@@ -223,10 +223,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             ),
             const Divider(color: Colors.white54),
             SwitchListTile(
-              title: const Text('Auto-restore on resume',
-                  style: TextStyle(color: Colors.white)),
-              subtitle: const Text('Best practice for seamless UX',
-                  style: TextStyle(color: Colors.white70, fontSize: 12)),
+              title: const Text(
+                'Auto-restore on resume',
+                style: TextStyle(color: Colors.white),
+              ),
+              subtitle: const Text(
+                'Best practice for seamless UX',
+                style: TextStyle(color: Colors.white70, fontSize: 12),
+              ),
               value: _shouldRestoreSuppression,
               onChanged: (value) =>
                   setState(() => _shouldRestoreSuppression = value),
@@ -254,17 +258,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             Row(
               children: [
                 Icon(
-                    _suppressionStatus == SuppressionStatus.suppressed
-                        ? Icons.block
-                        : Icons.nfc,
-                    color: color),
+                  _suppressionStatus == SuppressionStatus.suppressed
+                      ? Icons.block
+                      : Icons.nfc,
+                  color: color,
+                ),
                 const SizedBox(width: 8),
                 const Text(
                   'Current Status',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                 ),
               ],
             ),
@@ -288,8 +290,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.error_outline,
-                        color: Colors.red.shade700, size: 20),
+                    Icon(
+                      Icons.error_outline,
+                      color: Colors.red.shade700,
+                      size: 20,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(

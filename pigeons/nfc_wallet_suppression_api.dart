@@ -1,15 +1,14 @@
 import 'package:pigeon/pigeon.dart';
 
-@ConfigurePigeon(PigeonOptions(
-  dartOut: 'lib/src/nfc_wallet_suppression_pigeon.dart',
-  kotlinOut:
-      'android/src/main/kotlin/dev/teklund/nfc_wallet_suppression/NfcWalletSuppressionPigeon.kt',
-  kotlinOptions: KotlinOptions(
-    package: 'dev.teklund.nfc_wallet_suppression',
+@ConfigurePigeon(
+  PigeonOptions(
+    dartOut: 'lib/src/nfc_wallet_suppression_pigeon.dart',
+    kotlinOut:
+        'android/src/main/kotlin/dev/teklund/nfc_wallet_suppression/NfcWalletSuppressionPigeon.kt',
+    kotlinOptions: KotlinOptions(package: 'dev.teklund.nfc_wallet_suppression'),
+    swiftOut: 'ios/Classes/NfcWalletSuppressionPigeon.swift',
   ),
-  swiftOut: 'ios/Classes/NfcWalletSuppressionPigeon.swift',
-))
-
+)
 /// Status result from suppression operations
 enum SuppressionStatusCode {
   /// Suppression is active
@@ -39,10 +38,7 @@ enum SuppressionStatusCode {
 
 /// Result of a suppression operation with status and optional message
 class SuppressionResult {
-  const SuppressionResult({
-    required this.status,
-    this.message,
-  });
+  const SuppressionResult({required this.status, this.message});
 
   /// The status of the suppression operation
   final SuppressionStatusCode status;

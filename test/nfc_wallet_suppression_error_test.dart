@@ -55,32 +55,42 @@ void main() {
 
     test('requestSuppression handles denied status', () async {
       mockPlatform.setNextRequestStatus(SuppressionStatus.denied);
-      expect(await NfcWalletSuppression.requestSuppression(),
-          SuppressionStatus.denied);
+      expect(
+        await NfcWalletSuppression.requestSuppression(),
+        SuppressionStatus.denied,
+      );
     });
 
     test('requestSuppression handles unavailable status', () async {
       mockPlatform.setNextRequestStatus(SuppressionStatus.unavailable);
-      expect(await NfcWalletSuppression.requestSuppression(),
-          SuppressionStatus.unavailable);
+      expect(
+        await NfcWalletSuppression.requestSuppression(),
+        SuppressionStatus.unavailable,
+      );
     });
 
     test('requestSuppression handles notSupported status', () async {
       mockPlatform.setNextRequestStatus(SuppressionStatus.notSupported);
-      expect(await NfcWalletSuppression.requestSuppression(),
-          SuppressionStatus.notSupported);
+      expect(
+        await NfcWalletSuppression.requestSuppression(),
+        SuppressionStatus.notSupported,
+      );
     });
 
     test('requestSuppression handles alreadyPresenting status', () async {
       mockPlatform.setNextRequestStatus(SuppressionStatus.alreadyPresenting);
-      expect(await NfcWalletSuppression.requestSuppression(),
-          SuppressionStatus.alreadyPresenting);
+      expect(
+        await NfcWalletSuppression.requestSuppression(),
+        SuppressionStatus.alreadyPresenting,
+      );
     });
 
     test('releaseSuppression handles failure status', () async {
       mockPlatform.setNextReleaseStatus(SuppressionStatus.unknown);
-      expect(await NfcWalletSuppression.releaseSuppression(),
-          SuppressionStatus.unknown);
+      expect(
+        await NfcWalletSuppression.releaseSuppression(),
+        SuppressionStatus.unknown,
+      );
     });
 
     test('isSupported handles false', () async {

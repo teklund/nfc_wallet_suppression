@@ -366,8 +366,11 @@ void main() {
           );
 
           final result = await platform.requestSuppression();
-          expect(result, entry.value,
-              reason: 'Failed to convert ${entry.key} to ${entry.value}');
+          expect(
+            result,
+            entry.value,
+            reason: 'Failed to convert ${entry.key} to ${entry.value}',
+          );
         }
       });
     });
@@ -434,7 +437,9 @@ void main() {
         ]);
 
         expect(
-            results.every((r) => r == SuppressionStatus.notSuppressed), true);
+          results.every((r) => r == SuppressionStatus.notSuppressed),
+          true,
+        );
       });
 
       test('handles interleaved operations', () async {

@@ -65,47 +65,53 @@ void main() {
       expect(supported, true);
     });
 
-    test('isSupported returns false on platform without NFC capability',
-        () async {
-      final platform = MockUnsupportedPlatform();
-      NfcWalletSuppressionPlatform.instance = platform;
+    test(
+      'isSupported returns false on platform without NFC capability',
+      () async {
+        final platform = MockUnsupportedPlatform();
+        NfcWalletSuppressionPlatform.instance = platform;
 
-      final supported = await NfcWalletSuppression.isSupported();
+        final supported = await NfcWalletSuppression.isSupported();
 
-      expect(supported, false);
-    });
-
-    test('requestSuppression on supported platform returns suppressed status',
-        () async {
-      final platform = MockSupportedPlatform();
-      NfcWalletSuppressionPlatform.instance = platform;
-
-      final status = await NfcWalletSuppression.requestSuppression();
-
-      expect(status, SuppressionStatus.suppressed);
-    });
+        expect(supported, false);
+      },
+    );
 
     test(
-        'requestSuppression on unsupported platform returns notSupported status',
-        () async {
-      final platform = MockUnsupportedPlatform();
-      NfcWalletSuppressionPlatform.instance = platform;
+      'requestSuppression on supported platform returns suppressed status',
+      () async {
+        final platform = MockSupportedPlatform();
+        NfcWalletSuppressionPlatform.instance = platform;
 
-      final status = await NfcWalletSuppression.requestSuppression();
+        final status = await NfcWalletSuppression.requestSuppression();
 
-      expect(status, SuppressionStatus.notSupported);
-    });
+        expect(status, SuppressionStatus.suppressed);
+      },
+    );
 
     test(
-        'requestSuppression on platform with unavailable NFC returns unavailable',
-        () async {
-      final platform = MockUnavailablePlatform();
-      NfcWalletSuppressionPlatform.instance = platform;
+      'requestSuppression on unsupported platform returns notSupported status',
+      () async {
+        final platform = MockUnsupportedPlatform();
+        NfcWalletSuppressionPlatform.instance = platform;
 
-      final status = await NfcWalletSuppression.requestSuppression();
+        final status = await NfcWalletSuppression.requestSuppression();
 
-      expect(status, SuppressionStatus.unavailable);
-    });
+        expect(status, SuppressionStatus.notSupported);
+      },
+    );
+
+    test(
+      'requestSuppression on platform with unavailable NFC returns unavailable',
+      () async {
+        final platform = MockUnavailablePlatform();
+        NfcWalletSuppressionPlatform.instance = platform;
+
+        final status = await NfcWalletSuppression.requestSuppression();
+
+        expect(status, SuppressionStatus.unavailable);
+      },
+    );
 
     test('isSupported can be checked before requesting suppression', () async {
       final platform = MockUnsupportedPlatform();
@@ -138,20 +144,22 @@ void main() {
       expect(releaseStatus, SuppressionStatus.notSuppressed);
     });
 
-    test('unsupported platform maintains consistent unsupported state',
-        () async {
-      final platform = MockUnsupportedPlatform();
-      NfcWalletSuppressionPlatform.instance = platform;
+    test(
+      'unsupported platform maintains consistent unsupported state',
+      () async {
+        final platform = MockUnsupportedPlatform();
+        NfcWalletSuppressionPlatform.instance = platform;
 
-      final supported = await NfcWalletSuppression.isSupported();
-      final requestStatus = await NfcWalletSuppression.requestSuppression();
-      final releaseStatus = await NfcWalletSuppression.releaseSuppression();
-      final isSuppressed = await NfcWalletSuppression.isSuppressed();
+        final supported = await NfcWalletSuppression.isSupported();
+        final requestStatus = await NfcWalletSuppression.requestSuppression();
+        final releaseStatus = await NfcWalletSuppression.releaseSuppression();
+        final isSuppressed = await NfcWalletSuppression.isSuppressed();
 
-      expect(supported, false);
-      expect(requestStatus, SuppressionStatus.notSupported);
-      expect(releaseStatus, SuppressionStatus.notSupported);
-      expect(isSuppressed, false);
-    });
+        expect(supported, false);
+        expect(requestStatus, SuppressionStatus.notSupported);
+        expect(releaseStatus, SuppressionStatus.notSupported);
+        expect(isSuppressed, false);
+      },
+    );
   });
 }

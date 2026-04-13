@@ -17,14 +17,16 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('Platform Support', () {
-    testWidgets('isSupported returns a boolean value',
-        (WidgetTester tester) async {
+    testWidgets('isSupported returns a boolean value', (
+      WidgetTester tester,
+    ) async {
       final supported = await NfcWalletSuppression.isSupported();
       expect(supported, isA<bool>());
     });
 
-    testWidgets('isSupported is consistent across multiple calls',
-        (WidgetTester tester) async {
+    testWidgets('isSupported is consistent across multiple calls', (
+      WidgetTester tester,
+    ) async {
       final supported1 = await NfcWalletSuppression.isSupported();
       final supported2 = await NfcWalletSuppression.isSupported();
       final supported3 = await NfcWalletSuppression.isSupported();
@@ -35,8 +37,9 @@ void main() {
   });
 
   group('Suppression Lifecycle', () {
-    testWidgets('multiple request/release cycles maintain correct state',
-        (WidgetTester tester) async {
+    testWidgets('multiple request/release cycles maintain correct state', (
+      WidgetTester tester,
+    ) async {
       final supported = await NfcWalletSuppression.isSupported();
 
       if (!supported) {
@@ -69,8 +72,9 @@ void main() {
       expect(finalSuppressed, false);
     });
 
-    testWidgets('rapid sequential requests are handled correctly',
-        (WidgetTester tester) async {
+    testWidgets('rapid sequential requests are handled correctly', (
+      WidgetTester tester,
+    ) async {
       final supported = await NfcWalletSuppression.isSupported();
 
       if (!supported) {
@@ -83,40 +87,32 @@ void main() {
       final status3 = await NfcWalletSuppression.requestSuppression();
 
       // All should return a valid status
-      expect(
-        [
-          SuppressionStatus.suppressed,
-          SuppressionStatus.unavailable,
-          SuppressionStatus.denied,
-          SuppressionStatus.alreadyPresenting
-        ],
-        contains(status1),
-      );
-      expect(
-        [
-          SuppressionStatus.suppressed,
-          SuppressionStatus.unavailable,
-          SuppressionStatus.denied,
-          SuppressionStatus.alreadyPresenting
-        ],
-        contains(status2),
-      );
-      expect(
-        [
-          SuppressionStatus.suppressed,
-          SuppressionStatus.unavailable,
-          SuppressionStatus.denied,
-          SuppressionStatus.alreadyPresenting
-        ],
-        contains(status3),
-      );
+      expect([
+        SuppressionStatus.suppressed,
+        SuppressionStatus.unavailable,
+        SuppressionStatus.denied,
+        SuppressionStatus.alreadyPresenting,
+      ], contains(status1));
+      expect([
+        SuppressionStatus.suppressed,
+        SuppressionStatus.unavailable,
+        SuppressionStatus.denied,
+        SuppressionStatus.alreadyPresenting,
+      ], contains(status2));
+      expect([
+        SuppressionStatus.suppressed,
+        SuppressionStatus.unavailable,
+        SuppressionStatus.denied,
+        SuppressionStatus.alreadyPresenting,
+      ], contains(status3));
 
       // Clean up
       await NfcWalletSuppression.releaseSuppression();
     });
 
-    testWidgets('rapid sequential releases are handled correctly',
-        (WidgetTester tester) async {
+    testWidgets('rapid sequential releases are handled correctly', (
+      WidgetTester tester,
+    ) async {
       final supported = await NfcWalletSuppression.isSupported();
 
       if (!supported) {
@@ -132,31 +128,23 @@ void main() {
       final status3 = await NfcWalletSuppression.releaseSuppression();
 
       // All should return a valid status
-      expect(
-        [
-          SuppressionStatus.notSuppressed,
-          SuppressionStatus.unavailable,
-        ],
-        contains(status1),
-      );
-      expect(
-        [
-          SuppressionStatus.notSuppressed,
-          SuppressionStatus.unavailable,
-        ],
-        contains(status2),
-      );
-      expect(
-        [
-          SuppressionStatus.notSuppressed,
-          SuppressionStatus.unavailable,
-        ],
-        contains(status3),
-      );
+      expect([
+        SuppressionStatus.notSuppressed,
+        SuppressionStatus.unavailable,
+      ], contains(status1));
+      expect([
+        SuppressionStatus.notSuppressed,
+        SuppressionStatus.unavailable,
+      ], contains(status2));
+      expect([
+        SuppressionStatus.notSuppressed,
+        SuppressionStatus.unavailable,
+      ], contains(status3));
     });
 
-    testWidgets('release without prior request returns valid status',
-        (WidgetTester tester) async {
+    testWidgets('release without prior request returns valid status', (
+      WidgetTester tester,
+    ) async {
       final supported = await NfcWalletSuppression.isSupported();
 
       if (!supported) {
@@ -169,19 +157,17 @@ void main() {
       // Try to release without requesting
       final status = await NfcWalletSuppression.releaseSuppression();
 
-      expect(
-        [
-          SuppressionStatus.notSuppressed,
-          SuppressionStatus.unavailable,
-        ],
-        contains(status),
-      );
+      expect([
+        SuppressionStatus.notSuppressed,
+        SuppressionStatus.unavailable,
+      ], contains(status));
     });
   });
 
   group('State Consistency', () {
-    testWidgets('isSuppressed reflects actual suppression state',
-        (WidgetTester tester) async {
+    testWidgets('isSuppressed reflects actual suppression state', (
+      WidgetTester tester,
+    ) async {
       final supported = await NfcWalletSuppression.isSupported();
 
       if (!supported) {
@@ -206,8 +192,9 @@ void main() {
       expect(suppressed, false);
     });
 
-    testWidgets('multiple isSuppressed calls return consistent results',
-        (WidgetTester tester) async {
+    testWidgets('multiple isSuppressed calls return consistent results', (
+      WidgetTester tester,
+    ) async {
       final supported = await NfcWalletSuppression.isSupported();
 
       if (!supported) {
@@ -231,39 +218,39 @@ void main() {
   });
 
   group('Error Scenarios', () {
-    testWidgets('operations on unsupported platform return appropriate status',
-        (WidgetTester tester) async {
-      final supported = await NfcWalletSuppression.isSupported();
+    testWidgets(
+      'operations on unsupported platform return appropriate status',
+      (WidgetTester tester) async {
+        final supported = await NfcWalletSuppression.isSupported();
 
-      if (supported) {
-        // Skip test on supported platforms
-        return;
-      }
+        if (supported) {
+          // Skip test on supported platforms
+          return;
+        }
 
-      // All operations should handle unsupported platform gracefully
-      final requestStatus = await NfcWalletSuppression.requestSuppression();
-      final releaseStatus = await NfcWalletSuppression.releaseSuppression();
-      final isSuppressed = await NfcWalletSuppression.isSuppressed();
+        // All operations should handle unsupported platform gracefully
+        final requestStatus = await NfcWalletSuppression.requestSuppression();
+        final releaseStatus = await NfcWalletSuppression.releaseSuppression();
+        final isSuppressed = await NfcWalletSuppression.isSuppressed();
 
-      // Should not throw exceptions
-      expect(requestStatus, isA<SuppressionStatus>());
-      expect(releaseStatus, isA<SuppressionStatus>());
-      expect(isSuppressed, isA<bool>());
+        // Should not throw exceptions
+        expect(requestStatus, isA<SuppressionStatus>());
+        expect(releaseStatus, isA<SuppressionStatus>());
+        expect(isSuppressed, isA<bool>());
 
-      // Likely returns notSupported or unavailable
-      expect(
-        [
+        // Likely returns notSupported or unavailable
+        expect([
           SuppressionStatus.notSupported,
           SuppressionStatus.unavailable,
-        ],
-        contains(requestStatus),
-      );
-    });
+        ], contains(requestStatus));
+      },
+    );
   });
 
   group('Concurrent Operations', () {
-    testWidgets('concurrent requests and releases are handled safely',
-        (WidgetTester tester) async {
+    testWidgets('concurrent requests and releases are handled safely', (
+      WidgetTester tester,
+    ) async {
       final supported = await NfcWalletSuppression.isSupported();
 
       if (!supported) {
@@ -287,8 +274,9 @@ void main() {
       await NfcWalletSuppression.releaseSuppression();
     });
 
-    testWidgets('interleaved requests and checks maintain consistency',
-        (WidgetTester tester) async {
+    testWidgets('interleaved requests and checks maintain consistency', (
+      WidgetTester tester,
+    ) async {
       final supported = await NfcWalletSuppression.isSupported();
 
       if (!supported) {

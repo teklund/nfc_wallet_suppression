@@ -20,8 +20,9 @@ void main() {
     expect(suppressed, false);
   });
 
-  testWidgets('full request and release lifecycle',
-      (WidgetTester tester) async {
+  testWidgets('full request and release lifecycle', (
+    WidgetTester tester,
+  ) async {
     // Verify initial state is not suppressed
     bool suppressed = await NfcWalletSuppression.isSuppressed();
     expect(suppressed, false, reason: 'Initial state should be not suppressed');
@@ -35,7 +36,7 @@ void main() {
         SuppressionStatus.suppressed,
         SuppressionStatus.notSupported,
         SuppressionStatus.unavailable,
-        SuppressionStatus.denied
+        SuppressionStatus.denied,
       ],
       contains(requestStatus),
       reason: 'Request should return a valid status',
@@ -57,8 +58,11 @@ void main() {
 
       // Verify suppression is no longer active
       suppressed = await NfcWalletSuppression.isSuppressed();
-      expect(suppressed, false,
-          reason: 'Should not be suppressed after release');
+      expect(
+        suppressed,
+        false,
+        reason: 'Should not be suppressed after release',
+      );
     }
   });
 }
