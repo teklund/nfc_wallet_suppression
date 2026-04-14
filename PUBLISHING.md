@@ -84,7 +84,7 @@ This document provides a comprehensive checklist for publishing new versions of 
 - [ ] Verify Gradle builds successfully: `cd android && ./gradlew build`
 - [ ] Check minimum SDK version in build.gradle
 - [ ] Test on latest Android version
-- [ ] Test on minimum supported Android version (API 19)
+- [ ] Test on minimum supported Android version (API 21)
 - [ ] Verify ProGuard rules if applicable
 - [ ] Check Kotlin version compatibility
 
@@ -165,30 +165,19 @@ git push origin main
 git push origin v1.0.0
 ```
 
-### 4. Publish to pub.dev
+### 4. Publish to pub.dev (automated)
 
-```bash
-# Final dry-run
-dart pub publish --dry-run
+Pushing the tag triggers the [publish workflow](.github/workflows/publish.yml) automatically:
 
-# Publish (requires confirmation)
-dart pub publish
-```
+1. **Verify job** runs: format, analyze, tests, pana score check, and a dry-run publish
+2. **Publish job** waits for manual approval in the `pub.dev` GitHub Actions environment, then publishes via OIDC (no stored credentials)
+3. **Release job** creates the GitHub Release with auto-generated notes
 
-**Note:** You'll be prompted to confirm. Review the package contents carefully before confirming.
+To approve the publish, go to the Actions tab, open the workflow run, and approve the pending deployment.
 
-### 5. Create GitHub Release
+> To set up the `pub.dev` environment: go to **Settings → Environments → New environment**, name it `pub.dev`, and add required reviewers.
 
-1. Go to [GitHub Releases](https://github.com/teklund/nfc_wallet_suppression/releases)
-2. Click "Draft a new release"
-3. Select the tag: `v1.0.0`
-4. Release title: `v1.0.0`
-5. Copy CHANGELOG entry to release notes
-6. Attach any binaries or assets (if applicable)
-7. Mark as "Latest release"
-8. Publish release
-
-### 6. Verify Publication
+### 5. Verify Publication
 
 - [ ] Package appears on [pub.dev](https://pub.dev/packages/nfc_wallet_suppression)
 - [ ] Package score is displayed (wait ~10 minutes)

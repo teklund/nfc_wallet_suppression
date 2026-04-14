@@ -6,7 +6,7 @@ import 'package:pigeon/pigeon.dart';
     kotlinOut:
         'android/src/main/kotlin/dev/teklund/nfc_wallet_suppression/NfcWalletSuppressionPigeon.kt',
     kotlinOptions: KotlinOptions(package: 'dev.teklund.nfc_wallet_suppression'),
-    swiftOut: 'ios/Classes/NfcWalletSuppressionPigeon.swift',
+    swiftOut: 'ios/nfc_wallet_suppression/Sources/nfc_wallet_suppression/NfcWalletSuppressionPigeon.swift',
   ),
 )
 /// Status result from suppression operations

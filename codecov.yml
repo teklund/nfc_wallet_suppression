@@ -1,0 +1,3 @@
+coverage:
+  ignore:
+    - "lib/src/nfc_wallet_suppression_pigeon.dart"

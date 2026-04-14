@@ -13,12 +13,17 @@ import 'nfc_wallet_suppression_status.dart';
 /// error code matching and providing compile-time safety.
 class PigeonNfcWalletSuppression extends NfcWalletSuppressionPlatform {
   /// The Pigeon-generated API instance
-  final NfcWalletSuppressionApi _api = NfcWalletSuppressionApi();
+  @visibleForTesting
+  final NfcWalletSuppressionApi api;
+
+  /// Creates a [PigeonNfcWalletSuppression] with an optional generated API injection
+  PigeonNfcWalletSuppression({NfcWalletSuppressionApi? api}) 
+      : api = api ?? NfcWalletSuppressionApi();
 
   @override
   Future<SuppressionStatus> requestSuppression() async {
     try {
-      final result = await _api.requestSuppression();
+      final result = await api.requestSuppression();
 
       if (result.message != null && kDebugMode) {
         developer.log(result.message!, name: 'nfc_wallet_suppression');
@@ -28,7 +33,7 @@ class PigeonNfcWalletSuppression extends NfcWalletSuppressionPlatform {
     } catch (e) {
       if (kDebugMode) {
         developer.log(
-          'Request suppression error: $e',
+          'Error requesting suppression: $e',
           name: 'nfc_wallet_suppression',
           error: e,
         );
@@ -40,7 +45,7 @@ class PigeonNfcWalletSuppression extends NfcWalletSuppressionPlatform {
   @override
   Future<SuppressionStatus> releaseSuppression() async {
     try {
-      final result = await _api.releaseSuppression();
+      final result = await api.releaseSuppression();
 
       if (result.message != null && kDebugMode) {
         developer.log(result.message!, name: 'nfc_wallet_suppression');
@@ -50,7 +55,7 @@ class PigeonNfcWalletSuppression extends NfcWalletSuppressionPlatform {
     } catch (e) {
       if (kDebugMode) {
         developer.log(
-          'Release suppression error: $e',
+          'Error releasing suppression: $e',
           name: 'nfc_wallet_suppression',
           error: e,
         );
@@ -62,7 +67,7 @@ class PigeonNfcWalletSuppression extends NfcWalletSuppressionPlatform {
   @override
   Future<bool> isSuppressed() async {
     try {
-      return await _api.isSuppressed();
+      return await api.isSuppressed();
     } catch (e) {
       if (kDebugMode) {
         developer.log(
@@ -78,7 +83,7 @@ class PigeonNfcWalletSuppression extends NfcWalletSuppressionPlatform {
   @override
   Future<bool> isSupported() async {
     try {
-      return await _api.isSupported();
+      return await api.isSupported();
     } catch (e) {
       if (kDebugMode) {
         developer.log(

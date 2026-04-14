@@ -71,15 +71,27 @@ void main() {
       expect(suppressed, true);
     });
 
+    test('can simulate release result', () async {
+      fake.setReleaseResult(SuppressionStatus.unknown);
+
+      final status = await NfcWalletSuppression.releaseSuppression();
+      expect(status, SuppressionStatus.unknown);
+    });
+
     test('reset clears state and call history', () async {
-      await NfcWalletSuppression.requestSuppression();
+      fake.setSupported(false);
+      fake.setRequestResult(SuppressionStatus.unavailable);
+      fake.setReleaseResult(SuppressionStatus.unknown);
       fake.setSuppressed(true);
+      await NfcWalletSuppression.requestSuppression();
 
       fake.reset();
 
       expect(fake.methodCalls, isEmpty);
-      final suppressed = await NfcWalletSuppression.isSuppressed();
-      expect(suppressed, false);
+      expect(await NfcWalletSuppression.isSupported(), true);
+      expect(await NfcWalletSuppression.requestSuppression(), SuppressionStatus.suppressed);
+      expect(await NfcWalletSuppression.releaseSuppression(), SuppressionStatus.notSuppressed);
+      expect(await NfcWalletSuppression.isSuppressed(), false);
     });
   });
 
@@ -128,6 +140,14 @@ void main() {
 
       final status = await NfcWalletSuppression.requestSuppression();
       expect(status, SuppressionStatus.alreadyPresenting);
+    });
+
+    test('userCancelled scenario', () async {
+      final fake = NfcWalletSuppressionTestScenarios.userCancelled();
+      NfcWalletSuppressionPlatform.instance = fake;
+
+      final status = await NfcWalletSuppression.requestSuppression();
+      expect(status, SuppressionStatus.cancelled);
     });
   });
 }

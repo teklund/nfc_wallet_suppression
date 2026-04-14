@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nfc_wallet_suppression/nfc_wallet_suppression.dart';
-import 'package:nfc_wallet_suppression/testing.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 // Mock that allows setting return values for error testing

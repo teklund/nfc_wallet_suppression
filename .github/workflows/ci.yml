@@ -34,6 +34,9 @@ jobs:
       ios: ${{ steps.filter.outputs.ios }}
       dart: ${{ steps.filter.outputs.dart }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
       - name: Filter Paths
         uses: dorny/paths-filter@v3
         id: filter
@@ -146,7 +149,7 @@ jobs:
       
       - name: Run tests with coverage and formatting
         run: flutter test --coverage --reporter=github --test-randomize-ordering-seed=random
-      
+
       - name: Generate test summary
         if: always()
         run: |

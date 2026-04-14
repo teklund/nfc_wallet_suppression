@@ -14,7 +14,7 @@ automatic Apple Wallet presentation when detecting NFC readers.
   s.license          = { :file => '../LICENSE' }
   s.author           = { 'TEklund' => 'teklund@users.noreply.github.com' }
   s.source           = { :path => '.' }
-  s.source_files = 'Classes/**/*'
+  s.source_files = 'nfc_wallet_suppression/Sources/nfc_wallet_suppression/**/*.swift'
   s.dependency 'Flutter'
   s.platform = :ios, '13.0'
 

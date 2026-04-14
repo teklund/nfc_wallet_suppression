@@ -1,6 +1,10 @@
 package dev.teklund.nfc_wallet_suppression
 
 import kotlin.test.Test
+import kotlin.test.assertTrue
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertEquals
 
 /*
  * Unit tests for NfcWalletSuppressionPlugin focusing on state persistence
@@ -18,10 +22,8 @@ internal class NfcWalletSuppressionPluginTest {
     // No activity attached, so isSuppressed should be false
     
     plugin.isSuppressed { result ->
-        // In Kotlin Result success is checked via exceptionOrNull() or similar, 
-        // relying on the callback value being Result.success(false)
-        assert(result.isSuccess)
-        assert(result.getOrNull() == false)
+        assertTrue(result.isSuccess)
+        assertFalse(result.getOrNull()!!)
     }
   }
 
@@ -30,24 +32,70 @@ internal class NfcWalletSuppressionPluginTest {
     val plugin = NfcWalletSuppressionPlugin()
     
     plugin.requestSuppression { result ->
-        assert(result.isSuccess)
+        assertTrue(result.isSuccess)
         val suppressionResult = result.getOrNull()
-        assert(suppressionResult != null)
-        assert(suppressionResult?.status == SuppressionStatusCode.UNAVAILABLE)
-        assert(suppressionResult?.message == "Activity not available")
+        assertNotNull(suppressionResult)
+        assertEquals(SuppressionStatusCode.UNAVAILABLE, suppressionResult.status)
+        assertEquals("Activity not available", suppressionResult.message)
     }
   }
   
   @Test
-  fun releaseSuppression_returnsUnavailableWhenNoActivity() {
+  fun releaseSuppression_returnsNotSuppressedWhenNoActivity() {
     val plugin = NfcWalletSuppressionPlugin()
+
+    plugin.releaseSuppression { result ->
+        assertTrue(result.isSuccess)
+        val suppressionResult = result.getOrNull()
+        assertNotNull(suppressionResult)
+        assertEquals(SuppressionStatusCode.NOT_SUPPRESSED, suppressionResult.status)
+        assertEquals("Suppression released", suppressionResult.message)
+    }
+  }
+
+  @Test
+  fun isSupported_returnsFalseWhenNoContext() {
+    val plugin = NfcWalletSuppressionPlugin()
+    plugin.isSupported { result ->
+      assertTrue(result.isSuccess)
+      assertFalse(result.getOrNull()!!)
+    }
+  }
+
+  @Test
+  fun requestSuppression_returnsNotSupportedWhenNoNfcDevice() {
+    val plugin = NfcWalletSuppressionPlugin()
+    val binding = org.mockito.Mockito.mock(io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding::class.java)
+    val activity = org.mockito.Mockito.mock(android.app.Activity::class.java)
+    org.mockito.Mockito.`when`(binding.activity).thenReturn(activity)
+    
+    plugin.onAttachedToActivity(binding)
+    // When no NFC is available on the device, NfcAdapter.getDefaultAdapter returns null
+    plugin.requestSuppression { result ->
+        assertTrue(result.isSuccess)
+        val suppressionResult = result.getOrNull()
+        assertNotNull(suppressionResult)
+        assertEquals(SuppressionStatusCode.NOT_SUPPORTED, suppressionResult.status)
+        assertEquals("Device does not have NFC hardware", suppressionResult.message)
+    }
+  }
+
+  @Test
+  fun releaseSuppression_returnsNotSuppressedWhenNoNfcDevice() {
+    val plugin = NfcWalletSuppressionPlugin()
+    val binding = org.mockito.Mockito.mock(io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding::class.java)
+    val activity = org.mockito.Mockito.mock(android.app.Activity::class.java)
+    org.mockito.Mockito.`when`(binding.activity).thenReturn(activity)
+    
+    plugin.onAttachedToActivity(binding)
     
     plugin.releaseSuppression { result ->
-        assert(result.isSuccess)
+        assertTrue(result.isSuccess)
         val suppressionResult = result.getOrNull()
-        assert(suppressionResult != null)
-        assert(suppressionResult?.status == SuppressionStatusCode.UNAVAILABLE)
-        assert(suppressionResult?.message == "Activity not available")
+        assertNotNull(suppressionResult)
+        assertEquals(SuppressionStatusCode.NOT_SUPPRESSED, suppressionResult.status)
+        assertEquals("Suppression released", suppressionResult.message)
     }
   }
 }
+

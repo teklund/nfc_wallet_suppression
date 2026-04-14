@@ -25,9 +25,9 @@ void main() {
     });
 
     group('releaseSuppression', () {
-      test('returns notSupported', () async {
+      test('returns notSuppressed', () async {
         final result = await stub.releaseSuppression();
-        expect(result, SuppressionStatus.notSupported);
+        expect(result, SuppressionStatus.notSuppressed);
       });
     });
 
@@ -48,6 +48,14 @@ void main() {
     group('platform registration', () {
       test('can be set as platform instance', () {
         NfcWalletSuppressionPlatform.instance = stub;
+        expect(
+          NfcWalletSuppressionPlatform.instance,
+          isA<StubNfcWalletSuppression>(),
+        );
+      });
+
+      test('registerWith sets instance to StubNfcWalletSuppression', () {
+        StubNfcWalletSuppression.registerWith();
         expect(
           NfcWalletSuppressionPlatform.instance,
           isA<StubNfcWalletSuppression>(),

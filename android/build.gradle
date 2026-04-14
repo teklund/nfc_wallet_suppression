@@ -100,7 +100,6 @@ tasks.register('jacocoTestReport', JacocoReport) {
         '**/Manifest*.*',
         '**/*Test*.*',
         '**/*Fake*.*',
-        '**/*Wrapper*.*',
         'android/**/*.*'
     ]
     

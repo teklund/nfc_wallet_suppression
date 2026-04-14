@@ -47,8 +47,9 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, ActivityAware,
   }
 
   override fun onDetachedFromActivityForConfigChanges() {
-    // Don't clear activity reference during config changes to preserve state
-    // Activity will be updated in onReattachedToActivityForConfigChanges
+    // Clear the old Activity reference during configuration changes.
+    // Keep only minimal state (such as suppressionActive) for restoration on reattach.
+    activity = null
   }
 
   override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
@@ -71,27 +72,20 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, ActivityAware,
   private fun isSuppressedInternal(): Boolean {
     // Return false if no activity
     val activity = activity ?: return false
-    
+
     // Return false if flag not set
     if (!suppressionActive) return false
-    
-    // Check if NFC is actually available and enabled
-    // This matches iOS behavior where isSuppressingAutomaticPassPresentation()
-    // returns false if the system can't actually suppress (e.g., NFC disabled)
+
+    // Verify NFC is still available and enabled. suppressionActive may be stale
+    // if the user toggled NFC off in system settings after we called enableReaderMode.
     val nfcAdapter = NfcAdapter.getDefaultAdapter(activity)
     val actuallySupressed = nfcAdapter != null && nfcAdapter.isEnabled
-    
+
     if (isDebug) {
-      Log.d(TAG, "isSuppressed check: actuallySuppressed=$actuallySupressed (activity=${activity != null}, " +
+      Log.d(TAG, "isSuppressed check: actuallySuppressed=$actuallySupressed (" +
               "suppressionActive=$suppressionActive, nfcEnabled=${nfcAdapter?.isEnabled ?: false})")
     }
-    
-    // If NFC was disabled after we set suppressionActive, clear the flag
-    if (!actuallySupressed && suppressionActive) {
-      if (isDebug) Log.w(TAG, "NFC was disabled - clearing suppressionActive flag")
-      suppressionActive = false
-    }
-    
+
     return actuallySupressed
   }
 
@@ -113,7 +107,7 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, ActivityAware,
       activity,
       0,
       intent,
-      PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+      PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
     )
 
     nfcAdapter.enableForegroundDispatch(activity, pendingIntent, null, null)
@@ -173,7 +167,7 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, ActivityAware,
         activity,
         0,
         intent,
-        PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
       )
 
       nfcAdapter.enableForegroundDispatch(activity, pendingIntent, null, null)
@@ -210,10 +204,12 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, ActivityAware,
   override fun releaseSuppression(callback: (Result<SuppressionResult>) -> Unit) {
     val activity = activity
     if (activity == null) {
-      if (isDebug) Log.e(TAG, "Release suppression failed: Activity is null")
+      // If there is no activity there is nothing to release.
+      if (isDebug) Log.d(TAG, "Release suppression: no activity attached, nothing to release")
+      suppressionActive = false
       callback(Result.success(SuppressionResult(
-        status = SuppressionStatusCode.UNAVAILABLE,
-        message = "Activity not available"
+        status = SuppressionStatusCode.NOT_SUPPRESSED,
+        message = "Suppression released"
       )))
       return
     }

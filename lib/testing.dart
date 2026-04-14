@@ -7,7 +7,6 @@
 /// ```
 library;
 
-export 'src/nfc_wallet_suppression_pigeon_impl.dart';
 export 'src/nfc_wallet_suppression_platform_interface.dart';
 export 'src/nfc_wallet_suppression_status.dart';
 export 'src/nfc_wallet_suppression_testing.dart';

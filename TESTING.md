@@ -343,6 +343,6 @@ open coverage/html/index.html
 
 ## See Also
 
-- [Example test file](../test/nfc_wallet_suppression_testing_test.dart) - Complete examples
-- [Main README](../README.md) - Plugin usage documentation
+- [Example test file](test/nfc_wallet_suppression_testing_test.dart) - Complete examples
+- [Main README](README.md) - Plugin usage documentation
 - [API Documentation](https://pub.dev/documentation/nfc_wallet_suppression/latest/)

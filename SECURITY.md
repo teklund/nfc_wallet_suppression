@@ -46,28 +46,21 @@ This plugin **DOES**:
 The plugin includes a privacy manifest (`ios/Resources/PrivacyInfo.xcprivacy`) that declares:
 
 ```xml
-<key>NSPrivacyTracking</key>
-<false/>
-<key>NSPrivacyCollectedDataTypes</key>
+<key>NSPrivacyTrackingDomains</key>
 <array/>
 <key>NSPrivacyAccessedAPITypes</key>
-<array>
-    <dict>
-        <key>NSPrivacyAccessedAPIType</key>
-        <string>NSPrivacyAccessedAPICategoryUserDefaults</string>
-        <key>NSPrivacyAccessedAPITypeReasons</key>
-        <array>
-            <string>CA92.1</string> <!-- User preferences storage -->
-        </array>
-    </dict>
-</array>
+<array/>
+<key>NSPrivacyCollectedDataTypes</key>
+<array/>
+<key>NSPrivacyTracking</key>
+<false/>
 ```
 
 **What this means:**
 
 - No tracking of users
 - No data collection
-- UserDefaults only used for plugin state management
+- No required reason APIs are used
 - Complies with Apple's privacy requirements
 
 ### Android Permissions
@@ -140,7 +133,7 @@ This plugin does NOT protect against:
 1. **NFC Hardware Required:** Device must have NFC capability
 2. **NFC Enabled:** User must have NFC turned on
 3. **Reader Mode:** Uses reader mode which may conflict with other NFC apps
-4. **API Level 19+:** Minimum Android 4.4 required
+4. **API Level 21+:** Minimum Android 5.0 required
 
 ### Both Platforms
 

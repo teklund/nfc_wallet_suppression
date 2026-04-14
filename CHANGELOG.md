@@ -10,7 +10,7 @@ Major release with Pigeon migration for type-safe platform channels.
 
 - ✨ **Pigeon Integration**: Migrated from manual method channels to Pigeon-generated type-safe platform communication
 - 🛡️ **Compile-time Safety**: Eliminated string-based error code matching - all status codes are now type-checked enums
-- 🌐 **Multi-platform support**: Added stub implementations for web, macOS, Linux, and Windows that gracefully return `SuppressionStatus.notSupported`
+- 🌐 **Multi-platform support**: Added stub implementations for web, macOS, Linux, and Windows — `requestSuppression` returns `SuppressionStatus.notSupported`, `releaseSuppression` returns `SuppressionStatus.notSuppressed`
 - 📚 **PUBLISHING.md**: Complete publishing checklist and procedures
 - 🔒 **SECURITY.md**: Security policy and vulnerability reporting guidelines
 
@@ -31,8 +31,8 @@ Major release with Pigeon migration for type-safe platform channels.
 
 - Uses Pigeon v22.7+ for code generation
 - Generated platform channel code for iOS (Swift) and Android (Kotlin)
-- Maintains backward compatibility for the public Dart API (no breaking changes to Dart-level APIs)
-- All 88 tests passing with comprehensive edge case coverage (65 Dart + 8 Android + 15 iOS)
+- **Breaking API Changes**: `SuppressionStatus` replaces bool returns, and Dart SDK minimum is now 3.9.0.
+- Comprehensive test coverage: Dart unit tests, Android JVM tests, and iOS XCTest suite
 
 ## 0.1.1
 

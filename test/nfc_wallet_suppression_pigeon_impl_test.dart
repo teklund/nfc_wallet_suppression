@@ -65,82 +65,18 @@ class MockNfcWalletSuppressionApi extends NfcWalletSuppressionApi {
   }
 }
 
-// Testable version that accepts API injection
-class TestablePigeonNfcWalletSuppression extends NfcWalletSuppressionPlatform {
-  final NfcWalletSuppressionApi api;
-
-  TestablePigeonNfcWalletSuppression(this.api);
-
-  @override
-  Future<SuppressionStatus> requestSuppression() async {
-    try {
-      final result = await api.requestSuppression();
-      return _convertStatus(result.status);
-    } catch (e) {
-      return SuppressionStatus.unknown;
-    }
-  }
-
-  @override
-  Future<SuppressionStatus> releaseSuppression() async {
-    try {
-      final result = await api.releaseSuppression();
-      return _convertStatus(result.status);
-    } catch (e) {
-      return SuppressionStatus.unknown;
-    }
-  }
-
-  @override
-  Future<bool> isSuppressed() async {
-    try {
-      return await api.isSuppressed();
-    } catch (e) {
-      return false;
-    }
-  }
-
-  @override
-  Future<bool> isSupported() async {
-    try {
-      return await api.isSupported();
-    } catch (e) {
-      return false;
-    }
-  }
-
-  SuppressionStatus _convertStatus(SuppressionStatusCode status) {
-    switch (status) {
-      case SuppressionStatusCode.suppressed:
-        return SuppressionStatus.suppressed;
-      case SuppressionStatusCode.notSuppressed:
-        return SuppressionStatus.notSuppressed;
-      case SuppressionStatusCode.notSupported:
-        return SuppressionStatus.notSupported;
-      case SuppressionStatusCode.alreadyPresenting:
-        return SuppressionStatus.alreadyPresenting;
-      case SuppressionStatusCode.cancelled:
-        return SuppressionStatus.cancelled;
-      case SuppressionStatusCode.denied:
-        return SuppressionStatus.denied;
-      case SuppressionStatusCode.unavailable:
-        return SuppressionStatus.unavailable;
-      case SuppressionStatusCode.unknown:
-        return SuppressionStatus.unknown;
-    }
-  }
-}
+// Removed TestablePigeonNfcWalletSuppression as we now test the real implementation
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('PigeonNfcWalletSuppression', () {
-    late TestablePigeonNfcWalletSuppression platform;
+    late PigeonNfcWalletSuppression platform;
     late MockNfcWalletSuppressionApi mockApi;
 
     setUp(() {
       mockApi = MockNfcWalletSuppressionApi();
-      platform = TestablePigeonNfcWalletSuppression(mockApi);
+      platform = PigeonNfcWalletSuppression(api: mockApi);
     });
 
     tearDown(() {

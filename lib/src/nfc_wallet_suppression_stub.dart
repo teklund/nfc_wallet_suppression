@@ -25,7 +25,7 @@ class StubNfcWalletSuppression extends NfcWalletSuppressionPlatform {
 
   @override
   Future<SuppressionStatus> releaseSuppression() async {
-    return SuppressionStatus.notSupported;
+    return SuppressionStatus.notSuppressed;
   }
 
   @override
