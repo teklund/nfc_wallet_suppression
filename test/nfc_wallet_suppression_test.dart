@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nfc_wallet_suppression/nfc_wallet_suppression.dart';
-import 'package:nfc_wallet_suppression/src/nfc_wallet_suppression_method_channel.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 class MockNfcWalletSuppressionPlatform
@@ -24,25 +23,30 @@ class MockNfcWalletSuppressionPlatform
   Future<bool> isSuppressed() {
     return Future.value(_isSuppressing);
   }
+
+  @override
+  Future<bool> isSupported() {
+    return Future.value(true);
+  }
 }
 
 void main() {
   final NfcWalletSuppressionPlatform initialPlatform =
       NfcWalletSuppressionPlatform.instance;
 
-  test('$MethodChannelNfcWalletSuppression is the default instance', () {
-    expect(initialPlatform, isInstanceOf<MethodChannelNfcWalletSuppression>());
+  test('default instance implements NfcWalletSuppressionPlatform', () {
+    expect(initialPlatform, isA<NfcWalletSuppressionPlatform>());
   });
 
   test('isSuppressed_defaultFalse', () async {
-    MockNfcWalletSuppressionPlatform fakePlatform =
+    final MockNfcWalletSuppressionPlatform fakePlatform =
         MockNfcWalletSuppressionPlatform();
     NfcWalletSuppressionPlatform.instance = fakePlatform;
 
     expect(await NfcWalletSuppression.isSuppressed(), isFalse);
   });
   test('isSuppressed_trueWhenSuppressed', () async {
-    MockNfcWalletSuppressionPlatform fakePlatform =
+    final MockNfcWalletSuppressionPlatform fakePlatform =
         MockNfcWalletSuppressionPlatform();
     NfcWalletSuppressionPlatform.instance = fakePlatform;
 
@@ -50,7 +54,7 @@ void main() {
     expect(await NfcWalletSuppression.isSuppressed(), isTrue);
   });
   test('isSuppressed_falseAfterRelease', () async {
-    MockNfcWalletSuppressionPlatform fakePlatform =
+    final MockNfcWalletSuppressionPlatform fakePlatform =
         MockNfcWalletSuppressionPlatform();
     NfcWalletSuppressionPlatform.instance = fakePlatform;
 
@@ -61,7 +65,7 @@ void main() {
   });
 
   test('requestSuppression_returnsSuppressedStatus', () async {
-    MockNfcWalletSuppressionPlatform fakePlatform =
+    final MockNfcWalletSuppressionPlatform fakePlatform =
         MockNfcWalletSuppressionPlatform();
     NfcWalletSuppressionPlatform.instance = fakePlatform;
 
@@ -70,7 +74,7 @@ void main() {
   });
 
   test('releaseSuppression_returnsNotSuppressedStatus', () async {
-    MockNfcWalletSuppressionPlatform fakePlatform =
+    final MockNfcWalletSuppressionPlatform fakePlatform =
         MockNfcWalletSuppressionPlatform();
     NfcWalletSuppressionPlatform.instance = fakePlatform;
 
