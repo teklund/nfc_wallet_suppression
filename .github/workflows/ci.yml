@@ -176,8 +176,8 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/lcov.info
           fail_ci_if_error: false
-          flags: unittests
-          name: flutter-coverage
+          flags: dart
+          name: dart-coverage
           verbose: true
       
       - name: Upload test results as artifact
