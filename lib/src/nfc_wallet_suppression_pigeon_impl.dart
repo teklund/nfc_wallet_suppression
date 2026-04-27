@@ -17,8 +17,8 @@ class PigeonNfcWalletSuppression extends NfcWalletSuppressionPlatform {
   final NfcWalletSuppressionApi api;
 
   /// Creates a [PigeonNfcWalletSuppression] with an optional generated API injection
-  PigeonNfcWalletSuppression({NfcWalletSuppressionApi? api}) 
-      : api = api ?? NfcWalletSuppressionApi();
+  PigeonNfcWalletSuppression({NfcWalletSuppressionApi? api})
+    : api = api ?? NfcWalletSuppressionApi();
 
   @override
   Future<SuppressionStatus> requestSuppression() async {

@@ -89,8 +89,14 @@ void main() {
 
       expect(fake.methodCalls, isEmpty);
       expect(await NfcWalletSuppression.isSupported(), true);
-      expect(await NfcWalletSuppression.requestSuppression(), SuppressionStatus.suppressed);
-      expect(await NfcWalletSuppression.releaseSuppression(), SuppressionStatus.notSuppressed);
+      expect(
+        await NfcWalletSuppression.requestSuppression(),
+        SuppressionStatus.suppressed,
+      );
+      expect(
+        await NfcWalletSuppression.releaseSuppression(),
+        SuppressionStatus.notSuppressed,
+      );
       expect(await NfcWalletSuppression.isSuppressed(), false);
     });
   });

@@ -19,28 +19,32 @@ PlatformException _createConnectionError(String channelName) {
 enum SuppressionStatusCode {
   /// Suppression is active
   suppressed,
+
   /// Suppression is not active
   notSuppressed,
+
   /// Device or OS does not support suppression
   notSupported,
+
   /// Device is already presenting passes
   alreadyPresenting,
+
   /// User cancelled the suppression request
   cancelled,
+
   /// User or system denied the suppression request
   denied,
+
   /// NFC is not available (disabled, missing hardware, etc.)
   unavailable,
+
   /// Unknown status or error
   unknown,
 }
 
 /// Result of a suppression operation with status and optional message
 class SuppressionResult {
-  SuppressionResult({
-    required this.status,
-    this.message,
-  });
+  SuppressionResult({required this.status, this.message});
 
   /// The status of the suppression operation
   SuppressionStatusCode status;
@@ -49,10 +53,7 @@ class SuppressionResult {
   String? message;
 
   Object encode() {
-    return <Object?>[
-      status,
-      message,
-    ];
+    return <Object?>[status, message];
   }
 
   static SuppressionResult decode(Object result) {
@@ -64,7 +65,6 @@ class SuppressionResult {
   }
 }
 
-
 class _PigeonCodec extends StandardMessageCodec {
   const _PigeonCodec();
   @override
@@ -72,10 +72,10 @@ class _PigeonCodec extends StandardMessageCodec {
     if (value is int) {
       buffer.putUint8(4);
       buffer.putInt64(value);
-    }    else if (value is SuppressionStatusCode) {
+    } else if (value is SuppressionStatusCode) {
       buffer.putUint8(129);
       writeValue(buffer, value.index);
-    }    else if (value is SuppressionResult) {
+    } else if (value is SuppressionResult) {
       buffer.putUint8(130);
       writeValue(buffer, value.encode());
     } else {
@@ -86,10 +86,10 @@ class _PigeonCodec extends StandardMessageCodec {
   @override
   Object? readValueOfType(int type, ReadBuffer buffer) {
     switch (type) {
-      case 129: 
+      case 129:
         final int? value = readValue(buffer) as int?;
         return value == null ? null : SuppressionStatusCode.values[value];
-      case 130: 
+      case 130:
         return SuppressionResult.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
@@ -105,9 +105,13 @@ class NfcWalletSuppressionApi {
   /// Constructor for [NfcWalletSuppressionApi].  The [binaryMessenger] named argument is
   /// available for dependency injection.  If it is left null, the default
   /// BinaryMessenger will be used which routes to the host platform.
-  NfcWalletSuppressionApi({BinaryMessenger? binaryMessenger, String messageChannelSuffix = ''})
-      : pigeonVar_binaryMessenger = binaryMessenger,
-        pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
+  NfcWalletSuppressionApi({
+    BinaryMessenger? binaryMessenger,
+    String messageChannelSuffix = '',
+  }) : pigeonVar_binaryMessenger = binaryMessenger,
+       pigeonVar_messageChannelSuffix = messageChannelSuffix.isNotEmpty
+           ? '.$messageChannelSuffix'
+           : '';
   final BinaryMessenger? pigeonVar_binaryMessenger;
 
   static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
@@ -120,12 +124,14 @@ class NfcWalletSuppressionApi {
   /// On iOS, this uses PassKit's automatic pass presentation suppression.
   /// On Android, this uses NFC reader mode to prevent wallet apps.
   Future<SuppressionResult> requestSuppression() async {
-    final String pigeonVar_channelName = 'dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.requestSuppression$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
-      pigeonVar_channelName,
-      pigeonChannelCodec,
-      binaryMessenger: pigeonVar_binaryMessenger,
-    );
+    final String pigeonVar_channelName =
+        'dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.requestSuppression$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel =
+        BasicMessageChannel<Object?>(
+          pigeonVar_channelName,
+          pigeonChannelCodec,
+          binaryMessenger: pigeonVar_binaryMessenger,
+        );
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_channel.send(null) as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -151,12 +157,14 @@ class NfcWalletSuppressionApi {
   /// Returns a [SuppressionResult] indicating the outcome of the release.
   /// Should be called when NFC operations are complete to restore normal behavior.
   Future<SuppressionResult> releaseSuppression() async {
-    final String pigeonVar_channelName = 'dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.releaseSuppression$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
-      pigeonVar_channelName,
-      pigeonChannelCodec,
-      binaryMessenger: pigeonVar_binaryMessenger,
-    );
+    final String pigeonVar_channelName =
+        'dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.releaseSuppression$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel =
+        BasicMessageChannel<Object?>(
+          pigeonVar_channelName,
+          pigeonChannelCodec,
+          binaryMessenger: pigeonVar_binaryMessenger,
+        );
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_channel.send(null) as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -181,12 +189,14 @@ class NfcWalletSuppressionApi {
   ///
   /// Returns true if suppression is currently active, false otherwise.
   Future<bool> isSuppressed() async {
-    final String pigeonVar_channelName = 'dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.isSuppressed$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
-      pigeonVar_channelName,
-      pigeonChannelCodec,
-      binaryMessenger: pigeonVar_binaryMessenger,
-    );
+    final String pigeonVar_channelName =
+        'dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.isSuppressed$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel =
+        BasicMessageChannel<Object?>(
+          pigeonVar_channelName,
+          pigeonChannelCodec,
+          binaryMessenger: pigeonVar_binaryMessenger,
+        );
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_channel.send(null) as List<Object?>?;
     if (pigeonVar_replyList == null) {
@@ -212,12 +222,14 @@ class NfcWalletSuppressionApi {
   /// Returns true if the device has the necessary hardware and OS support,
   /// false otherwise. Should be called before attempting to use suppression.
   Future<bool> isSupported() async {
-    final String pigeonVar_channelName = 'dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.isSupported$pigeonVar_messageChannelSuffix';
-    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
-      pigeonVar_channelName,
-      pigeonChannelCodec,
-      binaryMessenger: pigeonVar_binaryMessenger,
-    );
+    final String pigeonVar_channelName =
+        'dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.isSupported$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel =
+        BasicMessageChannel<Object?>(
+          pigeonVar_channelName,
+          pigeonChannelCodec,
+          binaryMessenger: pigeonVar_binaryMessenger,
+        );
     final List<Object?>? pigeonVar_replyList =
         await pigeonVar_channel.send(null) as List<Object?>?;
     if (pigeonVar_replyList == null) {
