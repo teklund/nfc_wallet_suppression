@@ -2,7 +2,7 @@ group = "dev.teklund.nfc_wallet_suppression"
 version = "1.0-SNAPSHOT"
 
 buildscript {
-    ext.kotlin_version = "1.8.22"
+    ext.kotlin_version = "1.9.22"
     repositories {
         google()
         mavenCentral()
@@ -23,6 +23,7 @@ allprojects {
 
 apply plugin: "com.android.library"
 apply plugin: "kotlin-android"
+apply plugin: "jacoco"
 
 android {
     namespace = "dev.teklund.nfc_wallet_suppression"
@@ -35,7 +36,7 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11
+        jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
     sourceSets {
@@ -49,10 +50,11 @@ android {
 
     dependencies {
         testImplementation("org.jetbrains.kotlin:kotlin-test")
-        testImplementation("org.mockito:mockito-core:5.0.0")
+        testImplementation("org.mockito:mockito-core:5.14.2")
     }
 
     testOptions {
+        unitTests.returnDefaultValues = true
         unitTests.all {
             useJUnitPlatform()
 
@@ -61,6 +63,61 @@ android {
                outputs.upToDateWhen {false}
                showStandardStreams = true
             }
+            
+            // Enable JaCoCo code coverage
+            jacoco {
+                includeNoLocationClasses = true
+                excludes = ['jdk.internal.*']
+            }
         }
     }
+    
+    buildTypes {
+        debug {
+            testCoverageEnabled = true
+        }
+    }
+}
+
+// JaCoCo configuration for test coverage
+jacoco {
+    toolVersion = "0.8.12"
+}
+
+tasks.register('jacocoTestReport', JacocoReport) {
+    dependsOn 'testDebugUnitTest'
+    
+    reports {
+        xml.required = true
+        html.required = true
+        xml.outputLocation.set(layout.buildDirectory.file("reports/jacoco/test/jacocoTestReport.xml"))
+        html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco/test/html"))
+    }
+    
+    def fileFilter = [
+        '**/R.class',
+        '**/R$*.class',
+        '**/BuildConfig.*',
+        '**/Manifest*.*',
+        '**/*Test*.*',
+        '**/*Fake*.*',
+        'android/**/*.*'
+    ]
+    
+    def debugTree = fileTree(
+        dir: "${buildDir}/tmp/kotlin-classes/debug",
+        excludes: fileFilter
+    )
+    
+    def mainSrc = "${project.projectDir}/src/main/kotlin"
+    
+    sourceDirectories.setFrom(files([mainSrc]))
+    classDirectories.setFrom(files([debugTree]))
+    executionData.setFrom(fileTree(
+        dir: buildDir,
+        includes: [
+            'jacoco/testDebugUnitTest.exec',
+            'outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec'
+        ]
+    ))
 }

@@ -127,11 +127,12 @@ jobs:
       - name: Start iOS Simulator
         run: |
           # Get the first available iPhone simulator
-          DEVICE_ID=$(xcrun simctl list devices available --json | grep -o '"udid" : "[^"]*"' | head -1 | grep -o '[^"]*$' | head -c 36)
+          # Get the first available iPhone simulator using Python for robust JSON parsing
+          DEVICE_ID=$(xcrun simctl list devices available --json | python3 -c "import sys, json; devices = json.load(sys.stdin)['devices']; print(next((d['udid'] for runtime in devices.values() for d in runtime if 'iPhone' in d['name'] and d['isAvailable']), ''))")
           if [ -z "$DEVICE_ID" ]; then
             echo "No iPhone simulator found, creating one..."
             xcrun simctl create "iPhone 15" com.apple.CoreSimulator.CoreSimulatorService --type=com.apple.dt.iPhone15
-            DEVICE_ID=$(xcrun simctl list devices available --json | grep -o '"udid" : "[^"]*"' | head -1 | grep -o '[^"]*$' | head -c 36)
+            DEVICE_ID=$(xcrun simctl list devices available --json | python3 -c "import sys, json; devices = json.load(sys.stdin)['devices']; print(next((d['udid'] for runtime in devices.values() for d in runtime if 'iPhone' in d['name'] and d['isAvailable']), ''))")
           fi
           echo "Device ID: $DEVICE_ID"
           xcrun simctl boot "$DEVICE_ID" || true

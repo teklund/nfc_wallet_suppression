@@ -1,0 +1,599 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ main, master ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitignore'
+  push:
+    branches: [ main, master ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitignore'
+  workflow_dispatch:
+
+concurrency:
+  group: pull-request-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check_changes:
+    name: Check Changes
+    runs-on: ubuntu-latest
+    outputs:
+      android: ${{ steps.filter.outputs.android }}
+      ios: ${{ steps.filter.outputs.ios }}
+      dart: ${{ steps.filter.outputs.dart }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Filter Paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            android:
+              - 'android/**'
+              - 'example/android/**'
+              - 'lib/**'
+              - 'test/**'
+              - 'pigeons/**'
+              - 'pubspec.yaml'
+            ios:
+              - 'ios/**'
+              - 'example/ios/**'
+              - 'lib/**'
+              - 'test/**'
+              - 'pigeons/**'
+              - 'pubspec.yaml'
+            dart:
+              - 'lib/**'
+              - 'test/**'
+              - 'example/lib/**'
+              - 'example/test/**'
+              - 'pigeons/**'
+              - 'pubspec.yaml'
+              - 'analysis_options.yaml'
+
+  format:
+    name: Check Formatting
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      
+      - name: Print environment info
+        run: |
+          echo "## 🔧 Environment Information" >> $GITHUB_STEP_SUMMARY
+          echo "**OS:** $(uname -s)" >> $GITHUB_STEP_SUMMARY
+          echo "**Flutter:** $(flutter --version | head -n 1)" >> $GITHUB_STEP_SUMMARY
+          echo "**Dart:** $(dart --version)" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Verify formatting
+        run: dart format --output=none --set-exit-if-changed .
+
+  analyze:
+    name: Analyze Code (${{ matrix.flutter-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: format
+    strategy:
+      fail-fast: true
+      matrix:
+        flutter-version: ['3.35.x', 'stable']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Flutter ${{ matrix.flutter-version }}
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ matrix.flutter-version != 'stable' && matrix.flutter-version || '' }}
+          channel: stable
+          cache: true
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Analyze project
+        uses: invertase/github-action-dart-analyzer@v3
+        with:
+          fatal-infos: true
+          fatal-warnings: true
+          annotate-only: ${{ matrix.flutter-version != '3.35.x' }}
+
+  test:
+    name: Run Tests & Coverage (${{ matrix.flutter-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: analyze
+    strategy:
+      fail-fast: false
+      matrix:
+        flutter-version: ['3.35.x', 'stable']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Flutter ${{ matrix.flutter-version }}
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ matrix.flutter-version != 'stable' && matrix.flutter-version || '' }}
+          channel: stable
+          cache: true
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Run tests with coverage and formatting
+        run: flutter test --coverage --reporter=github --test-randomize-ordering-seed=random
+
+      - name: Generate test summary
+        if: always()
+        run: |
+          echo "## 🧪 Test Results (${{ matrix.flutter-version }})" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f "coverage/lcov.info" ]; then
+            echo "✅ **Coverage:** Generated" >> $GITHUB_STEP_SUMMARY
+            LINES=$(grep -c "^" coverage/lcov.info || echo "0")
+            echo "   - Coverage file size: $LINES lines" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ **Coverage:** Not generated" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Test Configuration:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Randomization Seed: random" >> $GITHUB_STEP_SUMMARY
+          echo "- Reporter: GitHub annotations" >> $GITHUB_STEP_SUMMARY
+          echo "- Flutter Version: ${{ matrix.flutter-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Dart: $(dart --version)" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Upload coverage reports to Codecov
+        if: matrix.flutter-version == 'stable'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage/lcov.info
+          fail_ci_if_error: false
+          flags: dart
+          name: dart-coverage
+          verbose: true
+      
+      - name: Upload test results as artifact
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: test-results-${{ matrix.flutter-version }}
+          path: |
+            coverage/
+            **/*.log
+          retention-days: 7
+
+  native-tests-android:
+    name: Android Native Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [analyze, check_changes]
+    if: needs.check_changes.outputs.android == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      
+      - name: Install dependencies
+        working-directory: example
+        run: flutter pub get
+      
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('example/android/**/*.gradle*', 'example/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      
+      - name: Run Android tests with coverage
+        working-directory: example/android
+        run: ./gradlew :nfc_wallet_suppression:testDebugUnitTest :nfc_wallet_suppression:jacocoTestReport --console=plain
+      
+      - name: Generate test summary
+        if: always()
+        run: |
+          echo "## 🤖 Android Native Tests" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -d "example/build/nfc_wallet_suppression/reports/tests" ]; then
+            echo "✅ Test reports generated" >> $GITHUB_STEP_SUMMARY
+            if [ -f "example/build/nfc_wallet_suppression/reports/tests/testDebugUnitTest/index.html" ]; then
+              echo "📊 Test report generated" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ Test reports not found" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ -f "example/build/nfc_wallet_suppression/reports/jacoco/test/jacocoTestReport.xml" ]; then
+            echo "✅ Coverage report generated" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Coverage report not found" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Upload Android coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: example/build/nfc_wallet_suppression/reports/jacoco/test/jacocoTestReport.xml
+          flags: android
+          name: android-coverage
+          fail_ci_if_error: false
+      
+      - name: Upload Android test results
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: android-test-results
+          path: |
+            example/build/nfc_wallet_suppression/reports/tests/
+            example/build/nfc_wallet_suppression/test-results/
+          retention-days: 7
+
+  native-tests-ios:
+    name: iOS Native Tests
+    runs-on: macos-latest
+    timeout-minutes: 15
+    needs: [analyze, check_changes]
+    if: needs.check_changes.outputs.ios == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      
+      - name: Print environment info
+        run: |
+          echo "## 🔧 iOS Test Environment" >> $GITHUB_STEP_SUMMARY
+          echo "**OS:** $(sw_vers -productVersion)" >> $GITHUB_STEP_SUMMARY
+          echo "**Xcode:** $(xcodebuild -version | head -n 1)" >> $GITHUB_STEP_SUMMARY
+          echo "**Flutter:** $(flutter --version | head -n 1)" >> $GITHUB_STEP_SUMMARY
+      
+      - name: Install dependencies
+        working-directory: example
+        run: flutter pub get
+      
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: example/ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('example/ios/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
+      
+      - name: Install CocoaPods dependencies
+        working-directory: example/ios
+        run: pod install
+      
+      - name: Install xcpretty (for better output)
+        run: gem install xcpretty
+      
+      - name: Select iOS simulator
+        id: simulator
+        run: |
+          SIMULATOR=$(xcrun simctl list devices available -j | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          devices = []
+          for runtime, device_list in data['devices'].items():
+              if 'iOS' in runtime:
+                  for d in device_list:
+                      if d['isAvailable'] and 'iPhone' in d['name']:
+                          devices.append((runtime, d['udid'], d['name']))
+          devices.sort(reverse=True)
+          if devices:
+              print(devices[0][1])
+          else:
+              print('')
+          ")
+          if [ -z \"$SIMULATOR\" ]; then
+            echo \"No available iPhone simulator found, creating one...\"
+            xcrun simctl create 'iPhone 15' 'iPhone 15' || true
+            SIMULATOR=$(xcrun simctl list devices available -j | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          for runtime, device_list in data['devices'].items():
+              if 'iOS' in runtime:
+                  for d in device_list:
+                      if d['isAvailable'] and 'iPhone 15' in d['name']:
+                          print(d['udid'])
+                          exit()
+            ")
+          fi
+          echo "udid=$SIMULATOR" >> $GITHUB_OUTPUT
+          echo "Selected simulator: $SIMULATOR"
+
+      - name: Run iOS tests with coverage
+        working-directory: example/ios
+        run: |
+          set -o pipefail
+          rm -rf TestResults.xcresult || true
+          xcodebuild test \
+            -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}' \
+            -only-testing:RunnerTests \
+            -enableCodeCoverage YES \
+            -resultBundlePath TestResults.xcresult \
+            | xcpretty --color --simple || xcodebuild test \
+            -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}' \
+            -only-testing:RunnerTests \
+            -enableCodeCoverage YES \
+            -resultBundlePath TestResults.xcresult
+      
+      - name: Convert iOS coverage to lcov
+        if: always()
+        working-directory: example/ios
+        run: |
+          # Install xcov for coverage conversion
+          gem install slather
+          
+          # Extract coverage from xcresult
+          xcrun xccov view --report --json TestResults.xcresult > coverage.json || true
+          
+          # Convert to lcov format using xcresult
+          if command -v xcresultparser &> /dev/null; then
+            xcresultparser --output-format cobertura TestResults.xcresult > coverage.xml || true
+          fi
+        continue-on-error: true
+      
+      - name: Parse test results
+        if: always()
+        working-directory: example/ios
+        run: |
+          echo "## 🍎 iOS Native Tests" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -d "TestResults.xcresult" ]; then
+            echo "✅ Test bundle created" >> $GITHUB_STEP_SUMMARY
+            # Extract test results using xcresulttool
+            xcrun xcresulttool get --format json --path TestResults.xcresult > results.json 2>/dev/null || true
+            if [ -f "results.json" ]; then
+              echo "📊 Test results extracted" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "⚠️ Test results not found" >> $GITHUB_STEP_SUMMARY
+          fi
+          if [ -f "coverage.json" ]; then
+            echo "✅ Coverage data extracted" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Upload iOS coverage to Codecov
+        if: always()
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: example/ios/coverage.json
+          flags: ios
+          name: ios-coverage
+          fail_ci_if_error: false
+        continue-on-error: true
+      
+      - name: Upload iOS test results
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: ios-test-results
+          path: |
+            example/ios/TestResults.xcresult
+            example/ios/results.json
+          retention-days: 7
+
+  publish-dry-run:
+    name: Publish Dry Run
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: analyze
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Validate package
+        run: |
+          flutter pub publish --dry-run 2>&1 | tee publish-output.txt
+          echo "## 📦 Publish Validation" >> $GITHUB_STEP_SUMMARY
+          if grep -q "Package has 0 warnings" publish-output.txt; then
+            echo "✅ Package validation passed with no warnings" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Package validation completed with warnings" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat publish-output.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
+
+  pana:
+    name: Pub Score Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: analyze
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Install pana
+        run: dart pub global activate pana
+      
+      - name: Run pana
+        run: |
+          dart pub global run pana --no-warning | tee pana-output.txt
+          SCORE=$(grep -o 'Score: [0-9]*' pana-output.txt | grep -o '[0-9]*' | tail -1 || echo "0")
+          echo "## 🎯 Pana Score: ${SCORE}/160" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat pana-output.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          if [ "$SCORE" -lt 130 ]; then
+            echo "⚠️ Score is below recommended threshold of 130" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ Score meets recommended threshold" >> $GITHUB_STEP_SUMMARY
+          fi
+  
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate
+          comment-summary-in-pr: on-failure
+
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [analyze, check_changes]
+    if: needs.check_changes.outputs.android == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      
+      - name: Install dependencies
+        working-directory: example
+        run: flutter pub get
+      
+      - name: Build Android APK
+        working-directory: example
+        run: flutter build apk --debug
+      
+      - name: Build Android App Bundle
+        working-directory: example
+        run: flutter build appbundle --debug
+      
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: android-apk
+          path: example/build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 7
+
+  build-ios:
+    name: Build iOS
+    runs-on: macos-latest
+    timeout-minutes: 20
+    needs: [analyze, check_changes]
+    if: needs.check_changes.outputs.ios == 'true'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      
+      - name: Install dependencies
+        working-directory: example
+        run: flutter pub get
+      
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: example/ios/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('example/ios/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
+      
+      - name: Install CocoaPods dependencies
+        working-directory: example/ios
+        run: pod install
+      
+      - name: Build iOS (no codesign)
+        working-directory: example
+        run: flutter build ios --debug --no-codesign
+      
+      - name: Upload iOS artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: ios-build
+          path: example/build/ios/iphoneos/Runner.app
+          retention-days: 7

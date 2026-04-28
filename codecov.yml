@@ -1,0 +1,36 @@
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+        informational: true
+    patch:
+      default:
+        target: 60%
+        informational: true
+
+ignore:
+  - "lib/src/nfc_wallet_suppression_pigeon.dart"
+  - "**/*.g.dart"
+  - "**/*.freezed.dart"
+  - "example/**"
+  - "test/**"
+  - "pigeons/**"
+
+flags:
+  dart:
+    paths:
+      - lib/
+    carryforward: true
+  android:
+    paths:
+      - android/src/main/
+    carryforward: true
+  ios:
+    paths:
+      - ios/Classes/
+    carryforward: true
