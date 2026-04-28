@@ -233,7 +233,6 @@ jobs:
       
       - name: Generate test summary
         if: always()
-        working-directory: example/android
         run: |
           echo "## 🤖 Android Native Tests" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

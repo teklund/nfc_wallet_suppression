@@ -9,7 +9,6 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
     NfcWalletSuppressionApiSetup.setUp(binaryMessenger: messenger, api: api)
   }
 
-  private let passLibrary = PKPassLibrary()
   private var suppressionToken: PKSuppressionRequestToken?
 
   func requestSuppression(completion: @escaping (Result<SuppressionResult, Error>) -> Void) {

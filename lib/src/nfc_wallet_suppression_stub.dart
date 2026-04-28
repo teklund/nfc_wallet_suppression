@@ -14,7 +14,14 @@ class StubNfcWalletSuppression extends NfcWalletSuppressionPlatform {
   StubNfcWalletSuppression();
 
   /// Registers this class as the default instance of [NfcWalletSuppressionPlatform].
-  static void registerWith() {
+  ///
+  /// On web, Flutter's plugin registrant calls `registerWith(Registrar registrar)`;
+  /// on macOS, Linux, and Windows it calls `registerWith()` with no arguments.
+  /// The optional [registrar] parameter (typed as `Object?` to avoid pulling in
+  /// `flutter_web_plugins` on non-web builds) accommodates both contracts so a
+  /// single stub can serve every non-mobile platform. The argument is ignored
+  /// because this stub does not need to register any platform channels.
+  static void registerWith([Object? registrar]) {
     NfcWalletSuppressionPlatform.instance = StubNfcWalletSuppression();
   }
 
