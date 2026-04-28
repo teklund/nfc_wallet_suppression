@@ -32,5 +32,5 @@ flags:
     carryforward: true
   ios:
     paths:
-      - ios/Classes/
+      - ios/nfc_wallet_suppression/Sources/
     carryforward: true
