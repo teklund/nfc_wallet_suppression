@@ -130,7 +130,7 @@ class NfcWalletSuppression {
   /// **Android:**
   /// - Disables NFC reader mode and foreground dispatch
   /// - Safe to call even if suppression was never requested
-  /// - Returns [SuppressionStatus.unavailable] if NFC is disabled
+  /// - Returns [SuppressionStatus.notSuppressed] if NFC is disabled or absent
   ///
   /// ## Example
   ///

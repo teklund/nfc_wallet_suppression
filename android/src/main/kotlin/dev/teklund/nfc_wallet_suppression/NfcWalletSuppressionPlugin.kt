@@ -92,9 +92,13 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, ActivityAware,
   private fun reestablishSuppression() {
     if (isDebug) Log.d(TAG, "Reestablishing NFC suppression after configuration change")
     val activity = activity
+    if (activity == null) {
+      if (isDebug) Log.w(TAG, "Cannot reestablish suppression: no activity attached")
+      suppressionActive = false
+      return
+    }
     val nfcAdapter = NfcAdapter.getDefaultAdapter(activity)
-    if (nfcAdapter == null || activity == null || !nfcAdapter.isEnabled) {
-      // NFC not available, clear suppression state
+    if (nfcAdapter == null || !nfcAdapter.isEnabled) {
       if (isDebug) Log.w(TAG, "Cannot reestablish suppression: NFC not available")
       suppressionActive = false
       return
