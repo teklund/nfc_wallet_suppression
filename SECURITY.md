@@ -150,20 +150,19 @@ This plugin does NOT protect against:
 ```dart
 // ✅ Good: Always release suppression
 try {
-  final plugin = NfcWalletSuppression();
-  await plugin.requestSuppression();
+  await NfcWalletSuppression.requestSuppression();
   // Your NFC operations
 } finally {
-  await plugin.releaseSuppression(); // Cleanup
+  await NfcWalletSuppression.releaseSuppression(); // Cleanup
 }
 
 // ✅ Good: Check support before use
-if (await plugin.isSupported()) {
-  await plugin.requestSuppression();
+if (await NfcWalletSuppression.isSupported()) {
+  await NfcWalletSuppression.requestSuppression();
 }
 
 // ✅ Good: Handle all error cases
-final status = await plugin.requestSuppression();
+final status = await NfcWalletSuppression.requestSuppression();
 switch (status) {
   case SuppressionStatus.suppressed:
     // Proceed
@@ -174,7 +173,7 @@ switch (status) {
 }
 
 // ❌ Bad: Forgetting to release
-await plugin.requestSuppression();
+await NfcWalletSuppression.requestSuppression();
 // App exits without cleanup - may leave reader mode active
 ```
 

@@ -79,14 +79,14 @@ class NfcWalletSuppressionPlugin: FlutterPlugin, ActivityAware,
     // Verify NFC is still available and enabled. suppressionActive may be stale
     // if the user toggled NFC off in system settings after we called enableReaderMode.
     val nfcAdapter = NfcAdapter.getDefaultAdapter(activity)
-    val actuallySupressed = nfcAdapter != null && nfcAdapter.isEnabled
+    val actuallySuppressed = nfcAdapter != null && nfcAdapter.isEnabled
 
     if (isDebug) {
-      Log.d(TAG, "isSuppressed check: actuallySuppressed=$actuallySupressed (" +
+      Log.d(TAG, "isSuppressed check: actuallySuppressed=$actuallySuppressed (" +
               "suppressionActive=$suppressionActive, nfcEnabled=${nfcAdapter?.isEnabled ?: false})")
     }
 
-    return actuallySupressed
+    return actuallySuppressed
   }
 
   private fun reestablishSuppression() {
