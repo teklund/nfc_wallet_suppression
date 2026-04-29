@@ -1,21 +1,20 @@
 # Native Test Coverage Guide
 
-This document explains how native test coverage is collected and reported for the `nfc_wallet_suppression` Flutter plugin.
+How code coverage is collected and reported for the `nfc_wallet_suppression` Flutter plugin.
 
 ## Overview
 
-The plugin now supports code coverage collection for all three layers:
-- **Dart**: Using Flutter's built-in coverage tool (lcov format)
-- **Android**: Using JaCoCo for Kotlin/Java code
-- **iOS**: Using Xcode's built-in coverage tool (xccov)
+The plugin collects coverage for all three layers and uploads each as a separate Codecov flag so regressions in one platform don't get hidden by gains in another:
 
-All coverage reports are automatically uploaded to [Codecov.io](https://codecov.io) during CI/CD runs.
+- **Dart** — Flutter's built-in coverage (lcov), uploaded as flag `dart`
+- **Android** — JaCoCo (XML), uploaded as flag `android`
+- **iOS** — Xcode `xccov` (JSON), uploaded as flag `ios`
+
+All three flags are also defined in `codecov.yml` with path scoping and carryforward, so a missing upload from one job (e.g. Android skipped on a Dart-only PR) doesn't drop coverage for that platform to zero.
 
 ## Android Coverage (JaCoCo)
 
-### Configuration
-
-The Android module uses JaCoCo for code coverage. Configuration is in `android/build.gradle`:
+JaCoCo configuration lives in `android/build.gradle`:
 
 ```groovy
 apply plugin: "jacoco"
@@ -26,9 +25,11 @@ android {
             testCoverageEnabled = true
         }
     }
-    
+
     testOptions {
+        unitTests.returnDefaultValues = true   // android.* stubs return null/0 instead of throwing
         unitTests.all {
+            useJUnitPlatform()
             jacoco {
                 includeNoLocationClasses = true
                 excludes = ['jdk.internal.*']
@@ -40,264 +41,170 @@ android {
 jacoco {
     toolVersion = "0.8.12"
 }
+
+tasks.register('jacocoTestReport', JacocoReport) {
+    dependsOn 'testDebugUnitTest'
+    reports {
+        xml.required = true
+        html.required = true
+        xml.outputLocation.set(layout.buildDirectory.file("reports/jacoco/test/jacocoTestReport.xml"))
+        html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco/test/html"))
+    }
+    // ... source / class / execution data wiring ...
+}
 ```
 
-### Excluded Files
+### Excluded from Android coverage
 
-The following files are excluded from Android coverage:
-- `**/R.class` - Android resources
-- `**/BuildConfig.*` - Build configuration
-- `**/*Test*.*` - Test files
-- `**/*Fake*.*` - Test doubles (FakeNfcAdapterWrapper)
-- `**/*Wrapper*.*` - Test-only wrapper classes
+- `**/R.class`, `**/R$*.class`, `**/BuildConfig.*`, `**/Manifest*.*` — generated
+- `**/*Test*.*`, `**/*Fake*.*` — test code
 
-### Local Usage
-
-Generate coverage report locally:
+### Run locally
 
 ```bash
 cd example/android
-./gradlew :nfc_wallet_suppression:testDebugUnitTest :nfc_wallet_suppression:jacocoTestReport
+./gradlew :nfc_wallet_suppression:testDebugUnitTest \
+          :nfc_wallet_suppression:jacocoTestReport
 ```
 
-View reports:
-- **XML**: `example/build/nfc_wallet_suppression/reports/jacoco/test/jacocoTestReport.xml`
-- **HTML**: `example/build/nfc_wallet_suppression/reports/jacoco/test/html/index.html`
+Reports:
 
-### CI/CD Integration
+- XML: `example/build/nfc_wallet_suppression/reports/jacoco/test/jacocoTestReport.xml`
+- HTML: `example/build/nfc_wallet_suppression/reports/jacoco/test/html/index.html`
 
-The GitHub Actions workflow automatically:
-1. Runs tests with coverage enabled: `testDebugUnitTest`
-2. Generates JaCoCo report: `jacocoTestReport`
-3. Uploads XML report to Codecov with flag `android`
+### CI
 
-```yaml
-- name: Run Android tests with coverage
-  run: ./gradlew :nfc_wallet_suppression:testDebugUnitTest :nfc_wallet_suppression:jacocoTestReport
+The `Android Native Tests` job in `ci.yml`:
 
-- name: Upload Android coverage to Codecov
-  uses: codecov/codecov-action@v5
-  with:
-    files: example/build/nfc_wallet_suppression/reports/jacoco/test/jacocoTestReport.xml
-    flags: android
-    name: android-coverage
-```
-
-### Coverage Metrics
-
-Current Android native coverage focuses on:
-- `NfcWalletSuppressionPlugin.kt` - Main plugin implementation
-- Method call handling
-- NFC adapter interactions
-- Error handling paths
-
-**Note**: Some methods have low coverage because they require real Android Activity context and NFC hardware. These are covered by integration tests in the example app.
+1. Runs `:nfc_wallet_suppression:testDebugUnitTest :nfc_wallet_suppression:jacocoTestReport`
+2. Uploads the XML report to Codecov with `flags: android`
 
 ## iOS Coverage (xccov)
 
-### Configuration
+iOS coverage is enabled by `xcodebuild test -enableCodeCoverage YES` and extracted from the resulting `.xcresult` bundle.
 
-iOS coverage is enabled via xcodebuild command-line flag:
-
-```bash
-xcodebuild test \
-  -enableCodeCoverage YES \
-  -resultBundlePath TestResults.xcresult
-```
-
-### Coverage Extraction
-
-Coverage data is extracted from `.xcresult` bundle:
-
-```bash
-# Extract coverage in JSON format
-xcrun xccov view --report --json TestResults.xcresult > coverage.json
-
-# View coverage summary
-xcrun xccov view --report TestResults.xcresult
-```
-
-### Local Usage
-
-Run tests with coverage:
+### Run locally
 
 ```bash
 cd example/ios
-
-# Run tests with coverage
 xcodebuild test \
   -workspace Runner.xcworkspace \
   -scheme Runner \
-  -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+  -destination 'platform=iOS Simulator,name=<simulator>,OS=latest' \
   -enableCodeCoverage YES \
   -resultBundlePath TestResults.xcresult
 
-# View coverage
+# Human-readable summary
 xcrun xccov view --report TestResults.xcresult
+
+# JSON for upload
+xcrun xccov view --report --json TestResults.xcresult > coverage.json
 ```
 
-### CI/CD Integration
+### CI
 
-The GitHub Actions workflow automatically:
-1. Runs tests with coverage: `-enableCodeCoverage YES`
-2. Extracts coverage: `xcrun xccov view --report --json`
-3. Uploads to Codecov with flag `ios`
+The `iOS Native Tests` job in `ci.yml`:
 
-```yaml
-- name: Run iOS tests with coverage
-  run: |
-    xcodebuild test \
-      -enableCodeCoverage YES \
-      -resultBundlePath TestResults.xcresult
+1. Runs `xcodebuild test … -enableCodeCoverage YES`
+2. Extracts JSON via `xcrun xccov view --report --json`
+3. Uploads the JSON to Codecov with `flags: ios`
 
-- name: Convert iOS coverage
-  run: xcrun xccov view --report --json TestResults.xcresult > coverage.json
-
-- name: Upload iOS coverage to Codecov
-  uses: codecov/codecov-action@v5
-  with:
-    files: example/ios/coverage.json
-    flags: ios
-    name: ios-coverage
-```
-
-### Coverage Metrics
-
-Current iOS native coverage focuses on:
-- `NfcWalletSuppressionPlugin.swift` - Main plugin implementation
-- PassKit interactions
-- Result handling
-- Error paths
-
-**Note**: Some iOS methods require real device testing because PassKit APIs are not fully functional in simulators.
+`codecov.yml` scopes the iOS flag to `ios/nfc_wallet_suppression/Sources/`, matching the SPM-based source layout introduced in 1.0.0.
 
 ## Dart Coverage
 
-### Configuration
-
-Dart coverage uses Flutter's built-in tool:
-
 ```bash
-flutter test --coverage
+flutter test --coverage   # generates coverage/lcov.info
 ```
 
-Generates: `coverage/lcov.info`
-
-### CI/CD Integration
-
-```yaml
-- name: Run tests with coverage
-  run: flutter test --coverage
-
-- name: Upload coverage to Codecov
-  uses: codecov/codecov-action@v5
-  with:
-    files: coverage/lcov.info
-    flags: unittests
-    name: flutter-coverage
-```
+`Run Tests & Coverage (stable)` in `ci.yml` uploads `coverage/lcov.info` to Codecov with `flags: dart`. The 3.35.x matrix entry generates coverage but doesn't upload, to avoid duplicate uploads.
 
 ## Codecov Integration
 
-### Coverage Flags
+### Flags
 
-Coverage reports are uploaded with different flags for filtering:
+- `dart` — scope `lib/`
+- `android` — scope `android/src/main/`
+- `ios` — scope `ios/nfc_wallet_suppression/Sources/`
 
-- `unittests` - Dart unit tests (65 tests, 100% coverage)
-- `android` - Android native tests (8 tests)
-- `ios` - iOS native tests (15 tests)
+`carryforward: true` is set on all three so a missing upload preserves the last-known value rather than collapsing the score.
 
-### Viewing Coverage
+### Status checks
 
-1. Visit: https://codecov.io/gh/teklund/nfc_wallet_suppression
-2. Filter by flag to see platform-specific coverage
-3. View file-level coverage for specific implementations
+`codecov/project` and `codecov/patch` are currently `informational: true` while the 1.0.0 baseline stabilizes. After enough post-merge data has accumulated, they flip to enforcing. Project target: `auto` with `threshold: 1%`. Patch target: `60%`.
 
-### Badge
+### Viewing coverage
 
-The README includes a Codecov badge showing overall coverage:
+- Dashboard: https://codecov.io/gh/teklund/nfc_wallet_suppression
+- Badge in `README.md`
 
-```markdown
-[![codecov](https://codecov.io/gh/teklund/nfc_wallet_suppression/graph/badge.svg?token=JRPE6FQF2T)](https://codecov.io/gh/teklund/nfc_wallet_suppression)
-```
+## Current Coverage (1.0.0 baseline)
 
-## Coverage Goals
+| Layer   | Coverage | Notes                                                                |
+| ------- | -------- | -------------------------------------------------------------------- |
+| Dart    | high     | Pigeon-generated bridge + small public API; `*pigeon.dart` ignored   |
+| Android | low      | Only the no-NFC-hardware path is exercised in JVM unit tests         |
+| iOS     | low      | PassKit suppression APIs require a real device for end-to-end paths  |
 
-### Current Status
+Project coverage at the 1.0.0 cut: ~45%. The dominant gap is `NfcWalletSuppressionPlugin.kt`'s success/failure paths, which are tracked separately for follow-up — see the GitHub issue on improving native test coverage.
 
-| Layer | Coverage | Notes |
-|-------|----------|-------|
-| **Dart** | 100% | All source files covered |
-| **Android** | ~6% | Only unit-testable code (wrapper tests excluded) |
-| **iOS** | TBD | Extracted but not integrated yet |
+## Why native coverage is lower
 
-### Why Low Native Coverage?
+- **Real hardware required** for many NFC and PassKit code paths
+- **Activity / Context** dependence on Android — true unit tests would need Robolectric or static-mocking of `NfcAdapter.getDefaultAdapter()`
+- **Simulator limitations** for iOS PassKit suppression
+- Native tests today focus on testable wrappers and the no-hardware path
 
-Native coverage is lower than Dart because:
+Native code is also validated through:
 
-1. **Real Hardware Required**: Many NFC and PassKit APIs require real devices
-2. **Activity/Context**: Android plugin requires Activity context not available in unit tests
-3. **Simulator Limitations**: iOS PassKit doesn't work fully in simulators
-4. **Test Focus**: Native tests focus on testable logic (wrappers, method routing)
+- Integration tests in the example app (`integration_tests.yml`)
+- Manual testing on real devices
 
-Native code is validated through:
-- ✅ Unit tests for testable logic
-- ✅ Integration tests in example app
-- ✅ Manual testing on real devices
-
-## Improving Native Coverage
-
-To improve native coverage in the future:
+## Improving native coverage
 
 ### Android
-1. **Instrument Tests**: Add instrumented tests that run on emulator/device
-2. **Robolectric**: Use Robolectric for Android framework mocking
-3. **More Wrappers**: Wrap more Android APIs for testability
+
+- Static-mock `NfcAdapter.getDefaultAdapter()` (Mockito 5.x supports this) to exercise success/failure paths beyond the null-adapter branch
+- Add Robolectric-based tests for Activity-dependent flows
+- Consider instrumented tests for hardware-tied logic
 
 ### iOS
-1. **Real Device Tests**: Run tests on real devices in CI
-2. **More Protocols**: Create protocols for more PassKit interactions
-3. **Integration Tests**: Add more integration test scenarios
 
-### Both Platforms
-1. **Test Coverage Gates**: Set minimum coverage thresholds
-2. **Coverage Trending**: Track coverage over time
-3. **Uncovered Code Review**: Regularly review uncovered code paths
+- Add real-device CI runs for PassKit-dependent paths
+- Extend the existing PassKit protocol mocks for non-success branches
+- More integration tests in the example app
+
+### Both
+
+- Once native coverage stabilizes, flip `codecov.yml` from `informational: true` to enforcing
 
 ## Troubleshooting
 
-### Android Coverage Not Generated
+### Android coverage missing
 
-Check that:
-- Tests ran successfully: `./gradlew testDebugUnitTest`
-- JaCoCo task executed: Look for `:jacocoTestReport` in output
-- Exec file exists: `example/build/nfc_wallet_suppression/outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec`
+- Tests ran successfully? `./gradlew testDebugUnitTest`
+- JaCoCo task ran? Look for `:jacocoTestReport` in output
+- Exec file present? `example/build/nfc_wallet_suppression/outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec`
 
-### iOS Coverage Not Generated
+### iOS coverage missing
 
-Check that:
-- Coverage flag was used: `-enableCodeCoverage YES`
-- Result bundle exists: `TestResults.xcresult`
-- xccov command works: `xcrun xccov view --report TestResults.xcresult`
+- `-enableCodeCoverage YES` set on the `xcodebuild test` call?
+- `TestResults.xcresult` bundle produced?
+- `xcrun xccov view --report TestResults.xcresult` shows data?
 
-### Codecov Upload Fails
+### Codecov upload fails
 
-Common issues:
-- Missing `CODECOV_TOKEN` secret in GitHub repository settings
-- Invalid coverage file format
-- Network issues during upload
-
-The workflow uses `fail_ci_if_error: false` so coverage upload failures won't block CI.
+- Is `CODECOV_TOKEN` configured in GitHub secrets?
+- Coverage file format valid?
+- Workflow uses `fail_ci_if_error: false`, so upload failures don't fail CI — but they also won't update Codecov.
 
 ## References
 
-- [JaCoCo Documentation](https://www.jacoco.org/jacoco/trunk/doc/)
+- [JaCoCo](https://www.jacoco.org/jacoco/trunk/doc/)
 - [Xcode Code Coverage](https://developer.apple.com/documentation/xcode/code-coverage)
-- [Codecov Documentation](https://docs.codecov.com/)
+- [Codecov](https://docs.codecov.com/)
 - [Flutter Test Coverage](https://flutter.dev/docs/testing/overview#test-coverage)
 
 ---
 
-*Last Updated: April 2026*  
-*Plugin Version: 1.0.0*  
-*Branch: phase-4*
+_Plugin Version: 1.0.0_
