@@ -55,7 +55,7 @@ flutter test
 # Full pre-push
 flutter test
 cd example/android && ./gradlew :nfc_wallet_suppression:testDebugUnitTest
-cd ../ios && xcodebuild test ...   # see iOS Native Tests job for the exact invocation
+# iOS: see docs/NATIVE_COVERAGE.md ("Run locally") for the full xcodebuild invocation
 ```
 
 **On every PR (automated):** ci.yml runs the relevant subset based on changed paths. All required jobs must pass before merge.
