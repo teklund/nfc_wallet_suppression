@@ -19,6 +19,9 @@ let package = Package(
             name: "nfc_wallet_suppression",
             dependencies: [
                 .product(name: "FlutterFramework", package: "FlutterFramework"),
+            ],
+            resources: [
+                .copy("PrivacyInfo.xcprivacy"),
             ]
             // PassKit is a system framework and is autolinked via `import PassKit` —
             // no linkerSettings needed for Swift targets.

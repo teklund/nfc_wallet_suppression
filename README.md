@@ -225,7 +225,7 @@ cd example && flutter run
 
 ## Privacy
 
-This plugin includes a privacy manifest (`ios/Resources/PrivacyInfo.xcprivacy`) that declares:
+This plugin includes a privacy manifest (`ios/nfc_wallet_suppression/Sources/nfc_wallet_suppression/PrivacyInfo.xcprivacy`) that declares:
 
 - **No tracking** (NSPrivacyTracking: false)
 - **No data collection** (NSPrivacyCollectedDataTypes: empty)

@@ -51,9 +51,10 @@ class NfcWalletSuppression {
   /// This allows your app to read NFC tags without competition from the
   /// system wallet.
   ///
-  /// **Important:** On iOS, this may prompt the user for permission. Multiple
-  /// rapid calls are safe - the plugin automatically cleans up any existing
-  /// suppression before creating a new one.
+  /// **Important:** On iOS, this may prompt the user for permission. Rapid
+  /// repeat calls are safe: on iOS the plugin releases any existing
+  /// suppression token before requesting a new one; on Android the framework
+  /// replaces the previous reader-mode/foreground-dispatch registration.
   ///
   /// ## Returns
   ///

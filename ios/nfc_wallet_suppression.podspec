@@ -15,6 +15,9 @@ automatic Apple Wallet presentation when detecting NFC readers.
   s.author           = { 'TEklund' => 'teklund@users.noreply.github.com' }
   s.source           = { :path => '.' }
   s.source_files = 'nfc_wallet_suppression/Sources/nfc_wallet_suppression/**/*.swift'
+  s.resource_bundles = {
+    'nfc_wallet_suppression_privacy' => ['nfc_wallet_suppression/Sources/nfc_wallet_suppression/PrivacyInfo.xcprivacy'],
+  }
   s.dependency 'Flutter'
   s.platform = :ios, '13.0'
 
@@ -22,15 +25,10 @@ automatic Apple Wallet presentation when detecting NFC readers.
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386' }
   s.swift_version = '5.0'
 
-  # Privacy Manifest: This plugin includes a PrivacyInfo.xcprivacy file that declares
-  # no tracking, no data collection, and no required reason API usage. The PassKit APIs
-  # used for NFC wallet suppression (requestAutomaticPassPresentationSuppression and
-  # endAutomaticPassPresentationSuppression) do not fall under Apple's required reason
-  # APIs and do not access sensitive user data. The privacy manifest is included as a
-  # best practice but does not need to be bundled as a resource. It serves as
-  # documentation that this plugin:
-  # - Does not track users (NSPrivacyTracking: false)
-  # - Does not collect any data (NSPrivacyCollectedDataTypes: empty)
-  # - Does not access required reason APIs (NSPrivacyAccessedAPITypes: empty)
-  # - Does not connect to tracking domains (NSPrivacyTrackingDomains: empty)
+  # Privacy Manifest: PrivacyInfo.xcprivacy is bundled so Xcode can aggregate it
+  # into the consuming app's privacy manifest at build time. The manifest declares
+  # no tracking, no data collection, no tracking domains, and no required-reason
+  # API usage. The PassKit APIs used here (requestAutomaticPassPresentationSuppression
+  # and endAutomaticPassPresentationSuppression) are not on Apple's required-reason
+  # API list, so NSPrivacyAccessedAPITypes is intentionally empty.
 end

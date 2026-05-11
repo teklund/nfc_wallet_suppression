@@ -43,7 +43,7 @@ This plugin **DOES**:
 
 ### iOS Privacy Manifest
 
-The plugin includes a privacy manifest (`ios/Resources/PrivacyInfo.xcprivacy`) that declares:
+The plugin bundles a privacy manifest (`ios/nfc_wallet_suppression/Sources/nfc_wallet_suppression/PrivacyInfo.xcprivacy`) into the SPM and CocoaPods builds. It declares:
 
 ```xml
 <key>NSPrivacyTrackingDomains</key>
@@ -329,7 +329,7 @@ We monitor dependencies using:
 - ✅ Privacy manifest included (`PrivacyInfo.xcprivacy`)
 - ✅ No tracking declaration
 - ✅ No data collection
-- ✅ API usage declared (UserDefaults for state)
+- ✅ No required-reason APIs accessed
 
 ### Google Play Security Requirements
 

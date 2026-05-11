@@ -40,7 +40,7 @@ class RunnerTests: XCTestCase {
         waitForExpectations(timeout: 1.0)
     }
     
-    /// Test that releaseSuppression returns notSuppressed when no token exists (idempotent)
+    /// Test that releaseSuppression returns unavailable when no token exists (idempotent)
     func testReleaseSuppression_withoutRequest_returnsUnavailable() {
         let expectation = self.expectation(description: "releaseSuppression completes")
         

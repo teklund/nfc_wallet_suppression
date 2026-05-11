@@ -1,7 +1,8 @@
 name: Integration Tests
 
 on:
-  # Disabled temporarily - see IMPROVEMENT_PLAN.md Task 23.b
+  # Disabled temporarily — re-enable tracked in #24.
+  # The simctl fallback below also needs fixing before re-enabling on PR/push.
   # pull_request:
   #   branches: [ main, master ]
   #   paths-ignore:
