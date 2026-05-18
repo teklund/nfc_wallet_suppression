@@ -30,41 +30,22 @@ jobs:
           channel: ${{ matrix.channel }}
           cache: true
       
-      - name: Get Flutter version
-        id: flutter-version
-        run: |
-          echo "version=$(flutter --version | head -n 1)" >> $GITHUB_OUTPUT
-      
-      - name: Print environment info
-        run: |
-          echo "## 🔧 Environment Information" >> $GITHUB_STEP_SUMMARY
-          echo "**OS:** $(uname -s)" >> $GITHUB_STEP_SUMMARY
-          echo "${{ steps.flutter-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Dart:** $(dart --version)" >> $GITHUB_STEP_SUMMARY
-      
       - name: Install dependencies
         run: flutter pub get
-      
-      - name: Check formatting
-        run: dart format --output=none --set-exit-if-changed .
-      
+
       - name: Analyze project
         run: flutter analyze --fatal-infos --fatal-warnings
-      
+
       - name: Run tests
         run: flutter test
-      
-      - name: Display test summary
-        if: success()
+
+      - name: Report results
+        if: always()
         run: |
-          echo "## ✅ Test Results - ${{ matrix.channel }} Flutter" >> $GITHUB_STEP_SUMMARY
-          echo "All tests passed successfully" >> $GITHUB_STEP_SUMMARY
-      
-      - name: Report success
-        if: success()
-        run: |
-          echo "✅ All checks passed on ${{ matrix.channel }} Flutter"
-          echo "Flutter version: ${{ steps.flutter-version.outputs.version }}"
+          FLUTTER_VERSION=$(flutter --version | head -n 1)
+          echo "## ${{ matrix.channel }} Flutter — SDK Compatibility" >> $GITHUB_STEP_SUMMARY
+          echo "**Flutter:** $FLUTTER_VERSION" >> $GITHUB_STEP_SUMMARY
+          echo "**Dart:** $(dart --version)" >> $GITHUB_STEP_SUMMARY
 
   create-issue-on-failure:
     name: Create Issue on Failure

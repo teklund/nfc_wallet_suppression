@@ -6,15 +6,21 @@ void main() {
     test('enum contains all expected values', () {
       expect(SuppressionStatus.values.length, 8);
       expect(
-          SuppressionStatus.values, contains(SuppressionStatus.notSuppressed));
+        SuppressionStatus.values,
+        contains(SuppressionStatus.notSuppressed),
+      );
       expect(SuppressionStatus.values, contains(SuppressionStatus.suppressed));
       expect(SuppressionStatus.values, contains(SuppressionStatus.unavailable));
       expect(SuppressionStatus.values, contains(SuppressionStatus.denied));
       expect(SuppressionStatus.values, contains(SuppressionStatus.cancelled));
       expect(
-          SuppressionStatus.values, contains(SuppressionStatus.notSupported));
-      expect(SuppressionStatus.values,
-          contains(SuppressionStatus.alreadyPresenting));
+        SuppressionStatus.values,
+        contains(SuppressionStatus.notSupported),
+      );
+      expect(
+        SuppressionStatus.values,
+        contains(SuppressionStatus.alreadyPresenting),
+      );
       expect(SuppressionStatus.values, contains(SuppressionStatus.unknown));
     });
 
@@ -36,9 +42,13 @@ void main() {
 
     test('enum can be compared for equality', () {
       expect(
-          SuppressionStatus.suppressed == SuppressionStatus.suppressed, isTrue);
-      expect(SuppressionStatus.suppressed == SuppressionStatus.notSuppressed,
-          isFalse);
+        SuppressionStatus.suppressed == SuppressionStatus.suppressed,
+        isTrue,
+      );
+      expect(
+        SuppressionStatus.suppressed == SuppressionStatus.notSuppressed,
+        isFalse,
+      );
     });
 
     test('enum can be used in switch statements', () {

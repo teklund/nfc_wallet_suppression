@@ -1,3 +1,7 @@
+# Claude Code local settings (shared configs like .claude/settings.json
+# or .claude/agents/ can still be committed)
+.claude/settings.local.json
+
 # Miscellaneous
 *.class
 #*.lock Should check in lockfiles for applications

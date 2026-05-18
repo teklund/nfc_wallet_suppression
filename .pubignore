@@ -1,0 +1,15 @@
+# Build artifacts and CI config — not useful to package consumers
+.github/
+coverage/
+doc/
+
+# Code generation source — consumers need the output, not the input
+pigeons/
+
+# Developer-only docs
+PUBLISHING.md
+
+# Binary files that trigger pub.dev warnings
+example/android/gradle/wrapper/gradle-wrapper.jar
+example/android/gradlew
+example/android/gradlew.bat
