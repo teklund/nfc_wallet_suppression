@@ -182,7 +182,7 @@ jobs:
       
       - name: Upload test results as artifact
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: test-results-${{ matrix.flutter-version }}
           path: |
@@ -262,7 +262,7 @@ jobs:
       
       - name: Upload Android test results
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: android-test-results
           path: |
@@ -417,7 +417,7 @@ jobs:
       
       - name: Upload iOS test results
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: ios-test-results
           path: |
@@ -548,7 +548,7 @@ jobs:
         run: flutter build appbundle --debug
       
       - name: Upload APK artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: android-apk
           path: example/build/app/outputs/flutter-apk/app-debug.apk
@@ -592,7 +592,7 @@ jobs:
         run: flutter build ios --debug --no-codesign
       
       - name: Upload iOS artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: ios-build
           path: example/build/ios/iphoneos/Runner.app
