@@ -35,7 +35,7 @@ jobs:
       dart: ${{ steps.filter.outputs.dart }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Filter Paths
         uses: dorny/paths-filter@v3
@@ -71,7 +71,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -104,7 +104,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       
       - name: Setup Flutter ${{ matrix.flutter-version }}
         uses: subosito/flutter-action@v2
@@ -135,7 +135,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       
       - name: Setup Flutter ${{ matrix.flutter-version }}
         uses: subosito/flutter-action@v2
@@ -199,7 +199,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -279,7 +279,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -434,7 +434,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -467,7 +467,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -504,7 +504,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       
       - name: Dependency Review
         uses: actions/dependency-review-action@v5
@@ -521,7 +521,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -563,7 +563,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
