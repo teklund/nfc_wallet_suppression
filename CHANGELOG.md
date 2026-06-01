@@ -14,6 +14,9 @@ All notable changes to this project will be documented in this file.
   No change to the supported Flutter range — the plugin still targets Flutter 3.35.0+.
 - ⬆️ **Example toolchain bump**: Example app updated to Gradle 8.14, Android Gradle
   Plugin 8.11.1, and Kotlin 2.2.20 to track currently-supported build tooling.
+- 🧪 **JaCoCo coverage config**: Dropped the deprecated `testCoverageEnabled` build
+  flag (incompatible with AGP 8.11+ Gradle task validation); unit-test coverage now
+  relies solely on the Gradle JaCoCo extension already configured in `testOptions`.
 
 ## 1.0.0
 

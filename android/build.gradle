@@ -77,11 +77,6 @@ android {
         }
     }
     
-    buildTypes {
-        debug {
-            testCoverageEnabled = true
-        }
-    }
 }
 
 // Built-in Kotlin: configure the JVM target via the modern compilerOptions DSL
