@@ -2,7 +2,7 @@ group = "dev.teklund.nfc_wallet_suppression"
 version = "1.0-SNAPSHOT"
 
 buildscript {
-    ext.kotlin_version = "1.9.22"
+    ext.kotlin_version = "2.2.20"
     repositories {
         google()
         mavenCentral()
@@ -22,8 +22,17 @@ allprojects {
 }
 
 apply plugin: "com.android.library"
-apply plugin: "kotlin-android"
 apply plugin: "jacoco"
+
+// Built-in Kotlin migration (Flutter 3.44+): from AGP 9 onward Kotlin support is
+// provided by AGP itself, so applying the Kotlin Gradle Plugin here would fail the
+// build. For older AGP (Flutter < 3.44) we keep applying KGP so the plugin still
+// builds for consumers on those toolchains.
+// See https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-plugin-authors
+def agpMajor = com.android.Version.ANDROID_GRADLE_PLUGIN_VERSION.tokenize('.')[0] as int
+if (agpMajor < 9) {
+    apply plugin: "kotlin-android"
+}
 
 android {
     namespace = "dev.teklund.nfc_wallet_suppression"
@@ -33,10 +42,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
     sourceSets {
@@ -76,6 +81,15 @@ android {
         debug {
             testCoverageEnabled = true
         }
+    }
+}
+
+// Built-in Kotlin: configure the JVM target via the modern compilerOptions DSL
+// (replaces the deprecated android.kotlinOptions block). Works whether KGP is
+// applied (older AGP) or provided by AGP (Built-in Kotlin, AGP 9+).
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11
     }
 }
 

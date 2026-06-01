@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Changed
+
+- 🤖 **Android Built-in Kotlin migration (Flutter 3.44+)**: The Android build no
+  longer unconditionally applies the Kotlin Gradle Plugin. From AGP 9 onward Kotlin
+  is provided by AGP itself; KGP is now applied conditionally (only for AGP < 9) so
+  the plugin keeps building on both new and older toolchains. The deprecated
+  `kotlinOptions` block was replaced with the modern `kotlin.compilerOptions` DSL.
+  No change to the supported Flutter range — the plugin still targets Flutter 3.35.0+.
+- ⬆️ **Example toolchain bump**: Example app updated to Gradle 8.14, Android Gradle
+  Plugin 8.11.1, and Kotlin 2.2.20 to track currently-supported build tooling.
+
 ## 1.0.0
 
 Major release with Pigeon migration for type-safe platform channels.
