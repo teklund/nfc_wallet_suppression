@@ -51,10 +51,11 @@ class NfcWalletSuppression {
   /// This allows your app to read NFC tags without competition from the
   /// system wallet.
   ///
-  /// **Important:** On iOS, this may prompt the user for permission. Rapid
-  /// repeat calls are safe: on iOS the plugin releases any existing
-  /// suppression token before requesting a new one; on Android the framework
-  /// replaces the previous reader-mode/foreground-dispatch registration.
+  /// **Important:** On iOS, this may prompt the user for permission. Rapid or
+  /// overlapping calls are safe: on both platforms a call made while suppression
+  /// is already active returns [SuppressionStatus.suppressed] without re-arming.
+  /// On iOS, concurrent calls made while a request is in flight share that
+  /// request's result.
   ///
   /// ## Returns
   ///
@@ -76,7 +77,8 @@ class NfcWalletSuppression {
   /// - Survives configuration changes (screen rotation)
   ///
   /// **Android:**
-  /// - Uses NFC Adapter's `enableReaderMode` and `enableForegroundDispatch`
+  /// - Uses the NFC Adapter's reader mode (`enableReaderMode`), which takes over
+  ///   the NFC stack and suppresses wallet / host-card-emulation apps
   /// - No permission prompt required
   /// - Automatically restored after activity recreation
   /// - Requires NFC to be enabled in device settings
@@ -126,12 +128,12 @@ class NfcWalletSuppression {
   /// **iOS:**
   /// - Uses PassKit's `endAutomaticPassPresentationSuppression`
   /// - Safe to call even if suppression was never requested
-  /// - Returns [SuppressionStatus.unavailable] if no token exists
+  /// - Returns [SuppressionStatus.unavailable] if no suppression is active
   ///
   /// **Android:**
-  /// - Disables NFC reader mode and foreground dispatch
+  /// - Disables NFC reader mode
   /// - Safe to call even if suppression was never requested
-  /// - Returns [SuppressionStatus.notSuppressed] if NFC is disabled or absent
+  /// - Returns [SuppressionStatus.unavailable] if no suppression is active
   ///
   /// ## Example
   ///
@@ -171,9 +173,10 @@ class NfcWalletSuppression {
   /// - Accurately reflects system-wide suppression state
   ///
   /// **Android:**
-  /// - Tracks suppression state internally
-  /// - State persists across activity recreation (e.g., screen rotation)
-  /// - Returns `false` if activity is detached
+  /// - Returns `true` only while suppression is active, an activity is attached,
+  ///   and NFC is still enabled
+  /// - Suppression is re-armed across activity recreation (e.g. screen rotation)
+  /// - Returns `false` if the activity is detached or NFC was turned off
   ///
   /// ## Example
   ///
