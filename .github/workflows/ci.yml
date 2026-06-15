@@ -171,7 +171,7 @@ jobs:
       
       - name: Upload coverage reports to Codecov
         if: matrix.flutter-version == 'stable'
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/lcov.info
@@ -252,7 +252,7 @@ jobs:
       
       - name: Upload Android coverage to Codecov
         if: always()
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: example/build/nfc_wallet_suppression/reports/jacoco/test/jacocoTestReport.xml
@@ -406,7 +406,7 @@ jobs:
       
       - name: Upload iOS coverage to Codecov
         if: always()
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: example/ios/coverage.json
