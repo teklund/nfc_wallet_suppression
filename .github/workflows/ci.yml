@@ -306,10 +306,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pods-
       
-      - name: Install CocoaPods dependencies
-        working-directory: example/ios
-        run: pod install
-      
+      - name: Build example for simulator
+        working-directory: example
+        # Drives pod install, generates the plugin registrant, and compiles the
+        # plugin pods (e.g. integration_test) so the Runner target builds before
+        # `xcodebuild test`. A bare `pod install` leaves the module unbuilt.
+        run: flutter build ios --debug --simulator --no-codesign
+
       - name: Install xcpretty (for better output)
         run: gem install xcpretty
       
@@ -352,7 +355,7 @@ jobs:
         working-directory: example/ios
         run: |
           set -o pipefail
-          rm -rf TestResults.xcresult || true
+          rm -rf TestResults.xcresult
           xcodebuild test \
             -workspace Runner.xcworkspace \
             -scheme Runner \
@@ -360,13 +363,7 @@ jobs:
             -only-testing:RunnerTests \
             -enableCodeCoverage YES \
             -resultBundlePath TestResults.xcresult \
-            | xcpretty --color --simple || xcodebuild test \
-            -workspace Runner.xcworkspace \
-            -scheme Runner \
-            -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}' \
-            -only-testing:RunnerTests \
-            -enableCodeCoverage YES \
-            -resultBundlePath TestResults.xcresult
+            | xcpretty --color --simple
       
       - name: Convert iOS coverage to lcov
         if: always()
