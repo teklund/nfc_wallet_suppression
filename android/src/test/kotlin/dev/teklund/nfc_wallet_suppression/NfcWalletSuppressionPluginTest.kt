@@ -3,7 +3,9 @@ package dev.teklund.nfc_wallet_suppression
 import android.app.Activity
 import android.content.Context
 import android.nfc.NfcAdapter
+import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
+import io.flutter.plugin.common.BinaryMessenger
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -14,8 +16,9 @@ import org.mockito.Mockito
  * Unit tests for [NfcWalletSuppressionPlugin].
  *
  * The plugin's NFC access is routed through [WalletSuppressor], so these tests
- * drive a [FakeWalletSuppressor] and use a mock [Activity] as an opaque token —
- * exercising the real suppression/release/lifecycle paths without a device.
+ * drive a [FakeWalletSuppressor] and use a mock [Activity] as an opaque
+ * placeholder — exercising the real suppression/release/lifecycle paths without
+ * a device.
  *
  * Run via `./gradlew testDebugUnitTest` in `example/android/`.
  */
@@ -26,6 +29,7 @@ internal class NfcWalletSuppressionPluginTest {
     var hasHardware = true
     var nfcEnabled = true
     var startError: Exception? = null
+    var stopError: Exception? = null
     var startCount = 0
     var stopCount = 0
 
@@ -36,6 +40,7 @@ internal class NfcWalletSuppressionPluginTest {
       startCount++
     }
     override fun stopReaderMode(activity: Activity) {
+      stopError?.let { throw it }
       stopCount++
     }
   }
@@ -140,6 +145,28 @@ internal class NfcWalletSuppressionPluginTest {
   }
 
   @Test
+  fun release_whenStopThrowsSecurityException_reportsDeniedAndStaysSuppressed() {
+    val fake = FakeWalletSuppressor()
+    val plugin = pluginWithActivity(fake)
+    requestStatus(plugin)
+
+    fake.stopError = SecurityException("denied")
+    assertEquals(SuppressionStatusCode.DENIED, releaseStatus(plugin))
+    assertTrue(suppressed(plugin), "A failed tear-down must keep suppression active (truthful)")
+  }
+
+  @Test
+  fun release_whenStopThrowsGenericException_reportsUnknownAndStaysSuppressed() {
+    val fake = FakeWalletSuppressor()
+    val plugin = pluginWithActivity(fake)
+    requestStatus(plugin)
+
+    fake.stopError = IllegalStateException("boom")
+    assertEquals(SuppressionStatusCode.UNKNOWN, releaseStatus(plugin))
+    assertTrue(suppressed(plugin))
+  }
+
+  @Test
   fun release_whenActive_disablesReaderModeAndReportsNotSuppressed() {
     val fake = FakeWalletSuppressor()
     val plugin = pluginWithActivity(fake)
@@ -169,6 +196,20 @@ internal class NfcWalletSuppressionPluginTest {
   fun isSupported_reflectsHardwarePresence() {
     assertTrue(supported(pluginWithActivity(FakeWalletSuppressor().apply { hasHardware = true })))
     assertFalse(supported(pluginWithActivity(FakeWalletSuppressor().apply { hasHardware = false })))
+  }
+
+  @Test
+  fun isSupported_usesApplicationContextWhenNoActivityAttached() {
+    val fake = FakeWalletSuppressor().apply { hasHardware = true }
+    val plugin = NfcWalletSuppressionPlugin(fake)
+    // Attach the engine (sets the application context) but no activity, mirroring
+    // a call made before the activity attaches.
+    val engineBinding = Mockito.mock(FlutterPlugin.FlutterPluginBinding::class.java)
+    Mockito.`when`(engineBinding.binaryMessenger).thenReturn(Mockito.mock(BinaryMessenger::class.java))
+    Mockito.`when`(engineBinding.applicationContext).thenReturn(Mockito.mock(Context::class.java))
+    plugin.onAttachedToEngine(engineBinding)
+
+    assertTrue(supported(plugin), "isSupported must work via application context without an activity")
   }
 
   // lifecycle
@@ -201,6 +242,26 @@ internal class NfcWalletSuppressionPluginTest {
 
     assertEquals(1, fake.startCount, "Must not re-arm when NFC is disabled")
     assertFalse(suppressed(plugin))
+  }
+
+  @Test
+  fun reattach_whenReArmThrows_dropsSuppression() {
+    val fake = FakeWalletSuppressor()
+    val activity = Mockito.mock(Activity::class.java)
+    val plugin = pluginWithActivity(fake, activity)
+    requestStatus(plugin)
+
+    // Re-arming reader mode fails on reattach (e.g. SecurityException).
+    fake.startError = SecurityException("denied")
+    plugin.onDetachedFromActivityForConfigChanges()
+    plugin.onReattachedToActivityForConfigChanges(activityBinding(activity))
+
+    assertFalse(suppressed(plugin), "A failed re-arm must drop suppression")
+    assertEquals(
+      SuppressionStatusCode.UNAVAILABLE,
+      releaseStatus(plugin),
+      "suppressionActive must have been cleared on re-arm failure",
+    )
   }
 
   @Test

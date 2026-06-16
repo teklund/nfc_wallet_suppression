@@ -54,18 +54,30 @@ class NfcWalletSuppression {
   /// **Important:** On iOS, this may prompt the user for permission. Rapid or
   /// overlapping calls are safe: on both platforms a call made while suppression
   /// is already active returns [SuppressionStatus.suppressed] without re-arming.
-  /// On iOS, concurrent calls made while a request is in flight share that
-  /// request's result.
+  /// On iOS, overlapping (un-awaited) calls made while a request is in flight
+  /// share that request's result.
+  ///
+  /// **Serialize your calls:** `await` each [requestSuppression] or
+  /// [releaseSuppression] before issuing the next. Interleaving them without
+  /// awaiting (e.g., request, then release, then request) is resolved
+  /// best-effort — the resulting suppression state is not guaranteed and may
+  /// differ between platforms. For sequential (awaited) use, the two platforms
+  /// behave identically. Query [isSuppressed] for the live state.
   ///
   /// ## Returns
   ///
   /// A [Future] that completes with a [SuppressionStatus]:
-  /// - [SuppressionStatus.suppressed]: Successfully suppressed wallet
-  /// - [SuppressionStatus.denied]: User denied permission (iOS only)
-  /// - [SuppressionStatus.cancelled]: User cancelled the permission prompt (iOS)
-  /// - [SuppressionStatus.notSupported]: Device doesn't support suppression
-  /// - [SuppressionStatus.alreadyPresenting]: Wallet is already active (iOS)
-  /// - [SuppressionStatus.unavailable]: NFC hardware not available
+  /// - [SuppressionStatus.suppressed]: Suppression is active
+  /// - [SuppressionStatus.notSupported]: Suppression isn't supported — Android:
+  ///   the device has no NFC hardware; iOS: PassKit reports it unsupported
+  /// - [SuppressionStatus.unavailable]: Temporarily unavailable and recoverable
+  ///   (Android only) — NFC is turned off, or no activity is attached
+  /// - [SuppressionStatus.denied]: Permission denied — iOS: by the user or
+  ///   system; Android: a `SecurityException` on the NFC call
+  /// - [SuppressionStatus.alreadyPresenting]: Wallet is already presenting a pass
+  ///   (iOS only)
+  /// - [SuppressionStatus.cancelled]: User cancelled the permission prompt
+  ///   (iOS only)
   /// - [SuppressionStatus.unknown]: An unexpected error occurred
   ///
   /// ## Platform Behavior
@@ -119,21 +131,35 @@ class NfcWalletSuppression {
   /// ## Returns
   ///
   /// A [Future] that completes with a [SuppressionStatus]:
-  /// - [SuppressionStatus.notSuppressed]: Successfully released suppression
-  /// - [SuppressionStatus.unavailable]: No active suppression to release
-  /// - [SuppressionStatus.unknown]: An unexpected error occurred
+  /// - [SuppressionStatus.notSuppressed]: The suppression you requested has been
+  ///   released
+  /// - [SuppressionStatus.unavailable]: There was no suppression to release
+  ///   (none was requested, or it was already released)
+  /// - [SuppressionStatus.denied]: Android — tearing down reader mode failed
+  ///   with a `SecurityException`; suppression may still be active
+  /// - [SuppressionStatus.unknown]: An unexpected error occurred (an Android
+  ///   reader-mode tear-down failure, or a platform-channel failure);
+  ///   suppression may still be active
+  ///
+  /// Release is based on the suppression you requested, not on live device
+  /// state: it returns [SuppressionStatus.notSuppressed] even if suppression had
+  /// already lapsed in the meantime (e.g. the app was backgrounded or the user
+  /// turned NFC off). Use [isSuppressed] to query whether suppression is
+  /// actually in effect right now. Both platforms behave identically here.
   ///
   /// ## Platform Behavior
   ///
   /// **iOS:**
   /// - Uses PassKit's `endAutomaticPassPresentationSuppression`
   /// - Safe to call even if suppression was never requested
-  /// - Returns [SuppressionStatus.unavailable] if no suppression is active
+  /// - Returns [SuppressionStatus.unavailable] if no suppression was requested
+  ///   (or it was already released)
   ///
   /// **Android:**
   /// - Disables NFC reader mode
   /// - Safe to call even if suppression was never requested
-  /// - Returns [SuppressionStatus.unavailable] if no suppression is active
+  /// - Returns [SuppressionStatus.unavailable] if no suppression was requested
+  ///   (or it was already released)
   ///
   /// ## Example
   ///
@@ -175,7 +201,7 @@ class NfcWalletSuppression {
   /// **Android:**
   /// - Returns `true` only while suppression is active, an activity is attached,
   ///   and NFC is still enabled
-  /// - Suppression is re-armed across activity recreation (e.g. screen rotation)
+  /// - Suppression is re-armed across activity recreation (e.g., screen rotation)
   /// - Returns `false` if the activity is detached or NFC was turned off
   ///
   /// ## Example
@@ -208,6 +234,12 @@ class NfcWalletSuppression {
   /// - Requires iOS 13.0 or later
   /// - Requires iPhone 7 or later (NFC hardware)
   /// - Requires the PassKit entitlement
+  ///
+  /// Note: on iOS this reflects Wallet pass-library availability — a *necessary*
+  /// condition, not a guarantee that suppression will succeed (PassKit exposes no
+  /// API to query suppression capability or the entitlement up front). A `true`
+  /// result can still be followed by [SuppressionStatus.notSupported] or
+  /// [SuppressionStatus.denied] from [requestSuppression].
   ///
   /// **Android:**
   /// - Requires Android 5.0+ (API 21)

@@ -182,6 +182,30 @@ class RunnerTests: XCTestCase {
     XCTAssertEqual(status, .suppressed)
   }
 
+  func testRequest_whenActiveButOsEnded_reRequestThatFailsGoesIdle() {
+    let fake = FakePassLibrary()
+    fake.tokenToReturn = 8
+    let plugin = NfcWalletSuppressionPlugin(library: fake)
+
+    plugin.requestSuppression { _ in }
+    fake.deliver(.success)  // active, token 8
+    fake.isSuppressingAutomaticPassPresentation = false  // OS ended it externally
+    fake.tokenToReturn = 9
+
+    var status: SuppressionStatusCode?
+    plugin.requestSuppression { status = (try? $0.get())?.status }
+    fake.deliver(.denied)  // the fresh re-request fails
+
+    XCTAssertEqual(status, .denied)
+    XCTAssertEqual(fake.endedTokens, [8, 9],
+                   "Stale token 8 released before re-request; failed request's token 9 released too")
+
+    // State is idle, so a subsequent release reports unavailable.
+    var releaseStatus: SuppressionStatusCode?
+    plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }
+    XCTAssertEqual(releaseStatus, .unavailable)
+  }
+
   // MARK: - releaseSuppression
 
   func testRelease_fromIdle_returnsUnavailable() {

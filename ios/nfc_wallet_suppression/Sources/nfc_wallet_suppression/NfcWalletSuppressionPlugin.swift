@@ -9,8 +9,8 @@ import PassKit
 /// protocol lets the plugin be driven by a fake in tests while using the real
 /// system implementation in production.
 ///
-/// Implementations MUST invoke the request response handler on the main thread,
-/// and asynchronously (after `requestSuppression` has returned) — see
+/// Implementations MUST invoke the response handler on the main thread, and
+/// asynchronously (after `requestSuppression` has returned) — see
 /// `SystemPassLibrary`. The plugin relies on both: state is touched only on the
 /// main thread, and the token returned by `requestSuppression` is recorded
 /// before the handler runs.
@@ -75,8 +75,9 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
     /// No suppression and no request in flight.
     case idle
     /// A PassKit request is in flight. `waiters` are coalesced request
-    /// completions; `release` is a release awaiting the result; `token` is the
-    /// issued token (`nil` until known, or if the request could not be submitted).
+    /// completions; `release` is a release completion awaiting the result;
+    /// `token` is the issued token (`nil` until known, or if the request could
+    /// not be submitted).
     case inFlight(waiters: [Completion], release: Completion?, token: PKSuppressionRequestToken?)
     /// Suppression is active, holding `token`.
     case active(PKSuppressionRequestToken)
@@ -180,7 +181,7 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
       }
     } else {
       // No token: the request could not be submitted (or a token-less result,
-      // which is anomalous). Either way nothing is held.
+      // which is anomalous). Either way, nothing is held.
       if let token = token { library.endSuppression(withRequestToken: token) }
       result = SuppressionResult(status: .unknown, message: Message.couldNotSubmit)
       state = .idle
@@ -209,6 +210,11 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
   }
 
   private func performRelease(_ completion: @escaping Completion) {
+    // Intent-based release (matches Android): if we hold a token, we release it
+    // and report .notSuppressed; otherwise .unavailable. We deliberately do not
+    // reconcile against isSuppressingAutomaticPassPresentation here so the
+    // request/release pair stays clean and both platforms behave identically;
+    // isSuppressed reports live state.
     guard case .active(let token) = state else {
       completion(.success(SuppressionResult(status: .unavailable, message: Message.noActiveToRelease)))
       return
@@ -222,6 +228,11 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
     completion(.success(library.isSuppressingAutomaticPassPresentation))
   }
 
+  /// Reports whether the Wallet pass library is available, which is a *necessary*
+  /// condition for suppression (e.g. it is false on iPad). It is not a guarantee
+  /// that a suppression request will succeed — PassKit exposes no API to query
+  /// suppression capability or the required entitlement up front. The definitive
+  /// answer comes from `requestSuppression`'s result (`.notSupported` / `.denied`).
   func isSupported(completion: @escaping (Result<Bool, Error>) -> Void) {
     completion(.success(library.isPassLibraryAvailable))
   }

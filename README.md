@@ -154,14 +154,14 @@ The `SuppressionStatus` enum represents the result of suppression operations:
 
 | Status | Description |
 | :--- | :--- |
-| `suppressed` | Suppression is successfully active |
-| `notSuppressed` | Suppression is not active |
-| `unavailable` | Suppression feature is unavailable on this device |
-| `denied` | Suppression request was denied (missing entitlements or permissions) |
-| `cancelled` | Suppression was cancelled by the system |
-| `notSupported` | The platform doesn't support this feature |
-| `alreadyPresenting` | Wallet is already presenting (iOS-specific) |
-| `unknown` | Status could not be determined |
+| `suppressed` | Suppression is active |
+| `notSuppressed` | Suppression is not active (e.g. successfully released) |
+| `unavailable` | No active suppression to release; or, during `requestSuppression` on Android, NFC is turned off or no activity is attached (recoverable) |
+| `denied` | Permission denied — iOS: by the user or system; Android: a `SecurityException` on the NFC call |
+| `cancelled` | User cancelled the permission prompt (iOS only) |
+| `notSupported` | Suppression isn't supported — Android: no NFC hardware; iOS: PassKit reports it unsupported |
+| `alreadyPresenting` | Wallet is already presenting a pass (iOS only) |
+| `unknown` | An unexpected error occurred |
 
 **Important Notes:**
 

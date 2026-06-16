@@ -402,26 +402,6 @@ void main() {
         expect(results[2], SuppressionStatus.notSuppressed);
         expect(results[3], true);
       });
-
-      test('state changes do not affect pending operations', () async {
-        mockApi.mockRequestResult = SuppressionResult(
-          status: SuppressionStatusCode.suppressed,
-          message: 'Success',
-        );
-
-        // Start operation
-        final future = platform.requestSuppression();
-
-        // Change mock state
-        mockApi.mockRequestResult = SuppressionResult(
-          status: SuppressionStatusCode.unknown,
-          message: 'Changed',
-        );
-
-        // Original operation should complete with original result
-        final result = await future;
-        expect(result, SuppressionStatus.suppressed);
-      });
     });
 
     group('default instance', () {

@@ -1,20 +1,13 @@
 name: CI
 
 on:
+  # No paths-ignore: the workflow must always run so the required "CI Success"
+  # gate always reports (a path-skipped workflow would leave PRs stuck waiting).
+  # Slow native/build jobs still skip per-job via the check_changes path filter.
   pull_request:
     branches: [ main, master ]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'LICENSE'
-      - '.gitignore'
   push:
     branches: [ main, master ]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'LICENSE'
-      - '.gitignore'
   workflow_dispatch:
 
 concurrency:
@@ -98,7 +91,7 @@ jobs:
     timeout-minutes: 10
     needs: format
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         flutter-version: ['3.35.x', 'stable']
     
@@ -427,21 +420,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: analyze
-    if: github.event_name == 'pull_request'
-    
+    # Run on PRs and on pushes to the default branch so publishability is
+    # validated even when changes land without a PR.
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-      
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-      
+
       - name: Install dependencies
         run: flutter pub get
-      
+
       - name: Validate package
         run: |
           flutter pub publish --dry-run 2>&1 | tee publish-output.txt
@@ -460,7 +455,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: analyze
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
     
     steps:
       - name: Checkout code
@@ -594,3 +589,36 @@ jobs:
           name: ios-build
           path: example/build/ios/iphoneos/Runner.app
           retention-days: 7
+
+  ci-success:
+    name: CI Success
+    runs-on: ubuntu-latest
+    # The single required status check. It depends on every other job and fails
+    # if any of them failed or was cancelled, while treating skipped jobs (e.g.
+    # path-filtered native/build jobs) as acceptable. Making this the only
+    # required check in branch protection keeps the ruleset stable across matrix
+    # and job changes.
+    if: always()
+    needs:
+      - check_changes
+      - format
+      - analyze
+      - test
+      - native-tests-android
+      - native-tests-ios
+      - publish-dry-run
+      - pana
+      - dependency-review
+      - build-android
+      - build-ios
+    steps:
+      - name: Verify all jobs succeeded
+        run: |
+          echo "Dependency results: ${{ join(needs.*.result, ', ') }}"
+          for result in ${{ join(needs.*.result, ' ') }}; do
+            if [ "$result" = "failure" ] || [ "$result" = "cancelled" ]; then
+              echo "::error::A required job did not succeed (result: $result)."
+              exit 1
+            fi
+          done
+          echo "All jobs succeeded or were skipped."
