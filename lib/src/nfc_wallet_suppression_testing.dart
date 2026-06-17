@@ -59,7 +59,11 @@ class FakeNfcWalletSuppression extends NfcWalletSuppressionPlatform {
     _releaseResult = result;
   }
 
-  /// Manually set the suppressed state (simulates external state change)
+  /// Manually set the suppressed state (simulates an external state change).
+  ///
+  /// Note: a subsequent [requestSuppression] or [releaseSuppression] call
+  /// updates this flag based on that call's configured result, so this override
+  /// reflects state only until the next request/release.
   void setSuppressed(bool suppressed) {
     _isCurrentlySuppressed = suppressed;
   }
@@ -82,16 +86,22 @@ class FakeNfcWalletSuppression extends NfcWalletSuppressionPlatform {
   @override
   Future<SuppressionStatus> requestSuppression() async {
     methodCalls.add('requestSuppression');
-    if (_requestResult == SuppressionStatus.suppressed) {
-      _isCurrentlySuppressed = true;
-    }
+    // Suppression is active only when the request reports success; any other
+    // outcome leaves it inactive. Assigning (rather than only setting `true`)
+    // prevents a stale `true` from surviving a later failed request.
+    _isCurrentlySuppressed = _requestResult == SuppressionStatus.suppressed;
     return _requestResult;
   }
 
   @override
   Future<SuppressionStatus> releaseSuppression() async {
     methodCalls.add('releaseSuppression');
-    if (_releaseResult == SuppressionStatus.notSuppressed) {
+    // `notSuppressed` (released) and `unavailable` (nothing to release) both mean
+    // suppression is no longer active. A failure result (e.g., `denied` or
+    // `unknown`) means the release did not take effect, so the prior state is
+    // preserved.
+    if (_releaseResult == SuppressionStatus.notSuppressed ||
+        _releaseResult == SuppressionStatus.unavailable) {
       _isCurrentlySuppressed = false;
     }
     return _releaseResult;
