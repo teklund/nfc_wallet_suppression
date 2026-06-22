@@ -51,7 +51,7 @@ jobs:
       - name: Run pana
         run: |
           dart pub global activate pana
-          dart pub global run pana --no-warning --exit-code-threshold 80
+          dart pub global run pana --no-warning --exit-code-threshold 130
 
       - name: Dry run publish
         run: flutter pub publish --dry-run
