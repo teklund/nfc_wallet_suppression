@@ -78,6 +78,39 @@ void main() {
       expect(status, SuppressionStatus.unknown);
     });
 
+    test('a failed request clears a previously suppressed state', () async {
+      fake.setRequestResult(SuppressionStatus.suppressed);
+      await NfcWalletSuppression.requestSuppression();
+      expect(await NfcWalletSuppression.isSuppressed(), true);
+
+      // A later request that fails must not leave a stale `true`.
+      fake.setRequestResult(SuppressionStatus.denied);
+      await NfcWalletSuppression.requestSuppression();
+      expect(await NfcWalletSuppression.isSuppressed(), false);
+    });
+
+    test('a failed release keeps suppression active', () async {
+      fake.setRequestResult(SuppressionStatus.suppressed);
+      await NfcWalletSuppression.requestSuppression();
+
+      fake.setReleaseResult(SuppressionStatus.unknown);
+      await NfcWalletSuppression.releaseSuppression();
+      expect(
+        await NfcWalletSuppression.isSuppressed(),
+        true,
+        reason: 'A failed release must not clear suppression',
+      );
+    });
+
+    test('release returning unavailable clears suppression', () async {
+      fake.setRequestResult(SuppressionStatus.suppressed);
+      await NfcWalletSuppression.requestSuppression();
+
+      fake.setReleaseResult(SuppressionStatus.unavailable);
+      await NfcWalletSuppression.releaseSuppression();
+      expect(await NfcWalletSuppression.isSuppressed(), false);
+    });
+
     test('reset clears state and call history', () async {
       fake.setSupported(false);
       fake.setRequestResult(SuppressionStatus.unavailable);
