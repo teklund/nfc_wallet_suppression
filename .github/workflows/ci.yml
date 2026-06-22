@@ -327,19 +327,9 @@ jobs:
           else:
               print('')
           ")
-          if [ -z \"$SIMULATOR\" ]; then
-            echo \"No available iPhone simulator found, creating one...\"
-            xcrun simctl create 'iPhone 15' 'iPhone 15' || true
-            SIMULATOR=$(xcrun simctl list devices available -j | python3 -c "
-          import json, sys
-          data = json.load(sys.stdin)
-          for runtime, device_list in data['devices'].items():
-              if 'iOS' in runtime:
-                  for d in device_list:
-                      if d['isAvailable'] and 'iPhone 15' in d['name']:
-                          print(d['udid'])
-                          exit()
-            ")
+          if [ -z "$SIMULATOR" ]; then
+            echo "::error::No available iPhone simulator found on the runner."
+            exit 1
           fi
           echo "udid=$SIMULATOR" >> $GITHUB_OUTPUT
           echo "Selected simulator: $SIMULATOR"
