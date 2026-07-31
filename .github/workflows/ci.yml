@@ -465,17 +465,26 @@ jobs:
       
       - name: Run pana
         run: |
-          dart pub global run pana --no-warning | tee pana-output.txt
-          SCORE=$(grep -o 'Score: [0-9]*' pana-output.txt | grep -o '[0-9]*' | tail -1 || echo "0")
-          echo "## 🎯 Pana Score: ${SCORE}/160" >> $GITHUB_STEP_SUMMARY
+          # Enforce the same threshold the release gate uses (publish.yml) so a
+          # release-blocking pub-score regression fails here on the PR, not later
+          # at tag time.
+          set +e
+          dart pub global run pana --no-warning --exit-code-threshold 130 | tee pana-output.txt
+          PANA_EXIT=${PIPESTATUS[0]}
+          set -e
+          # For the summary only; the pass/fail decision is PANA_EXIT above. Show
+          # "unknown" (not a misleading 0) if pana's output format ever changes.
+          SCORE=$(grep -o 'Score: [0-9]*' pana-output.txt | grep -o '[0-9]*' | tail -1)
+          echo "## 🎯 Pana Score: ${SCORE:-unknown}/160 (required: >= 130)" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           cat pana-output.txt >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-          if [ "$SCORE" -lt 130 ]; then
-            echo "⚠️ Score is below recommended threshold of 130" >> $GITHUB_STEP_SUMMARY
+          if [ "$PANA_EXIT" -ne 0 ]; then
+            echo "❌ Score is below the required threshold of 130/160" >> $GITHUB_STEP_SUMMARY
           else
-            echo "✅ Score meets recommended threshold" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Score meets the required threshold" >> $GITHUB_STEP_SUMMARY
           fi
+          exit "$PANA_EXIT"
   
   dependency-review:
     name: Dependency Review
