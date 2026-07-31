@@ -1,8 +1,8 @@
 name: Integration Tests
 
 on:
-  # Disabled temporarily — re-enable tracked in #24.
-  # The simctl fallback below also needs fixing before re-enabling on PR/push.
+  # Disabled temporarily — re-enable tracked in #24 (still needs end-to-end
+  # verification of the Android emulator and iOS simulator paths on CI runners).
   # pull_request:
   #   branches: [ main, master ]
   #   paths-ignore:
@@ -131,9 +131,8 @@ jobs:
           # Get the first available iPhone simulator using Python for robust JSON parsing
           DEVICE_ID=$(xcrun simctl list devices available --json | python3 -c "import sys, json; devices = json.load(sys.stdin)['devices']; print(next((d['udid'] for runtime in devices.values() for d in runtime if 'iPhone' in d['name'] and d['isAvailable']), ''))")
           if [ -z "$DEVICE_ID" ]; then
-            echo "No iPhone simulator found, creating one..."
-            xcrun simctl create "iPhone 15" com.apple.CoreSimulator.CoreSimulatorService --type=com.apple.dt.iPhone15
-            DEVICE_ID=$(xcrun simctl list devices available --json | python3 -c "import sys, json; devices = json.load(sys.stdin)['devices']; print(next((d['udid'] for runtime in devices.values() for d in runtime if 'iPhone' in d['name'] and d['isAvailable']), ''))")
+            echo "::error::No available iPhone simulator found on the runner."
+            exit 1
           fi
           echo "Device ID: $DEVICE_ID"
           xcrun simctl boot "$DEVICE_ID" || true
