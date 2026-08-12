@@ -108,7 +108,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         _suppressionStatus = result;
         _isLoading = false;
       });
-    } catch (error, _) {
+    } catch (error) {
       if (!mounted) return;
       setState(() {
         _error = 'Error requesting suppression: $error';
@@ -132,7 +132,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         _suppressionStatus = result;
         _isLoading = false;
       });
-    } catch (error, _) {
+    } catch (error) {
       if (!mounted) return;
       setState(() {
         _error = 'Error releasing suppression: $error';
@@ -158,7 +158,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             : SuppressionStatus.notSuppressed;
         _isLoading = false;
       });
-    } catch (error, _) {
+    } catch (error) {
       if (!mounted) return;
       setState(() {
         _error = 'Error checking suppression status: $error';
