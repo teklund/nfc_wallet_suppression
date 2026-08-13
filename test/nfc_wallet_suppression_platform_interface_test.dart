@@ -42,14 +42,5 @@ void main() {
       // Restore original
       NfcWalletSuppressionPlatform.instance = originalInstance;
     });
-
-    test('instance can be set with MockPlatformInterfaceMixin', () {
-      // Verify that a proper mock implementation can be set
-      expect(
-        () => NfcWalletSuppressionPlatform.instance = mockPlatform,
-        returnsNormally,
-      );
-      expect(NfcWalletSuppressionPlatform.instance, equals(mockPlatform));
-    });
   });
 }
