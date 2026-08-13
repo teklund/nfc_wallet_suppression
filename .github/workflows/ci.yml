@@ -25,6 +25,8 @@ jobs:
     outputs:
       android: ${{ steps.filter.outputs.android }}
       ios: ${{ steps.filter.outputs.ios }}
+      web: ${{ steps.filter.outputs.web }}
+      macos: ${{ steps.filter.outputs.macos }}
       dart: ${{ steps.filter.outputs.dart }}
     steps:
       - name: Checkout code
@@ -55,6 +57,23 @@ jobs:
               - 'lib/**'
               - 'test/**'
               - 'pigeons/**'
+              - 'pubspec.yaml'
+            # web and macos guard the plugin's platform declaration rather than
+            # any native source we own: both have Dart-only stub implementations,
+            # and the way they are declared in pubspec.yaml is what the Flutter
+            # tool turns into a plugin registrant. pubspec.yaml is therefore the
+            # most important trigger here, not a platform source directory.
+            web:
+              - '.github/workflows/ci.yml'
+              - 'lib/**'
+              - 'example/lib/**'
+              - 'example/web/**'
+              - 'pubspec.yaml'
+            macos:
+              - '.github/workflows/ci.yml'
+              - 'lib/**'
+              - 'example/lib/**'
+              - 'example/macos/**'
               - 'pubspec.yaml'
             dart:
               - '.github/workflows/ci.yml'
@@ -639,6 +658,80 @@ jobs:
           path: example/build/ios/iphoneos/Runner.app
           retention-days: 7
 
+  # Web and macOS exist to verify the plugin's Dart-only stub platforms. Neither
+  # builds native code we wrote — what they actually exercise is the plugin
+  # registrant the Flutter tool generates from `flutter.plugin.platforms` in
+  # pubspec.yaml. That generation is where a plugin silently breaks: Flutter
+  # removed support for `pluginClass: none` after 3.35, which turned the stub
+  # declarations into a registrant referencing a class literally named `none`.
+  # Both jobs fail on that; nothing else in this workflow does.
+  build-web:
+    name: Build Web (${{ matrix.flutter-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [analyze, check_changes]
+    if: needs.check_changes.outputs.web == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        flutter-version: ['3.35.x', 'stable']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Flutter ${{ matrix.flutter-version }}
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ matrix.flutter-version != 'stable' && matrix.flutter-version || '' }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        working-directory: example
+        run: flutter pub get
+
+      - name: Build web
+        working-directory: example
+        run: flutter build web
+
+  build-macos:
+    name: Build macOS (${{ matrix.flutter-version }})
+    runs-on: macos-latest
+    timeout-minutes: 25
+    needs: [analyze, check_changes]
+    if: needs.check_changes.outputs.macos == 'true'
+    # Matrixed for the same reason the Android jobs are: the declared floor is a
+    # promise, and a plugin declaration can break against either an older or a
+    # newer Flutter. These are macOS runners, so this is the most expensive pair
+    # of legs in the workflow — drop the floor leg first if minutes get tight.
+    strategy:
+      fail-fast: false
+      matrix:
+        flutter-version: ['3.35.x', 'stable']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Flutter ${{ matrix.flutter-version }}
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ matrix.flutter-version != 'stable' && matrix.flutter-version || '' }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        working-directory: example
+        run: flutter pub get
+
+      # No explicit `pod install` step: the plugin contributes no macOS pod, so
+      # letting the Flutter tool drive CocoaPods is both sufficient and the path
+      # that actually reproduces the registrant failure described above.
+      - name: Build macOS
+        working-directory: example
+        run: flutter build macos --debug
+
   ci-success:
     name: CI Success
     runs-on: ubuntu-latest
@@ -660,6 +753,8 @@ jobs:
       - dependency-review
       - build-android
       - build-ios
+      - build-web
+      - build-macos
     steps:
       - name: Verify all jobs succeeded
         run: |
