@@ -54,6 +54,17 @@ unlinked_spec.ds
 **/android/captures/
 **/android/gradlew
 **/android/gradlew.bat
+
+# The example app's Gradle wrapper is committed deliberately, so un-ignore it:
+# CI runs `./gradlew` from example/android, and Gradle's guidance is that the
+# wrapper is checked in so every build uses the same Gradle version. Leaving it
+# both ignored and tracked made `pub publish` warn on every release.
+# The plugin's own android/ wrapper stays ignored — nothing builds from that
+# directory; the plugin compiles as a subproject of the consuming app.
+!example/android/gradle/wrapper/gradle-wrapper.jar
+!example/android/gradlew
+!example/android/gradlew.bat
+
 **/android/local.properties
 **/android/**/GeneratedPluginRegistrant.java
 **/android/key.properties
