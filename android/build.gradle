@@ -24,14 +24,28 @@ allprojects {
 apply plugin: "com.android.library"
 apply plugin: "jacoco"
 
-// Built-in Kotlin migration (Flutter 3.44+): from AGP 9 onward Kotlin support is
-// provided by AGP itself, so applying the Kotlin Gradle Plugin here would fail the
-// build. For older AGP (Flutter < 3.44) we keep applying KGP so the plugin still
-// builds for consumers on those toolchains.
+// Built-in Kotlin migration (Flutter 3.44+): from AGP 9 onward Kotlin support can be
+// provided by AGP itself, in which case applying the Kotlin Gradle Plugin here would
+// fail the build. But AGP 9 alone is not enough — built-in Kotlin is only active when
+// `android.builtInKotlin` is unset or true, and Flutter's own migrator writes
+// `android.builtInKotlin=false` into consumer projects. Whenever it is off we must
+// apply KGP ourselves, including on AGP 9.
+// The condition mirrors FlutterPluginUtils.isBuiltInKotlinEnabled.
+//
+// KGP is applied programmatically on purpose. Flutter detects KGP-applying plugins by
+// statically grepping this file for a literal `apply plugin: "kotlin-android"` line; a
+// match warns consumers that our plugin is Built-in-Kotlin-incompatible and will stop
+// building in a future Flutter release, even though the conditional above is correct.
+// pluginManager.apply is the same call Flutter itself makes as its fallback, and it is
+// idempotent, so both of us applying it is harmless.
+//
 // See https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-plugin-authors
 def agpMajor = com.android.Version.ANDROID_GRADLE_PLUGIN_VERSION.tokenize('.')[0] as int
-if (agpMajor < 9) {
-    apply plugin: "kotlin-android"
+def builtInKotlinProp = project.findProperty("android.builtInKotlin")
+def builtInKotlin = agpMajor >= 9 &&
+    (builtInKotlinProp == null || builtInKotlinProp.toString().toBoolean())
+if (!builtInKotlin) {
+    pluginManager.apply("kotlin-android")
 }
 
 android {
@@ -54,7 +68,7 @@ android {
     }
 
     dependencies {
-        testImplementation("org.jetbrains.kotlin:kotlin-test")
+        testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:$kotlin_version")
         testImplementation("org.mockito:mockito-core:5.14.2")
     }
 
@@ -113,15 +127,18 @@ tasks.register('jacocoTestReport', JacocoReport) {
         'android/**/*.*'
     ]
     
-    def debugTree = fileTree(
-        dir: "${buildDir}/tmp/kotlin-classes/debug",
-        excludes: fileFilter
-    )
-    
+    // Take the class directory from the Kotlin compile task itself rather than
+    // hardcoding a path. AGP moved the output under Built-in Kotlin (AGP 9+) from
+    // `tmp/kotlin-classes/debug` to an `intermediates/built_in_kotlinc/...` directory;
+    // a hardcoded path silently yields an empty report and a green build.
+    def debugClasses = tasks.named("compileDebugKotlin").flatMap { it.destinationDirectory }
+
     def mainSrc = "${project.projectDir}/src/main/kotlin"
-    
+
     sourceDirectories.setFrom(files([mainSrc]))
-    classDirectories.setFrom(files([debugTree]))
+    classDirectories.setFrom(
+        files(debugClasses).asFileTree.matching { exclude fileFilter }
+    )
     executionData.setFrom(fileTree(
         dir: buildDir,
         includes: [
