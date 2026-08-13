@@ -217,7 +217,7 @@ NfcWalletSuppressionPlatform.instance = fake;
 
 ## Example App
 
-See the [`example/`](https://github.com/teklund/nfc_wallet_suppression/tree/main/example) directory for a complete working example with lifecycle management and error handling.
+See the [`example/`](https://github.com/teklund/nfc_wallet_suppression/tree/HEAD/example) directory for a complete working example with lifecycle management and error handling.
 
 ```bash
 cd example && flutter run

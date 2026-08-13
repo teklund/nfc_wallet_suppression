@@ -161,7 +161,7 @@ git commit -m "chore: bump version to 1.0.0"
 git tag -a v1.0.0 -m "Release version 1.0.0"
 
 # Push commits and tags
-git push origin main
+git push origin master
 git push origin v1.0.0
 ```
 
@@ -176,6 +176,19 @@ Pushing the tag triggers the [publish workflow](.github/workflows/publish.yml) a
 To approve the publish, go to the Actions tab, open the workflow run, and approve the pending deployment.
 
 > To set up the `pub.dev` environment: go to **Settings → Environments → New environment**, name it `pub.dev`, and add required reviewers.
+
+> **Prerequisite — enable automated publishing on pub.dev.** The publish job
+> authenticates with OIDC and stores no credentials, which only works if pub.dev
+> is expecting it. On [pub.dev](https://pub.dev/packages/nfc_wallet_suppression/admin)
+> go to **Admin → Automated publishing**, enable publishing from GitHub Actions,
+> set the repository to `teklund/nfc_wallet_suppression`, and set the tag pattern
+> to `v{{version}}`. Without this the verify job passes and the publish job fails
+> at authentication.
+>
+> **The tag must carry the `v` prefix.** The workflow triggers on
+> `v[0-9]+.[0-9]+.[0-9]+*`. The 0.1.1 tag in this repository has no prefix, which
+> is why that release did not go through this workflow — it has never actually
+> run, so treat the first use as unproven.
 
 ### 5. Verify Publication
 
