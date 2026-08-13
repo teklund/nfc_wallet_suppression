@@ -11,7 +11,7 @@ iOS implementation of the nfc_wallet_suppression Flutter plugin. Uses PassKit to
 automatic Apple Wallet presentation when detecting NFC readers.
                        DESC
   s.homepage         = 'https://github.com/teklund/nfc_wallet_suppression'
-  s.license          = { :file => '../LICENSE' }
+  s.license          = { :type => 'BSD', :file => '../LICENSE' }
   s.author           = { 'TEklund' => 'teklund@users.noreply.github.com' }
   s.source           = { :path => '.' }
   s.source_files = 'nfc_wallet_suppression/Sources/nfc_wallet_suppression/**/*.swift'

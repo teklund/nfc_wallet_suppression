@@ -1,7 +1,10 @@
 # Build artifacts and CI config — not useful to package consumers
 .github/
 coverage/
-doc/
+# The directory is `docs/`, not `doc/`. This rule read `doc/` and so matched
+# nothing, which shipped the internal engineering notes to consumers and left
+# pub warning about the plural directory name.
+docs/
 
 # Code generation source — consumers need the output, not the input
 pigeons/
