@@ -71,7 +71,9 @@ flutter pub add nfc_wallet_suppression
 
 ### iOS
 
-**Minimum:** iOS 13.0+ (Flutter SDK minimum; PassKit suppression API available from iOS 9.0+)
+**Minimum:** iOS 13.0+ (this plugin's floor; the PassKit suppression API is available from iOS 9.0+)
+
+Your app's actual minimum is whichever is higher — this plugin's floor or the one your Flutter version requires. Flutter 3.47, for example, requires iOS 15.0.
 
 **Note:** Only suppresses wallet on devices with NFC hardware (iPhone 7+). Older iPhones without NFC don't need suppression.
 
