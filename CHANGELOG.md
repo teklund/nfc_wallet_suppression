@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Fixed
+
+- 🐛 **Web, macOS, Linux and Windows support restored on Flutter 3.36+**: The stub
+  platforms were declared with `pluginClass: none`, a form Flutter removed after
+  3.35 ([flutter/flutter#57497](https://github.com/flutter/flutter/issues/57497)).
+  Newer Flutter versions took `none` literally and generated a plugin registrant
+  referencing a class of that name, so a dependent app failed to build for web
+  (`Couldn't resolve the package 'flutter_web_plugins'`) and for macOS
+  (`No podspec found for nfc_wallet_suppression`). The desktop platforms now use
+  `dartPluginClass` alone, and web uses a real `pluginClass` plus the
+  `flutter_web_plugins` dependency its generated registrant requires. No released
+  version was affected — the stub platforms were introduced in the unreleased
+  1.0.0 — and the supported Flutter range is unchanged at 3.35.0+.
+
 ### Changed
 
 - 🤖 **Android Built-in Kotlin migration (Flutter 3.44+)**: The Android build no
@@ -12,8 +26,12 @@ All notable changes to this project will be documented in this file.
   the plugin keeps building on both new and older toolchains. The deprecated
   `kotlinOptions` block was replaced with the modern `kotlin.compilerOptions` DSL.
   No change to the supported Flutter range — the plugin still targets Flutter 3.35.0+.
-- ⬆️ **Example toolchain bump**: Example app updated to Gradle 8.14, Android Gradle
-  Plugin 8.11.1, and Kotlin 2.2.20 to track currently-supported build tooling.
+- ⬆️ **Example toolchain bump**: Example app updated to Gradle 9.1.0, Android Gradle
+  Plugin 8.13.2, and Kotlin 2.4.10 to track currently-supported build tooling. The
+  previous versions sat exactly on Flutter's minimum supported versions, so any
+  further increase there would have broken the build with no margin. Staying on
+  AGP 8.x is deliberate: AGP 9 is only reachable once the declared Flutter floor
+  moves to 3.44+.
 - 🧪 **JaCoCo coverage config**: Dropped the deprecated `testCoverageEnabled` build
   flag (incompatible with AGP 8.11+ Gradle task validation); unit-test coverage now
   relies solely on the Gradle JaCoCo extension already configured in `testOptions`.
