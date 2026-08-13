@@ -184,50 +184,85 @@ jobs:
           retention-days: 7
 
   native-tests-android:
-    name: Android Native Tests
+    name: Android Native Tests (${{ matrix.flutter-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [analyze, check_changes]
     if: needs.check_changes.outputs.android == 'true'
-    
+    # Built against both the declared floor and the latest stable. The plugin's
+    # Gradle logic branches on AGP version and android.builtInKotlin, so a single
+    # toolchain cannot cover it — the floor is the promise nothing else verifies.
+    strategy:
+      fail-fast: false
+      matrix:
+        flutter-version: ['3.35.x', 'stable']
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
-      
+
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
           distribution: 'zulu'
           java-version: '17'
-      
-      - name: Setup Flutter
+
+      - name: Setup Flutter ${{ matrix.flutter-version }}
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: ${{ matrix.flutter-version != 'stable' && matrix.flutter-version || '' }}
           channel: stable
           cache: true
-      
+
       - name: Install dependencies
         working-directory: example
         run: flutter pub get
-      
+
       - name: Cache Gradle
         uses: actions/cache@v6
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('example/android/**/*.gradle*', 'example/android/gradle/wrapper/gradle-wrapper.properties') }}
+          key: ${{ runner.os }}-gradle-${{ matrix.flutter-version }}-${{ hashFiles('example/android/**/*.gradle*', 'example/android/gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: |
+            ${{ runner.os }}-gradle-${{ matrix.flutter-version }}-
             ${{ runner.os }}-gradle-
-      
+
       - name: Run Android tests with coverage
         working-directory: example/android
         run: ./gradlew :nfc_wallet_suppression:testDebugUnitTest :nfc_wallet_suppression:jacocoTestReport --console=plain
       
+      # A JaCoCo report can be well-formed, non-empty as a file, and still contain
+      # zero classes when the configured class directory does not match where the
+      # compiler actually wrote them. That failure mode is silent: the Gradle build
+      # succeeds and Codecov accepts the upload. Assert on content, not existence.
+      - name: Verify coverage report is not empty
+        run: |
+          REPORT=example/build/nfc_wallet_suppression/reports/jacoco/test/jacocoTestReport.xml
+          if [ ! -f "$REPORT" ]; then
+            echo "::error::JaCoCo report not found at $REPORT"
+            exit 1
+          fi
+          python3 - "$REPORT" <<'PY'
+          import sys, xml.etree.ElementTree as ET
+          root = ET.parse(sys.argv[1]).getroot()
+          packages = len(root.findall("package"))
+          line = next((c for c in root.findall("counter") if c.get("type") == "LINE"), None)
+          covered = int(line.get("covered")) if line is not None else 0
+          missed = int(line.get("missed")) if line is not None else 0
+          print(f"packages={packages} lines_covered={covered} lines_missed={missed}")
+          if packages == 0 or (covered + missed) == 0:
+              sys.exit("::error::JaCoCo report contains no classes - the configured "
+                       "class directory likely does not match the compiler output")
+          if covered == 0:
+              sys.exit("::error::JaCoCo reports 0 covered lines")
+          PY
+
       - name: Generate test summary
         if: always()
         run: |
-          echo "## 🤖 Android Native Tests" >> $GITHUB_STEP_SUMMARY
+          echo "## 🤖 Android Native Tests (${{ matrix.flutter-version }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ -d "example/build/nfc_wallet_suppression/reports/tests" ]; then
             echo "✅ Test reports generated" >> $GITHUB_STEP_SUMMARY
@@ -242,9 +277,11 @@ jobs:
           else
             echo "⚠️ Coverage report not found" >> $GITHUB_STEP_SUMMARY
           fi
-      
+
+      # Uploaded from the stable leg only; both legs produce identical coverage, so
+      # sending both would just double-count the same lines under the same flag.
       - name: Upload Android coverage to Codecov
-        if: always()
+        if: always() && matrix.flutter-version == 'stable'
         uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -252,12 +289,12 @@ jobs:
           flags: android
           name: android-coverage
           fail_ci_if_error: false
-      
+
       - name: Upload Android test results
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: android-test-results
+          name: android-test-results-${{ matrix.flutter-version }}
           path: |
             example/build/nfc_wallet_suppression/reports/tests/
             example/build/nfc_wallet_suppression/test-results/
@@ -504,44 +541,49 @@ jobs:
           comment-summary-in-pr: on-failure
 
   build-android:
-    name: Build Android
+    name: Build Android (${{ matrix.flutter-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [analyze, check_changes]
     if: needs.check_changes.outputs.android == 'true'
-    
+    strategy:
+      fail-fast: false
+      matrix:
+        flutter-version: ['3.35.x', 'stable']
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
-      
-      - name: Setup Flutter
+
+      - name: Setup Flutter ${{ matrix.flutter-version }}
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: ${{ matrix.flutter-version != 'stable' && matrix.flutter-version || '' }}
           channel: stable
           cache: true
-      
+
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
           distribution: 'zulu'
           java-version: '17'
-      
+
       - name: Install dependencies
         working-directory: example
         run: flutter pub get
-      
+
       - name: Build Android APK
         working-directory: example
         run: flutter build apk --debug
-      
+
       - name: Build Android App Bundle
         working-directory: example
         run: flutter build appbundle --debug
-      
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v7
         with:
-          name: android-apk
+          name: android-apk-${{ matrix.flutter-version }}
           path: example/build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 7
 
