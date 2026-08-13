@@ -34,8 +34,14 @@ jobs:
         uses: dorny/paths-filter@v4
         id: filter
         with:
+          # Every filter includes this workflow file. A change to the native or
+          # build jobs cannot be validated any other way, and without this a PR
+          # editing those jobs skips them and merges green but unverified.
+          # Scoped to ci.yml rather than .github/workflows/** so that edits to
+          # the release and publish workflows still skip the native matrix.
           filters: |
             android:
+              - '.github/workflows/ci.yml'
               - 'android/**'
               - 'example/android/**'
               - 'lib/**'
@@ -43,6 +49,7 @@ jobs:
               - 'pigeons/**'
               - 'pubspec.yaml'
             ios:
+              - '.github/workflows/ci.yml'
               - 'ios/**'
               - 'example/ios/**'
               - 'lib/**'
@@ -50,6 +57,7 @@ jobs:
               - 'pigeons/**'
               - 'pubspec.yaml'
             dart:
+              - '.github/workflows/ci.yml'
               - 'lib/**'
               - 'test/**'
               - 'example/lib/**'
