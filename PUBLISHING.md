@@ -10,7 +10,6 @@ This document provides a comprehensive checklist for publishing new versions of 
 
 - [ ] Update `CHANGELOG.md` with all changes following [Keep a Changelog](https://keepachangelog.com/) format
 - [ ] Update version number in `pubspec.yaml`
-- [ ] Update version number in `ios/nfc_wallet_suppression.podspec`
 - [ ] Update README.md if API has changed
 - [ ] Review and update API documentation in code
 - [ ] Review all documentation for accuracy and completeness
@@ -109,19 +108,19 @@ This document provides a comprehensive checklist for publishing new versions of 
 
 ### 1. Version Bump
 
-Update version numbers following [Semantic Versioning](https://semver.org/):
-
-**pubspec.yaml:**
+`pubspec.yaml` is the only file carrying the package version. Update it
+following [Semantic Versioning](https://semver.org/):
 
 ```yaml
 version: 1.0.0
 ```
 
-**ios/nfc_wallet_suppression.podspec:**
-
-```ruby
-s.version = '1.0.0'
-```
+> **Leave `s.version` in `ios/nfc_wallet_suppression.podspec` at `0.0.1`.**
+> A Flutter plugin's podspec is never published to a CocoaPods trunk — it is
+> consumed by path (`s.source = { :path => '.' }`) from the app's Podfile, so
+> the version is inert. Every plugin in the Flutter repo leaves it at the
+> `flutter create` default. Bumping it in lockstep with pubspec.yaml is busywork
+> that will eventually drift and mislead.
 
 ### 2. Update CHANGELOG
 

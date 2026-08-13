@@ -2,7 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-## 1.0.0
+## 1.0.0-dev.1
+
+Pre-release of 1.0.0, published to exercise the release pipeline end to end.
+Functionally identical to the forthcoming 1.0.0 — prefer that release once it
+is available.
 
 Major release with Pigeon migration for type-safe platform channels.
 
@@ -38,6 +42,7 @@ Major release with Pigeon migration for type-safe platform channels.
 
 - 🐛 **Type Safety**: Eliminated possibility of typos in error code strings between platforms
 - 🐛 **Error Context**: Platform errors now include detailed messages in structured format
+- 🐛 **Package size**: `.pubignore` shadows the root `.gitignore`, so local build output was being bundled into the published archive. Restated the artifact rules in `.pubignore` — the archive drops from 28 MB to 326 KB
 
 ### Technical Details
 

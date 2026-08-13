@@ -1,4 +1,46 @@
-# Build artifacts and CI config — not useful to package consumers
+# ⚠️  This file SHADOWS the root .gitignore.
+#
+# From dart.dev/tools/pub/publishing: "If a directory contains both a
+# .pubignore file and a .gitignore file, then `dart pub publish` ignores that
+# directory's .gitignore file." So every root .gitignore rule that should also
+# keep files out of the published archive has to be restated below — otherwise
+# it silently stops applying at publish time. Nested .gitignore files
+# (android/, example/, ios/, ...) are unaffected; only the root one is lost.
+#
+# Verify with `flutter pub publish --dry-run` and read the file tree, not just
+# the warning count. Leaked build output produces zero warnings.
+
+# Only NON-hidden rules need restating. pub already drops "any hidden files or
+# directories ... names that begin with dot" unconditionally, ignore files or
+# not, so `.dart_tool/`, `.gradle/`, `.idea/`, `.DS_Store`, `.pub-preload-cache/`
+# and friends are covered no matter what. Listing them here would be rules that
+# match nothing — exactly the failure mode the `doc/` typo below had. What
+# follows is the non-hidden generated output from the root .gitignore.
+
+# Build output. Without this the archive carries whatever happens to be in the
+# publisher's working tree — `flutter test` alone leaves ~90 MB of .dill files
+# in build/test_cache/.
+build/
+migrate_working_dir/
+**/doc/api/
+
+# Generated binaries and artifacts
+app.*.symbols
+flutter_*.png
+linked_*.ds
+unlinked.ds
+unlinked_spec.ds
+*.class
+*.pyc
+*.log
+*.swp
+
+# IDE project files
+*.iml
+*.ipr
+*.iws
+
+# CI config and generated reports — not useful to package consumers
 .github/
 coverage/
 # The directory is `docs/`, not `doc/`. This rule read `doc/` and so matched
