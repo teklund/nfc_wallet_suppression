@@ -131,7 +131,7 @@ tasks.register('jacocoTestReport', JacocoReport) {
     // hardcoding a path. AGP moved the output under Built-in Kotlin (AGP 9+) from
     // `tmp/kotlin-classes/debug` to an `intermediates/built_in_kotlinc/...` directory;
     // a hardcoded path silently yields an empty report and a green build.
-    def debugClasses = tasks.named("compileDebugKotlin").map { it.destinationDirectory }
+    def debugClasses = tasks.named("compileDebugKotlin").flatMap { it.destinationDirectory }
 
     def mainSrc = "${project.projectDir}/src/main/kotlin"
 
