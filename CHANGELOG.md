@@ -42,6 +42,7 @@ Major release with Pigeon migration for type-safe platform channels.
 
 - 🐛 **Type Safety**: Eliminated possibility of typos in error code strings between platforms
 - 🐛 **Error Context**: Platform errors now include detailed messages in structured format
+- 🐛 **Package size**: `.pubignore` shadows the root `.gitignore`, so local build output was being bundled into the published archive. Restated the artifact rules in `.pubignore` — the archive drops from 28 MB to 326 KB
 
 ### Technical Details
 
