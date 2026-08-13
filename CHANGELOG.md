@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Fixed
+
+- 🐛 **Web, macOS, Linux and Windows support restored on Flutter 3.36+**: The stub
+  platforms were declared with `pluginClass: none`, a form Flutter removed after
+  3.35 ([flutter/flutter#57497](https://github.com/flutter/flutter/issues/57497)).
+  Newer Flutter versions took `none` literally and generated a plugin registrant
+  referencing a class of that name, so a dependent app failed to build for web
+  (`Couldn't resolve the package 'flutter_web_plugins'`) and for macOS
+  (`No podspec found for nfc_wallet_suppression`). The desktop platforms now use
+  `dartPluginClass` alone, and web uses a real `pluginClass` plus the
+  `flutter_web_plugins` dependency its generated registrant requires. No released
+  version was affected — the stub platforms were introduced in the unreleased
+  1.0.0 — and the supported Flutter range is unchanged at 3.35.0+.
+
 ### Changed
 
 - 🤖 **Android Built-in Kotlin migration (Flutter 3.44+)**: The Android build no

@@ -18,6 +18,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Required by the generated web plugin registrant, which imports
+  # `flutter_web_plugins` to obtain the `Registrar` passed to registerWith.
+  flutter_web_plugins:
+    sdk: flutter
   plugin_platform_interface: ^2.0.2
 
 dev_dependencies:
@@ -49,18 +53,11 @@ flutter:
       ios:
         pluginClass: NfcWalletSuppressionPlugin
       web:
-        pluginClass: none
-        dartPluginClass: StubNfcWalletSuppression
+        pluginClass: StubNfcWalletSuppression
         fileName: src/nfc_wallet_suppression_stub.dart
       macos:
-        pluginClass: none
         dartPluginClass: StubNfcWalletSuppression
-        fileName: src/nfc_wallet_suppression_stub.dart
       linux:
-        pluginClass: none
         dartPluginClass: StubNfcWalletSuppression
-        fileName: src/nfc_wallet_suppression_stub.dart
       windows:
-        pluginClass: none
         dartPluginClass: StubNfcWalletSuppression
-        fileName: src/nfc_wallet_suppression_stub.dart
