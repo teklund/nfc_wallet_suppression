@@ -2,7 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-## 1.0.0
+## 1.0.0-dev.1
+
+Pre-release of 1.0.0, published to exercise the release pipeline end to end.
+Functionally identical to the forthcoming 1.0.0 — prefer that release once it
+is available.
 
 Major release with Pigeon migration for type-safe platform channels.
 
