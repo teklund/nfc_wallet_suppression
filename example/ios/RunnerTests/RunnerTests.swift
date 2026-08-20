@@ -155,7 +155,7 @@ class RunnerTests: XCTestCase {
 
     var releaseStatus: SuppressionStatusCode?
     plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }
-    XCTAssertEqual(releaseStatus, .unavailable, "No token should linger after a failed request")
+    XCTAssertEqual(releaseStatus, .notSuppressed, "No token should linger after a failed request")
   }
 
   func testRequest_zeroToken_waitsForHandlerAndReportsItsReason() {
@@ -198,7 +198,7 @@ class RunnerTests: XCTestCase {
     // No phantom token was retained, so a following release has nothing to end.
     var releaseStatus: SuppressionStatusCode?
     plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }
-    XCTAssertEqual(releaseStatus, .unavailable)
+    XCTAssertEqual(releaseStatus, .notSuppressed)
   }
 
   func testRequest_timeoutMessage_statesTheTimeoutWithoutTruncatingIt() {
@@ -231,7 +231,7 @@ class RunnerTests: XCTestCase {
 
     var releaseStatus: SuppressionStatusCode?
     plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }
-    XCTAssertEqual(releaseStatus, .unavailable)
+    XCTAssertEqual(releaseStatus, .notSuppressed)
   }
 
   func testRequest_coalescedRequestAndDeferredReleaseResolveTogether() {
@@ -317,10 +317,10 @@ class RunnerTests: XCTestCase {
     XCTAssertEqual(fake.endedTokens, [8, 9],
                    "Stale token 8 released before re-request; failed request's token 9 released too")
 
-    // State is idle, so a subsequent release reports unavailable.
+    // State is idle, so a subsequent release is an idempotent no-op.
     var releaseStatus: SuppressionStatusCode?
     plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }
-    XCTAssertEqual(releaseStatus, .unavailable)
+    XCTAssertEqual(releaseStatus, .notSuppressed)
   }
 
   // MARK: - Ordering
@@ -505,7 +505,7 @@ class RunnerTests: XCTestCase {
 
     var releaseStatus: SuppressionStatusCode?
     plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }
-    XCTAssertEqual(releaseStatus, .unavailable, "Nothing is held once the late failure is reconciled")
+    XCTAssertEqual(releaseStatus, .notSuppressed, "Nothing is held once the late failure is reconciled")
   }
 
   func testRequest_lateSuccessAfterTimeoutAndRelease_endsTokenDefensivelyASecondTime() {
@@ -748,13 +748,18 @@ class RunnerTests: XCTestCase {
 
   // MARK: - releaseSuppression
 
-  func testRelease_fromIdle_returnsUnavailable() {
+  func testRelease_fromIdle_isAnIdempotentNoOp() {
+    // Releasing when nothing is suppressed is a success, not an error: the caller
+    // asked for suppression to be off and it is off. That lets a
+    // `finally { release() }` block run unconditionally without having to know
+    // whether the matching request succeeded. The message still distinguishes
+    // this path from a real tear-down for anyone reading logs.
     let (plugin, _, _) = makeSUT()
 
     var result: SuppressionResult?
     plugin.releaseSuppression { result = try? $0.get() }
 
-    XCTAssertEqual(result?.status, .unavailable)
+    XCTAssertEqual(result?.status, .notSuppressed)
     XCTAssertEqual(result?.message, "No active suppression to release")
   }
 
@@ -787,7 +792,7 @@ class RunnerTests: XCTestCase {
     XCTAssertEqual(fake.endedTokens, [5], "Deferred release ends the now-active token")
   }
 
-  func testRelease_duringInFlightRequest_whenRequestFails_reportsUnavailable() {
+  func testRelease_duringInFlightRequest_whenRequestFails_reportsNotSuppressed() {
     let (plugin, fake, _) = makeSUT(token: 6)
 
     var releaseStatus: SuppressionStatusCode?
@@ -795,11 +800,11 @@ class RunnerTests: XCTestCase {
     plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }  // deferred
 
     fake.deliver(.denied)
-    XCTAssertEqual(releaseStatus, .unavailable, "Nothing to release after a failed request")
+    XCTAssertEqual(releaseStatus, .notSuppressed, "Nothing to release after a failed request")
     XCTAssertEqual(fake.endedTokens, [6], "The failed request's token is still released")
   }
 
-  func testSecondRelease_duringInFlightRequest_runsAfterTheFirstAndReportsUnavailable() {
+  func testSecondRelease_duringInFlightRequest_runsAfterTheFirstAndReportsNotSuppressed() {
     let (plugin, fake, _) = makeSUT(token: 12)
 
     var firstRelease: SuppressionStatusCode?
@@ -815,7 +820,7 @@ class RunnerTests: XCTestCase {
     fake.deliver(.success)
 
     XCTAssertEqual(firstRelease, .notSuppressed, "The first release ends the suppression")
-    XCTAssertEqual(secondRelease, .unavailable, "The second finds nothing left to release")
+    XCTAssertEqual(secondRelease, .notSuppressed, "The second finds nothing left to release")
     XCTAssertEqual(fake.endedTokens, [12])
   }
 

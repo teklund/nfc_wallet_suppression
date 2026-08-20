@@ -516,14 +516,20 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
 
   private func performRelease(_ completion: @escaping Completion) {
     // Intent-based release (matches Android): if we hold a token we end it and
-    // report `.notSuppressed`; otherwise `.unavailable`. We deliberately do not
-    // reconcile against `isSuppressingAutomaticPassPresentation` here so the
-    // request/release pair stays clean and both platforms behave identically;
-    // `isSuppressed` reports live state.
+    // report `.notSuppressed`. We deliberately do not reconcile against
+    // `isSuppressingAutomaticPassPresentation` here so the request/release pair
+    // stays clean and both platforms behave identically; `isSuppressed` reports
+    // live state.
+    //
+    // Releasing when nothing was suppressed is also `.notSuppressed`, not an
+    // error: the caller asked for suppression to be off and it is off. That makes
+    // release idempotent, so a `finally { release() }` block never has to
+    // special-case whether the matching request succeeded. The message still
+    // distinguishes the two paths for anyone reading logs.
     switch tokenState {
     case .none:
       completion(
-        .success(SuppressionResult(status: .unavailable, message: Message.noActiveToRelease)))
+        .success(SuppressionResult(status: .notSuppressed, message: Message.noActiveToRelease)))
     case .held(let token), .unconfirmed(let token, _):
       library.endSuppression(withRequestToken: token)
       tokenState = .none

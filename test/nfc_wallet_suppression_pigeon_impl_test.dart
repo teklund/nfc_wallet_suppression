@@ -95,7 +95,7 @@ void main() {
         );
 
         final result = await platform.requestSuppression();
-        expect(result, SuppressionStatus.suppressed);
+        expect(result.status, SuppressionStatus.suppressed);
       });
 
       test('returns notSupported status', () async {
@@ -105,7 +105,7 @@ void main() {
         );
 
         final result = await platform.requestSuppression();
-        expect(result, SuppressionStatus.notSupported);
+        expect(result.status, SuppressionStatus.notSupported);
       });
 
       test('returns alreadyPresenting status', () async {
@@ -115,7 +115,7 @@ void main() {
         );
 
         final result = await platform.requestSuppression();
-        expect(result, SuppressionStatus.alreadyPresenting);
+        expect(result.status, SuppressionStatus.alreadyPresenting);
       });
 
       test('returns cancelled status', () async {
@@ -125,7 +125,7 @@ void main() {
         );
 
         final result = await platform.requestSuppression();
-        expect(result, SuppressionStatus.cancelled);
+        expect(result.status, SuppressionStatus.cancelled);
       });
 
       test('returns denied status', () async {
@@ -135,7 +135,7 @@ void main() {
         );
 
         final result = await platform.requestSuppression();
-        expect(result, SuppressionStatus.denied);
+        expect(result.status, SuppressionStatus.denied);
       });
 
       test('returns unavailable status', () async {
@@ -145,7 +145,7 @@ void main() {
         );
 
         final result = await platform.requestSuppression();
-        expect(result, SuppressionStatus.unavailable);
+        expect(result.status, SuppressionStatus.unavailable);
       });
 
       test('returns unknown status', () async {
@@ -155,14 +155,14 @@ void main() {
         );
 
         final result = await platform.requestSuppression();
-        expect(result, SuppressionStatus.unknown);
+        expect(result.status, SuppressionStatus.unknown);
       });
 
       test('returns unknown on exception', () async {
         mockApi.mockException = Exception('Test error');
 
         final result = await platform.requestSuppression();
-        expect(result, SuppressionStatus.unknown);
+        expect(result.status, SuppressionStatus.unknown);
       });
 
       test('handles null message gracefully', () async {
@@ -172,7 +172,7 @@ void main() {
         );
 
         final result = await platform.requestSuppression();
-        expect(result, SuppressionStatus.suppressed);
+        expect(result.status, SuppressionStatus.suppressed);
       });
 
       test('handles empty message gracefully', () async {
@@ -182,7 +182,7 @@ void main() {
         );
 
         final result = await platform.requestSuppression();
-        expect(result, SuppressionStatus.suppressed);
+        expect(result.status, SuppressionStatus.suppressed);
       });
     });
 
@@ -194,17 +194,20 @@ void main() {
         );
 
         final result = await platform.releaseSuppression();
-        expect(result, SuppressionStatus.notSuppressed);
+        expect(result.status, SuppressionStatus.notSuppressed);
       });
 
-      test('returns unavailable when no active suppression', () async {
+      // Neither platform returns `unavailable` from release any more — release
+      // is idempotent and reports `notSuppressed`. Kept as a pure conversion
+      // check: whatever the wire says is what the caller is told.
+      test('passes an unavailable wire status straight through', () async {
         mockApi.mockReleaseResult = SuppressionResult(
           status: SuppressionStatusCode.unavailable,
           message: 'No active suppression',
         );
 
         final result = await platform.releaseSuppression();
-        expect(result, SuppressionStatus.unavailable);
+        expect(result.status, SuppressionStatus.unavailable);
       });
 
       test('returns notSupported status', () async {
@@ -214,14 +217,14 @@ void main() {
         );
 
         final result = await platform.releaseSuppression();
-        expect(result, SuppressionStatus.notSupported);
+        expect(result.status, SuppressionStatus.notSupported);
       });
 
       test('returns unknown on exception', () async {
         mockApi.mockException = Exception('Test error');
 
         final result = await platform.releaseSuppression();
-        expect(result, SuppressionStatus.unknown);
+        expect(result.status, SuppressionStatus.unknown);
       });
 
       test('handles null message gracefully', () async {
@@ -231,7 +234,7 @@ void main() {
         );
 
         final result = await platform.releaseSuppression();
-        expect(result, SuppressionStatus.notSuppressed);
+        expect(result.status, SuppressionStatus.notSuppressed);
       });
     });
 
@@ -293,7 +296,16 @@ void main() {
           SuppressionStatusCode.denied: SuppressionStatus.denied,
           SuppressionStatusCode.unavailable: SuppressionStatus.unavailable,
           SuppressionStatusCode.unknown: SuppressionStatus.unknown,
+          SuppressionStatusCode.nfcDisabled: SuppressionStatus.nfcDisabled,
         };
+
+        // Pin the map to the enum so adding a wire status without adding a case
+        // here fails loudly instead of going silently untested.
+        expect(
+          statusTests.keys.toSet(),
+          SuppressionStatusCode.values.toSet(),
+          reason: 'Every wire status code must have a conversion test',
+        );
 
         for (final entry in statusTests.entries) {
           mockApi.mockRequestResult = SuppressionResult(
@@ -303,7 +315,7 @@ void main() {
 
           final result = await platform.requestSuppression();
           expect(
-            result,
+            result.status,
             entry.value,
             reason: 'Failed to convert ${entry.key} to ${entry.value}',
           );
@@ -311,26 +323,88 @@ void main() {
       });
     });
 
+    group('description', () {
+      // The platform used to compute a message and the Dart layer threw it
+      // away, so callers had no detail to log. It now rides along on the result.
+      test('carries the platform message through requestSuppression', () async {
+        mockApi.mockRequestResult = SuppressionResult(
+          status: SuppressionStatusCode.nfcDisabled,
+          message: 'NFC is disabled. Please enable NFC in device settings',
+        );
+
+        final result = await platform.requestSuppression();
+        expect(
+          result.description,
+          'NFC is disabled. Please enable NFC in device settings',
+        );
+      });
+
+      test('carries the platform message through releaseSuppression', () async {
+        mockApi.mockReleaseResult = SuppressionResult(
+          status: SuppressionStatusCode.notSuppressed,
+          message: 'No active suppression to release',
+        );
+
+        final result = await platform.releaseSuppression();
+        expect(result.description, 'No active suppression to release');
+      });
+
+      test('is null when the platform supplies no message', () async {
+        mockApi.mockRequestResult = SuppressionResult(
+          status: SuppressionStatusCode.suppressed,
+        );
+
+        final result = await platform.requestSuppression();
+        expect(result.description, isNull);
+      });
+
+      test('reports the exception text when the channel fails', () async {
+        mockApi.mockException = Exception('boom');
+
+        final result = await platform.requestSuppression();
+        expect(result.status, SuppressionStatus.unknown);
+        expect(result.description, contains('boom'));
+      });
+    });
+
     group('error scenarios', () {
       test('handles generic exception', () async {
         mockApi.mockException = Exception('Generic error');
 
-        expect(await platform.requestSuppression(), SuppressionStatus.unknown);
-        expect(await platform.releaseSuppression(), SuppressionStatus.unknown);
+        expect(
+          (await platform.requestSuppression()).status,
+          SuppressionStatus.unknown,
+        );
+        expect(
+          (await platform.releaseSuppression()).status,
+          SuppressionStatus.unknown,
+        );
       });
 
       test('handles state error', () async {
         mockApi.mockException = StateError('Invalid state');
 
-        expect(await platform.requestSuppression(), SuppressionStatus.unknown);
-        expect(await platform.releaseSuppression(), SuppressionStatus.unknown);
+        expect(
+          (await platform.requestSuppression()).status,
+          SuppressionStatus.unknown,
+        );
+        expect(
+          (await platform.releaseSuppression()).status,
+          SuppressionStatus.unknown,
+        );
       });
 
       test('handles argument error', () async {
         mockApi.mockException = ArgumentError('Invalid argument');
 
-        expect(await platform.requestSuppression(), SuppressionStatus.unknown);
-        expect(await platform.releaseSuppression(), SuppressionStatus.unknown);
+        expect(
+          (await platform.requestSuppression()).status,
+          SuppressionStatus.unknown,
+        );
+        expect(
+          (await platform.releaseSuppression()).status,
+          SuppressionStatus.unknown,
+        );
       });
 
       test('isSuppressed returns false on any exception', () async {
@@ -357,7 +431,10 @@ void main() {
           platform.requestSuppression(),
         ]);
 
-        expect(results.every((r) => r == SuppressionStatus.suppressed), true);
+        expect(
+          results.every((r) => r.status == SuppressionStatus.suppressed),
+          true,
+        );
       });
 
       test('handles rapid successive releaseSuppression calls', () async {
@@ -373,7 +450,7 @@ void main() {
         ]);
 
         expect(
-          results.every((r) => r == SuppressionStatus.notSuppressed),
+          results.every((r) => r.status == SuppressionStatus.notSuppressed),
           true,
         );
       });
@@ -390,17 +467,18 @@ void main() {
         mockApi.mockIsSuppressed = true;
         mockApi.mockIsSupported = true;
 
-        final results = await Future.wait([
-          platform.requestSuppression(),
-          platform.isSuppressed(),
-          platform.releaseSuppression(),
-          platform.isSupported(),
-        ]);
+        // All four are started before any is awaited, which is the point of the
+        // test. They are awaited individually rather than through `Future.wait`
+        // so each keeps its own static type.
+        final request = platform.requestSuppression();
+        final suppressed = platform.isSuppressed();
+        final release = platform.releaseSuppression();
+        final supported = platform.isSupported();
 
-        expect(results[0], SuppressionStatus.suppressed);
-        expect(results[1], true);
-        expect(results[2], SuppressionStatus.notSuppressed);
-        expect(results[3], true);
+        expect((await request).status, SuppressionStatus.suppressed);
+        expect(await suppressed, true);
+        expect((await release).status, SuppressionStatus.notSuppressed);
+        expect(await supported, true);
       });
     });
 

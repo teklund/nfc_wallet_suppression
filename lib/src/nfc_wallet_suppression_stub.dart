@@ -1,4 +1,5 @@
 import 'nfc_wallet_suppression_platform_interface.dart';
+import 'nfc_wallet_suppression_result.dart';
 import 'nfc_wallet_suppression_status.dart';
 
 /// Stub implementation of [NfcWalletSuppressionPlatform] for unsupported platforms.
@@ -26,13 +27,19 @@ class StubNfcWalletSuppression extends NfcWalletSuppressionPlatform {
   }
 
   @override
-  Future<SuppressionStatus> requestSuppression() async {
-    return SuppressionStatus.notSupported;
+  Future<SuppressionResult> requestSuppression() async {
+    return const SuppressionResult(
+      status: SuppressionStatus.notSupported,
+      description: 'NFC wallet suppression is not supported on this platform.',
+    );
   }
 
   @override
-  Future<SuppressionStatus> releaseSuppression() async {
-    return SuppressionStatus.notSuppressed;
+  Future<SuppressionResult> releaseSuppression() async {
+    return const SuppressionResult(
+      status: SuppressionStatus.notSuppressed,
+      description: 'Nothing to release; suppression is not supported here.',
+    );
   }
 
   @override

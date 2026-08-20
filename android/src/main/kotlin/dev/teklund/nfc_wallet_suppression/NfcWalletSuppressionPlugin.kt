@@ -148,8 +148,10 @@ class NfcWalletSuppressionPlugin internal constructor(
       return
     }
     if (!suppressor.isNfcEnabled(activity)) {
+      // Distinct from UNAVAILABLE: this is the one failure the user can fix, so
+      // an app can act on it by deep-linking to android.settings.NFC_SETTINGS.
       callback(Result.success(SuppressionResult(
-        SuppressionStatusCode.UNAVAILABLE, "NFC is disabled. Please enable NFC in device settings")))
+        SuppressionStatusCode.NFC_DISABLED, "NFC is disabled. Please enable NFC in device settings")))
       return
     }
     // Already active (and NFC enabled): return idempotent success without
@@ -175,14 +177,20 @@ class NfcWalletSuppressionPlugin internal constructor(
   }
 
   override fun releaseSuppression(callback: (Result<SuppressionResult>) -> Unit) {
-    // Intent-based release (matches iOS): NOT_SUPPRESSED when we release a
-    // suppression that was requested, UNAVAILABLE when there was none to release.
-    // We deliberately do NOT reconcile against live state here (unlike
-    // isSuppressed) so request/release stays a clean pair and both platforms
-    // behave identically; isSuppressed is the API for live state.
+    // Intent-based release (matches iOS): we report on the suppression we were
+    // holding, not on live device state. We deliberately do NOT reconcile against
+    // live state here (unlike isSuppressed) so request/release stays a clean pair
+    // and both platforms behave identically; isSuppressed is the API for live
+    // state.
+    //
+    // Releasing when nothing was suppressed is NOT_SUPPRESSED, not an error: the
+    // caller asked for suppression to be off and it is off. That makes release
+    // idempotent, so a `finally { release() }` block never has to special-case
+    // whether the matching request succeeded. The message still distinguishes the
+    // two paths for anyone reading logs.
     if (!suppressionActive) {
       callback(Result.success(SuppressionResult(
-        SuppressionStatusCode.UNAVAILABLE, "No active suppression to release")))
+        SuppressionStatusCode.NOT_SUPPRESSED, "No active suppression to release")))
       return
     }
     val activity = activity
