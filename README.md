@@ -113,32 +113,43 @@ Your app's actual minimum is whichever is higher — this plugin's floor or the 
 import 'package:nfc_wallet_suppression/nfc_wallet_suppression.dart';
 
 // Request NFC wallet suppression
-try {
-  SuppressionStatus status = await NfcWalletSuppression.requestSuppression();
-  
-  if (status == SuppressionStatus.suppressed) {
-    print('✓ Suppression active - you can now handle NFC interactions');
-  } else {
-    print('⚠ Suppression status: ${status.name}');
-  }
-} catch (error) {
-  print('Error requesting NFC wallet suppression: $error');
+final result = await NfcWalletSuppression.requestSuppression();
+
+if (result.isSuppressed) {
+  print('✓ Suppression active - you can now handle NFC interactions');
+} else {
+  // `description` is the platform's own diagnostic text. Log it; never parse it.
+  print('⚠ ${result.status.name}: ${result.description}');
 }
 
 // Check if NFC wallet is currently suppressed
-try {
-  bool isSuppressed = await NfcWalletSuppression.isSuppressed();
-  print('Is NFC wallet suppressed? $isSuppressed');
-} catch (e) {
-  print('Error checking suppression status: $e');
-}
+final isSuppressed = await NfcWalletSuppression.isSuppressed();
+print('Is NFC wallet suppressed? $isSuppressed');
 
-// Release NFC wallet suppression when done
-try {
-  SuppressionStatus status = await NfcWalletSuppression.releaseSuppression();
-  print('Suppression released: ${status.name}');
-} catch (e) {
-  print('Error releasing NFC wallet suppression: $e');
+// Release NFC wallet suppression when done. Release is idempotent, so this is
+// safe in a `finally` even if the request never succeeded.
+await NfcWalletSuppression.releaseSuppression();
+```
+
+### Reacting to the status
+
+```dart
+final result = await NfcWalletSuppression.requestSuppression();
+
+switch (result.status) {
+  case SuppressionStatus.suppressed:
+    startNfcSession();
+  case SuppressionStatus.nfcDisabled:
+    // The one failure the user can fix themselves.
+    await AppSettings.openNfcSettings(); // android.settings.NFC_SETTINGS
+  case SuppressionStatus.notSupported:
+    showUnsupportedDeviceUi();
+  default:
+    if (result.isRetryable) {
+      scheduleRetry();
+    } else {
+      reportProblem(result.description);
+    }
 }
 ```
 
@@ -146,24 +157,43 @@ try {
 
 | Method | Returns | Description |
 | :--- | :--- | :--- |
-| `requestSuppression()` | `Future<SuppressionStatus>` | Request wallet suppression |
-| `releaseSuppression()` | `Future<SuppressionStatus>` | Release suppression |
+| `requestSuppression()` | `Future<SuppressionResult>` | Request wallet suppression |
+| `releaseSuppression()` | `Future<SuppressionResult>` | Release suppression |
 | `isSuppressed()` | `Future<bool>` | Check if currently suppressed |
+| `isSupported()` | `Future<bool>` | Check if the device has the hardware/OS support |
+
+### SuppressionResult
+
+Both suppression methods return a `SuppressionResult`:
+
+| Member | Type | Description |
+| :--- | :--- | :--- |
+| `status` | `SuppressionStatus` | The machine-readable outcome. Branch on this. |
+| `description` | `String?` | The platform's own account of what happened. Diagnostic only — the wording is not part of the API contract and may change. Never parse it. |
+| `isSuppressed` | `bool` | `status == suppressed` |
+| `isReleased` | `bool` | `status == notSuppressed` |
+| `isRetryable` | `bool` | `status` is `nfcDisabled` or `unavailable` |
 
 ### SuppressionStatus Values
 
-The `SuppressionStatus` enum represents the result of suppression operations:
+Not every value can come back from every method. New values may be added
+without a major version bump, so **always include a `default` when switching.**
 
-| Status | Description |
-| :--- | :--- |
-| `suppressed` | Suppression is active |
-| `notSuppressed` | Suppression is not active (e.g. successfully released) |
-| `unavailable` | No active suppression to release; or, during `requestSuppression` on Android, NFC is turned off or no activity is attached (recoverable) |
-| `denied` | Permission denied — iOS: by the user or system; Android: a `SecurityException` on the NFC call |
-| `cancelled` | User cancelled the permission prompt (iOS only) |
-| `notSupported` | Suppression isn't supported — Android: no NFC hardware; iOS: PassKit reports it unsupported |
-| `alreadyPresenting` | Wallet is already presenting a pass (iOS only) |
-| `unknown` | An unexpected error occurred |
+| Status | `request` | `release` | Description |
+| :--- | :---: | :---: | :--- |
+| `suppressed` | ✔ | | Suppression is active |
+| `notSuppressed` | | ✔ | Suppression is off — whether this call ended it or there was nothing to end |
+| `nfcDisabled` | ✔ (Android) | | NFC hardware is present but switched off in settings. The one failure the user can fix: deep-link them to `android.settings.NFC_SETTINGS`. |
+| `unavailable` | ✔ (Android) | | Transient and retryable — no foreground Activity |
+| `denied` | ✔ | ✔ (Android) | Permission denied — iOS: by the user or system (includes a missing entitlement); Android: a `SecurityException` on the NFC call |
+| `cancelled` | ✔ (iOS) | | User cancelled the permission prompt |
+| `notSupported` | ✔ | | Suppression isn't supported at all — Android: no NFC hardware; iOS: PassKit reports it unsupported |
+| `alreadyPresenting` | ✔ (iOS) | | Wallet is already presenting a pass |
+| `unknown` | ✔ | ✔ | Unexpected failure, or no answer in time. The operation may or may not have taken effect — call `isSuppressed()` if you need to know. |
+
+On iOS, `releaseSuppression()` can only report `notSuppressed` in practice:
+ending suppression cannot fail, so `unknown` is reachable only if the platform
+channel itself does.
 
 **Important Notes:**
 

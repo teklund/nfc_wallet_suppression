@@ -1,4 +1,5 @@
 import 'nfc_wallet_suppression_platform_interface.dart';
+import 'nfc_wallet_suppression_result.dart';
 import 'nfc_wallet_suppression_status.dart';
 
 /// Provides a mechanism to suppress the system's NFC wallet behavior.
@@ -23,14 +24,14 @@ import 'nfc_wallet_suppression_status.dart';
 /// import 'package:nfc_wallet_suppression/nfc_wallet_suppression.dart';
 ///
 /// // Request suppression when you need to read NFC tags
-/// final status = await NfcWalletSuppression.requestSuppression();
+/// final result = await NfcWalletSuppression.requestSuppression();
 ///
-/// if (status == SuppressionStatus.suppressed) {
+/// if (result.isSuppressed) {
 ///   // Now you can read NFC tags without wallet interference
 ///   // ... your NFC reading code ...
-/// } else if (status == SuppressionStatus.denied) {
+/// } else if (result.status == SuppressionStatus.denied) {
 ///   // User denied the permission
-/// } else if (status == SuppressionStatus.notSupported) {
+/// } else if (result.status == SuppressionStatus.notSupported) {
 ///   // Device doesn't support wallet suppression
 /// }
 ///
@@ -39,6 +40,7 @@ import 'nfc_wallet_suppression_status.dart';
 /// ```
 ///
 /// See also:
+/// - [SuppressionResult] for the shape of what these methods return
 /// - [SuppressionStatus] for all possible status values
 /// - [requestSuppression] to suppress wallet presentation
 /// - [releaseSuppression] to restore wallet functionality
@@ -57,28 +59,31 @@ class NfcWalletSuppression {
   /// On iOS, overlapping (un-awaited) calls made while a request is in flight
   /// share that request's result.
   ///
-  /// **Serialize your calls:** `await` each [requestSuppression] or
-  /// [releaseSuppression] before issuing the next. Interleaving them without
-  /// awaiting (e.g., request, then release, then request) is resolved
-  /// best-effort — the resulting suppression state is not guaranteed and may
-  /// differ between platforms. For sequential (awaited) use, the two platforms
-  /// behave identically. Query [isSuppressed] for the live state.
+  /// Calls do not have to be awaited before the next one is issued. Operations
+  /// run in the order you issued them, and each caller is told the outcome of
+  /// its own operation, so interleaving (e.g., request, release, request without
+  /// awaiting) leaves suppression in the state the last operation asked for.
+  /// [isSuppressed] still reports the live state.
   ///
   /// ## Returns
   ///
-  /// A [Future] that completes with a [SuppressionStatus]:
-  /// - [SuppressionStatus.suppressed]: Suppression is active
-  /// - [SuppressionStatus.notSupported]: Suppression isn't supported — Android:
-  ///   the device has no NFC hardware; iOS: PassKit reports it unsupported
-  /// - [SuppressionStatus.unavailable]: Temporarily unavailable and recoverable
-  ///   (Android only) — NFC is turned off, or no activity is attached
-  /// - [SuppressionStatus.denied]: Permission denied — iOS: by the user or
-  ///   system; Android: a `SecurityException` on the NFC call
-  /// - [SuppressionStatus.alreadyPresenting]: Wallet is already presenting a pass
-  ///   (iOS only)
-  /// - [SuppressionStatus.cancelled]: User cancelled the permission prompt
-  ///   (iOS only)
-  /// - [SuppressionStatus.unknown]: An unexpected error occurred
+  /// A [Future] that completes with a [SuppressionResult]. Its
+  /// [SuppressionResult.status] is one of:
+  ///
+  /// | Status | iOS | Android |
+  /// |---|---|---|
+  /// | [SuppressionStatus.suppressed] — suppression is active | ✔ | ✔ |
+  /// | [SuppressionStatus.notSupported] — no suppression capability at all; iOS: PassKit reports it unsupported, Android: no NFC hardware | ✔ | ✔ |
+  /// | [SuppressionStatus.nfcDisabled] — NFC hardware present but switched off; deep-link the user to settings | | ✔ |
+  /// | [SuppressionStatus.unavailable] — transient; no foreground Activity | | ✔ |
+  /// | [SuppressionStatus.denied] — iOS: refused by the user or system (includes a missing entitlement); Android: a `SecurityException` | ✔ | ✔ |
+  /// | [SuppressionStatus.alreadyPresenting] — the wallet is already showing a pass | ✔ | |
+  /// | [SuppressionStatus.cancelled] — the request was cancelled before it completed | ✔ | |
+  /// | [SuppressionStatus.unknown] — unexpected failure, or no answer in time; call [isSuppressed] if you need the live state | ✔ | ✔ |
+  ///
+  /// [SuppressionStatus.notSuppressed] is never returned here — it belongs to
+  /// [releaseSuppression]. New values may be added without a major version bump,
+  /// so always include a fallback when switching.
   ///
   /// ## Platform Behavior
   ///
@@ -98,27 +103,27 @@ class NfcWalletSuppression {
   /// ## Example
   ///
   /// ```dart
-  /// final status = await NfcWalletSuppression.requestSuppression();
+  /// final result = await NfcWalletSuppression.requestSuppression();
   ///
-  /// switch (status) {
+  /// switch (result.status) {
   ///   case SuppressionStatus.suppressed:
   ///     print('Wallet suppressed successfully');
-  ///     break;
+  ///   case SuppressionStatus.nfcDisabled:
+  ///     // The one failure the user can fix — offer to open NFC settings.
+  ///     promptToEnableNfc();
   ///   case SuppressionStatus.denied:
   ///     print('User denied permission');
-  ///     break;
   ///   case SuppressionStatus.notSupported:
   ///     print('Device does not support wallet suppression');
-  ///     break;
   ///   default:
-  ///     print('Failed with status: $status');
+  ///     print('Failed: ${result.status} (${result.description})');
   /// }
   /// ```
   ///
   /// See also:
   /// - [releaseSuppression] to restore wallet functionality
   /// - [isSuppressed] to check if currently suppressed
-  static Future<SuppressionStatus> requestSuppression() {
+  static Future<SuppressionResult> requestSuppression() {
     return NfcWalletSuppressionPlatform.instance.requestSuppression();
   }
 
@@ -128,20 +133,28 @@ class NfcWalletSuppression {
   /// NFC tags are detected. You should always call this when your NFC reading
   /// session is complete to restore normal wallet functionality.
   ///
+  /// Release is idempotent. Calling it when nothing is suppressed is a success,
+  /// not an error — you asked for suppression to be off and it is off — so a
+  /// `finally { release() }` block never has to know whether the matching
+  /// request succeeded.
+  ///
   /// ## Returns
   ///
-  /// A [Future] that completes with a [SuppressionStatus]:
-  /// - [SuppressionStatus.notSuppressed]: The suppression you requested has been
-  ///   released
-  /// - [SuppressionStatus.unavailable]: There was no suppression to release
-  ///   (none was requested, or it was already released)
-  /// - [SuppressionStatus.denied]: Android — tearing down reader mode failed
-  ///   with a `SecurityException`; suppression may still be active
-  /// - [SuppressionStatus.unknown]: An unexpected error occurred (an Android
-  ///   reader-mode tear-down failure, or a platform-channel failure);
-  ///   suppression may still be active
+  /// A [Future] that completes with a [SuppressionResult]. Its
+  /// [SuppressionResult.status] is one of:
   ///
-  /// Release is based on the suppression you requested, not on live device
+  /// | Status | iOS | Android |
+  /// |---|---|---|
+  /// | [SuppressionStatus.notSuppressed] — suppression is off, whether this call ended it or there was nothing to end | ✔ | ✔ |
+  /// | [SuppressionStatus.denied] — tearing down reader mode threw a `SecurityException`; suppression may still be active | | ✔ |
+  /// | [SuppressionStatus.unknown] — unexpected tear-down failure, or the platform channel itself failed; suppression may still be active | ✔ | ✔ |
+  ///
+  /// On iOS this can only ever be [SuppressionStatus.notSuppressed] in practice:
+  /// ending suppression cannot fail, so [SuppressionStatus.unknown] is reachable
+  /// only if the platform channel does. New values may be added without a major
+  /// version bump, so still include a fallback when switching.
+  ///
+  /// Release reports on the suppression *you* requested, not on live device
   /// state: it returns [SuppressionStatus.notSuppressed] even if suppression had
   /// already lapsed in the meantime (e.g. the app was backgrounded or the user
   /// turned NFC off). Use [isSuppressed] to query whether suppression is
@@ -152,14 +165,10 @@ class NfcWalletSuppression {
   /// **iOS:**
   /// - Uses PassKit's `endAutomaticPassPresentationSuppression`
   /// - Safe to call even if suppression was never requested
-  /// - Returns [SuppressionStatus.unavailable] if no suppression was requested
-  ///   (or it was already released)
   ///
   /// **Android:**
   /// - Disables NFC reader mode
   /// - Safe to call even if suppression was never requested
-  /// - Returns [SuppressionStatus.unavailable] if no suppression was requested
-  ///   (or it was already released)
   ///
   /// ## Example
   ///
@@ -176,7 +185,7 @@ class NfcWalletSuppression {
   /// See also:
   /// - [requestSuppression] to suppress wallet presentation
   /// - [isSuppressed] to check current state
-  static Future<SuppressionStatus> releaseSuppression() {
+  static Future<SuppressionResult> releaseSuppression() {
     return NfcWalletSuppressionPlatform.instance.releaseSuppression();
   }
 
@@ -257,7 +266,7 @@ class NfcWalletSuppression {
   /// ```dart
   /// if (await NfcWalletSuppression.isSupported()) {
   ///   // Show NFC suppression UI
-  ///   final status = await NfcWalletSuppression.requestSuppression();
+  ///   final result = await NfcWalletSuppression.requestSuppression();
   ///   // ...
   /// } else {
   ///   // Show message that device doesn't support this feature

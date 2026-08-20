@@ -33,8 +33,8 @@ void main() {
       final supported = await NfcWalletSuppression.isSupported();
       expect(supported, true);
 
-      final status = await NfcWalletSuppression.requestSuppression();
-      expect(status, SuppressionStatus.suppressed);
+      final result = await NfcWalletSuppression.requestSuppression();
+      expect(result.status, SuppressionStatus.suppressed);
 
       final suppressed = await NfcWalletSuppression.isSuppressed();
       expect(suppressed, true);
@@ -51,16 +51,30 @@ void main() {
       final supported = await NfcWalletSuppression.isSupported();
       expect(supported, false);
 
-      final status = await NfcWalletSuppression.requestSuppression();
-      expect(status, SuppressionStatus.notSupported);
+      final result = await NfcWalletSuppression.requestSuppression();
+      expect(result.status, SuppressionStatus.notSupported);
     });
 
-    test('can simulate NFC disabled', () async {
+    test('can simulate NFC switched off in settings', () async {
+      fake.setSupported(true);
+      fake.setRequestResult(
+        SuppressionStatus.nfcDisabled,
+        description: 'NFC is disabled',
+      );
+
+      final result = await NfcWalletSuppression.requestSuppression();
+      expect(result.status, SuppressionStatus.nfcDisabled);
+      expect(result.description, 'NFC is disabled');
+      expect(result.isRetryable, true);
+    });
+
+    test('can simulate a transiently unavailable platform', () async {
       fake.setSupported(true);
       fake.setRequestResult(SuppressionStatus.unavailable);
 
-      final status = await NfcWalletSuppression.requestSuppression();
-      expect(status, SuppressionStatus.unavailable);
+      final result = await NfcWalletSuppression.requestSuppression();
+      expect(result.status, SuppressionStatus.unavailable);
+      expect(result.isRetryable, true);
     });
 
     test('can manually set suppressed state', () async {
@@ -74,8 +88,8 @@ void main() {
     test('can simulate release result', () async {
       fake.setReleaseResult(SuppressionStatus.unknown);
 
-      final status = await NfcWalletSuppression.releaseSuppression();
-      expect(status, SuppressionStatus.unknown);
+      final result = await NfcWalletSuppression.releaseSuppression();
+      expect(result.status, SuppressionStatus.unknown);
     });
 
     test('a failed request clears a previously suppressed state', () async {
@@ -102,14 +116,22 @@ void main() {
       );
     });
 
-    test('release returning unavailable clears suppression', () async {
-      fake.setRequestResult(SuppressionStatus.suppressed);
-      await NfcWalletSuppression.requestSuppression();
+    test(
+      'releasing when nothing is suppressed is an idempotent success',
+      () async {
+        // Release is idempotent: with nothing held it still reports
+        // `notSuppressed`, so `finally { release(); }` needs no special case.
+        fake.setReleaseResult(
+          SuppressionStatus.notSuppressed,
+          description: 'No active suppression to release',
+        );
 
-      fake.setReleaseResult(SuppressionStatus.unavailable);
-      await NfcWalletSuppression.releaseSuppression();
-      expect(await NfcWalletSuppression.isSuppressed(), false);
-    });
+        final result = await NfcWalletSuppression.releaseSuppression();
+        expect(result.status, SuppressionStatus.notSuppressed);
+        expect(result.isReleased, true);
+        expect(await NfcWalletSuppression.isSuppressed(), false);
+      },
+    );
 
     test('reset clears state and call history', () async {
       fake.setSupported(false);
@@ -123,11 +145,11 @@ void main() {
       expect(fake.methodCalls, isEmpty);
       expect(await NfcWalletSuppression.isSupported(), true);
       expect(
-        await NfcWalletSuppression.requestSuppression(),
+        (await NfcWalletSuppression.requestSuppression()).status,
         SuppressionStatus.suppressed,
       );
       expect(
-        await NfcWalletSuppression.releaseSuppression(),
+        (await NfcWalletSuppression.releaseSuppression()).status,
         SuppressionStatus.notSuppressed,
       );
       expect(await NfcWalletSuppression.isSuppressed(), false);
@@ -142,8 +164,8 @@ void main() {
       final supported = await NfcWalletSuppression.isSupported();
       expect(supported, true);
 
-      final status = await NfcWalletSuppression.requestSuppression();
-      expect(status, SuppressionStatus.suppressed);
+      final result = await NfcWalletSuppression.requestSuppression();
+      expect(result.status, SuppressionStatus.suppressed);
     });
 
     test('unsupportedDevice scenario', () async {
@@ -153,40 +175,53 @@ void main() {
       final supported = await NfcWalletSuppression.isSupported();
       expect(supported, false);
 
-      final status = await NfcWalletSuppression.requestSuppression();
-      expect(status, SuppressionStatus.notSupported);
+      final result = await NfcWalletSuppression.requestSuppression();
+      expect(result.status, SuppressionStatus.notSupported);
     });
 
     test('nfcUnavailable scenario', () async {
       final fake = NfcWalletSuppressionTestScenarios.nfcUnavailable();
       NfcWalletSuppressionPlatform.instance = fake;
 
-      final status = await NfcWalletSuppression.requestSuppression();
-      expect(status, SuppressionStatus.unavailable);
+      final result = await NfcWalletSuppression.requestSuppression();
+      expect(result.status, SuppressionStatus.unavailable);
+    });
+
+    test('nfcDisabled scenario', () async {
+      final fake = NfcWalletSuppressionTestScenarios.nfcDisabled();
+      NfcWalletSuppressionPlatform.instance = fake;
+
+      final result = await NfcWalletSuppression.requestSuppression();
+      expect(result.status, SuppressionStatus.nfcDisabled);
+      expect(
+        await NfcWalletSuppression.isSupported(),
+        true,
+        reason: 'The hardware is there; it is only switched off',
+      );
     });
 
     test('userDenied scenario', () async {
       final fake = NfcWalletSuppressionTestScenarios.userDenied();
       NfcWalletSuppressionPlatform.instance = fake;
 
-      final status = await NfcWalletSuppression.requestSuppression();
-      expect(status, SuppressionStatus.denied);
+      final result = await NfcWalletSuppression.requestSuppression();
+      expect(result.status, SuppressionStatus.denied);
     });
 
     test('alreadyPresenting scenario', () async {
       final fake = NfcWalletSuppressionTestScenarios.alreadyPresenting();
       NfcWalletSuppressionPlatform.instance = fake;
 
-      final status = await NfcWalletSuppression.requestSuppression();
-      expect(status, SuppressionStatus.alreadyPresenting);
+      final result = await NfcWalletSuppression.requestSuppression();
+      expect(result.status, SuppressionStatus.alreadyPresenting);
     });
 
     test('userCancelled scenario', () async {
       final fake = NfcWalletSuppressionTestScenarios.userCancelled();
       NfcWalletSuppressionPlatform.instance = fake;
 
-      final status = await NfcWalletSuppression.requestSuppression();
-      expect(status, SuppressionStatus.cancelled);
+      final result = await NfcWalletSuppression.requestSuppression();
+      expect(result.status, SuppressionStatus.cancelled);
     });
   });
 }

@@ -60,10 +60,26 @@ enum class SuppressionStatusCode(val raw: Int) {
   CANCELLED(4),
   /** User or system denied the suppression request */
   DENIED(5),
-  /** NFC is not available (disabled, missing hardware, etc.) */
+  /**
+   * Suppression could not be attempted right now, but may succeed later.
+   *
+   * Transient and retryable — e.g. no foreground Activity on Android. This
+   * deliberately does *not* cover disabled NFC, which is [nfcDisabled].
+   */
   UNAVAILABLE(6),
   /** Unknown status or error */
-  UNKNOWN(7);
+  UNKNOWN(7),
+  /**
+   * NFC hardware is present but switched off in system settings.
+   *
+   * Distinct from [unavailable] and [notSupported] because it is the one
+   * condition the user can fix: an app can deep-link to NFC settings and
+   * prompt them to enable it.
+   *
+   * Appended last on purpose — pigeon serialises enums by index, so new
+   * values must go at the end to keep existing wire values stable.
+   */
+  NFC_DISABLED(8);
 
   companion object {
     fun ofRaw(raw: Int): SuppressionStatusCode? {
