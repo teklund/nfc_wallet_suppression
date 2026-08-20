@@ -245,7 +245,11 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
     static let noActiveToRelease = "No active suppression to release"
 
     static func timedOut(after seconds: TimeInterval) -> String {
-      "PassKit did not answer the suppression request within \(Int(seconds))s."
+      // `%g` drops the trailing zeros on a whole number of seconds ("5s") without
+      // truncating a sub-second timeout to "0s", which `Int(seconds)` would. The
+      // timeout is injectable, so fractional values reach here in tests.
+      "PassKit did not answer the suppression request within "
+        + String(format: "%g", seconds) + "s."
     }
   }
 

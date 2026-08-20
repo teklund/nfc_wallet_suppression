@@ -103,12 +103,14 @@ class RunnerTests: XCTestCase {
   /// `FakeScheduler` compiles fine and silently arms a real five-second timer on
   /// the main queue, which would leave timer garbage behind in CI.
   private func makeSUT(
-    token: PKSuppressionRequestToken = 1
+    token: PKSuppressionRequestToken = 1,
+    requestTimeout: TimeInterval = NfcWalletSuppressionPlugin.defaultRequestTimeout
   ) -> (NfcWalletSuppressionPlugin, FakePassLibrary, FakeScheduler) {
     let fake = FakePassLibrary()
     fake.tokenToReturn = token
     let clock = FakeScheduler()
-    let plugin = NfcWalletSuppressionPlugin(library: fake, scheduler: clock)
+    let plugin = NfcWalletSuppressionPlugin(
+      library: fake, scheduler: clock, requestTimeout: requestTimeout)
     return (plugin, fake, clock)
   }
 
@@ -197,6 +199,24 @@ class RunnerTests: XCTestCase {
     var releaseStatus: SuppressionStatusCode?
     plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }
     XCTAssertEqual(releaseStatus, .unavailable)
+  }
+
+  func testRequest_timeoutMessage_statesTheTimeoutWithoutTruncatingIt() {
+    // The timeout is injectable, so the message must survive a fractional value.
+    // Formatting it as an `Int` would report a 0.5 s timeout as "0s".
+    let (halfSecond, _, halfClock) = makeSUT(requestTimeout: 0.5)
+    var message: String?
+    halfSecond.requestSuppression { message = (try? $0.get())?.message }
+    halfClock.fire()
+    XCTAssertEqual(
+      message, "PassKit did not answer the suppression request within 0.5s.")
+
+    // A whole number of seconds still reads "5s", not "5.0s".
+    let (whole, _, wholeClock) = makeSUT(requestTimeout: 5)
+    whole.requestSuppression { message = (try? $0.get())?.message }
+    wholeClock.fire()
+    XCTAssertEqual(
+      message, "PassKit did not answer the suppression request within 5s.")
   }
 
   func testRequest_zeroToken_anomalousSuccess_reportsUnknownAndClaimsNothing() {
@@ -410,7 +430,7 @@ class RunnerTests: XCTestCase {
 
     fake.deliver(.success)
     XCTAssertEqual(callCount, 1)
-    XCTAssertEqual(clock.pendingCount, 0, "A answered request must not leave a deadline armed")
+    XCTAssertEqual(clock.pendingCount, 0, "An answered request must not leave a deadline armed")
 
     clock.fire()  // no-op: nothing live
     XCTAssertEqual(callCount, 1, "A cancelled deadline must never answer")
