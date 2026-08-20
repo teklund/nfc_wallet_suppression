@@ -53,7 +53,7 @@ void main() {
 
       // Cycle 2
       final status2 = await NfcWalletSuppression.requestSuppression();
-      if (status2 == SuppressionStatus.suppressed) {
+      if (status2.isSuppressed) {
         final suppressed2 = await NfcWalletSuppression.isSuppressed();
         expect(suppressed2, true);
       }
@@ -61,7 +61,7 @@ void main() {
 
       // Cycle 3
       final status3 = await NfcWalletSuppression.requestSuppression();
-      if (status3 == SuppressionStatus.suppressed) {
+      if (status3.isSuppressed) {
         final suppressed3 = await NfcWalletSuppression.isSuppressed();
         expect(suppressed3, true);
       }
@@ -86,25 +86,19 @@ void main() {
       final status2 = await NfcWalletSuppression.requestSuppression();
       final status3 = await NfcWalletSuppression.requestSuppression();
 
-      // All should return a valid status
-      expect([
+      // All should return a valid status. `nfcDisabled` is in the set because
+      // `isSupported` only checks for NFC *hardware* on Android, so this runs
+      // on a device that has NFC switched off in settings.
+      const validRequestStatuses = [
         SuppressionStatus.suppressed,
+        SuppressionStatus.nfcDisabled,
         SuppressionStatus.unavailable,
         SuppressionStatus.denied,
         SuppressionStatus.alreadyPresenting,
-      ], contains(status1));
-      expect([
-        SuppressionStatus.suppressed,
-        SuppressionStatus.unavailable,
-        SuppressionStatus.denied,
-        SuppressionStatus.alreadyPresenting,
-      ], contains(status2));
-      expect([
-        SuppressionStatus.suppressed,
-        SuppressionStatus.unavailable,
-        SuppressionStatus.denied,
-        SuppressionStatus.alreadyPresenting,
-      ], contains(status3));
+      ];
+      expect(validRequestStatuses, contains(status1.status));
+      expect(validRequestStatuses, contains(status2.status));
+      expect(validRequestStatuses, contains(status3.status));
 
       // Clean up
       await NfcWalletSuppression.releaseSuppression();
@@ -127,19 +121,11 @@ void main() {
       final status2 = await NfcWalletSuppression.releaseSuppression();
       final status3 = await NfcWalletSuppression.releaseSuppression();
 
-      // All should return a valid status
-      expect([
-        SuppressionStatus.notSuppressed,
-        SuppressionStatus.unavailable,
-      ], contains(status1));
-      expect([
-        SuppressionStatus.notSuppressed,
-        SuppressionStatus.unavailable,
-      ], contains(status2));
-      expect([
-        SuppressionStatus.notSuppressed,
-        SuppressionStatus.unavailable,
-      ], contains(status3));
+      // Release is idempotent, so every one of them reports `notSuppressed` —
+      // the repeats are not errors.
+      expect(status1.status, SuppressionStatus.notSuppressed);
+      expect(status2.status, SuppressionStatus.notSuppressed);
+      expect(status3.status, SuppressionStatus.notSuppressed);
     });
 
     testWidgets('release without prior request returns valid status', (
@@ -157,10 +143,10 @@ void main() {
       // Try to release without requesting
       final status = await NfcWalletSuppression.releaseSuppression();
 
-      expect([
-        SuppressionStatus.notSuppressed,
-        SuppressionStatus.unavailable,
-      ], contains(status));
+      // Releasing nothing still ends in "not suppressed", which is the whole
+      // point of making release idempotent.
+      expect(status.status, SuppressionStatus.notSuppressed);
+      expect(status.isReleased, true);
     });
   });
 
@@ -181,7 +167,7 @@ void main() {
 
       // Request and check
       final requestStatus = await NfcWalletSuppression.requestSuppression();
-      if (requestStatus == SuppressionStatus.suppressed) {
+      if (requestStatus.isSuppressed) {
         suppressed = await NfcWalletSuppression.isSuppressed();
         expect(suppressed, true);
       }
@@ -203,7 +189,7 @@ void main() {
 
       final status = await NfcWalletSuppression.requestSuppression();
 
-      if (status == SuppressionStatus.suppressed) {
+      if (status.isSuppressed) {
         final check1 = await NfcWalletSuppression.isSuppressed();
         final check2 = await NfcWalletSuppression.isSuppressed();
         final check3 = await NfcWalletSuppression.isSuppressed();
@@ -234,15 +220,16 @@ void main() {
         final isSuppressed = await NfcWalletSuppression.isSuppressed();
 
         // Should not throw exceptions
-        expect(requestStatus, isA<SuppressionStatus>());
-        expect(releaseStatus, isA<SuppressionStatus>());
+        expect(requestStatus, isA<SuppressionResult>());
+        expect(releaseStatus, isA<SuppressionResult>());
         expect(isSuppressed, isA<bool>());
 
-        // Likely returns notSupported or unavailable
+        // Likely returns notSupported, or nfcDisabled/unavailable on Android
         expect([
           SuppressionStatus.notSupported,
+          SuppressionStatus.nfcDisabled,
           SuppressionStatus.unavailable,
-        ], contains(requestStatus));
+        ], contains(requestStatus.status));
       },
     );
   });

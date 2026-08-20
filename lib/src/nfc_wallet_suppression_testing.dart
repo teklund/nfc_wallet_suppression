@@ -20,13 +20,14 @@
 ///     fake.setRequestResult(SuppressionStatus.suppressed);
 ///
 ///     final result = await NfcWalletSuppression.requestSuppression();
-///     expect(result, SuppressionStatus.suppressed);
+///     expect(result.status, SuppressionStatus.suppressed);
 ///   });
 /// }
 /// ```
 library;
 
 import 'nfc_wallet_suppression_platform_interface.dart';
+import 'nfc_wallet_suppression_result.dart';
 import 'nfc_wallet_suppression_status.dart';
 
 /// A fake implementation of [NfcWalletSuppressionPlatform] for testing.
@@ -38,8 +39,12 @@ import 'nfc_wallet_suppression_status.dart';
 class FakeNfcWalletSuppression extends NfcWalletSuppressionPlatform {
   bool _isCurrentlySuppressed = false;
   bool _isSupported = true;
-  SuppressionStatus _requestResult = SuppressionStatus.suppressed;
-  SuppressionStatus _releaseResult = SuppressionStatus.notSuppressed;
+  SuppressionResult _requestResult = const SuppressionResult(
+    status: SuppressionStatus.suppressed,
+  );
+  SuppressionResult _releaseResult = const SuppressionResult(
+    status: SuppressionStatus.notSuppressed,
+  );
 
   /// Track method calls for verification in tests
   final List<String> methodCalls = [];
@@ -49,14 +54,26 @@ class FakeNfcWalletSuppression extends NfcWalletSuppressionPlatform {
     _isSupported = supported;
   }
 
-  /// Set the result that [requestSuppression] will return
-  void setRequestResult(SuppressionStatus result) {
-    _requestResult = result;
+  /// Set the status that [requestSuppression] will return.
+  ///
+  /// Pass [description] when a test needs to assert on the diagnostic text the
+  /// platform would have supplied.
+  void setRequestResult(SuppressionStatus result, {String? description}) {
+    _requestResult = SuppressionResult(
+      status: result,
+      description: description,
+    );
   }
 
-  /// Set the result that [releaseSuppression] will return
-  void setReleaseResult(SuppressionStatus result) {
-    _releaseResult = result;
+  /// Set the status that [releaseSuppression] will return.
+  ///
+  /// Pass [description] when a test needs to assert on the diagnostic text the
+  /// platform would have supplied.
+  void setReleaseResult(SuppressionStatus result, {String? description}) {
+    _releaseResult = SuppressionResult(
+      status: result,
+      description: description,
+    );
   }
 
   /// Manually set the suppressed state (simulates an external state change).
@@ -72,8 +89,12 @@ class FakeNfcWalletSuppression extends NfcWalletSuppressionPlatform {
   void reset() {
     _isCurrentlySuppressed = false;
     _isSupported = true;
-    _requestResult = SuppressionStatus.suppressed;
-    _releaseResult = SuppressionStatus.notSuppressed;
+    _requestResult = const SuppressionResult(
+      status: SuppressionStatus.suppressed,
+    );
+    _releaseResult = const SuppressionResult(
+      status: SuppressionStatus.notSuppressed,
+    );
     methodCalls.clear();
   }
 
@@ -84,24 +105,23 @@ class FakeNfcWalletSuppression extends NfcWalletSuppressionPlatform {
   }
 
   @override
-  Future<SuppressionStatus> requestSuppression() async {
+  Future<SuppressionResult> requestSuppression() async {
     methodCalls.add('requestSuppression');
     // Suppression is active only when the request reports success; any other
     // outcome leaves it inactive. Assigning (rather than only setting `true`)
     // prevents a stale `true` from surviving a later failed request.
-    _isCurrentlySuppressed = _requestResult == SuppressionStatus.suppressed;
+    _isCurrentlySuppressed =
+        _requestResult.status == SuppressionStatus.suppressed;
     return _requestResult;
   }
 
   @override
-  Future<SuppressionStatus> releaseSuppression() async {
+  Future<SuppressionResult> releaseSuppression() async {
     methodCalls.add('releaseSuppression');
-    // `notSuppressed` (released) and `unavailable` (nothing to release) both mean
-    // suppression is no longer active. A failure result (e.g., `denied` or
-    // `unknown`) means the release did not take effect, so the prior state is
-    // preserved.
-    if (_releaseResult == SuppressionStatus.notSuppressed ||
-        _releaseResult == SuppressionStatus.unavailable) {
+    // `notSuppressed` means the release took effect — which now includes the
+    // "nothing was suppressed" case, since release is idempotent. Any other
+    // result means it did not take effect, so the prior state is preserved.
+    if (_releaseResult.status == SuppressionStatus.notSuppressed) {
       _isCurrentlySuppressed = false;
     }
     return _releaseResult;
@@ -134,12 +154,22 @@ class NfcWalletSuppressionTestScenarios {
     return fake;
   }
 
-  /// Scenario: NFC is available but currently unavailable (e.g., disabled)
+  /// Scenario: suppression is transiently unavailable (e.g., no foreground
+  /// Activity on Android). Retryable without any user action.
   static FakeNfcWalletSuppression nfcUnavailable() {
     final fake = FakeNfcWalletSuppression();
     fake.setSupported(true);
     fake.setRequestResult(SuppressionStatus.unavailable);
-    fake.setReleaseResult(SuppressionStatus.unavailable);
+    return fake;
+  }
+
+  /// Scenario: NFC hardware is present but switched off in system settings.
+  ///
+  /// The case an app would respond to by deep-linking the user to NFC settings.
+  static FakeNfcWalletSuppression nfcDisabled() {
+    final fake = FakeNfcWalletSuppression();
+    fake.setSupported(true);
+    fake.setRequestResult(SuppressionStatus.nfcDisabled);
     return fake;
   }
 

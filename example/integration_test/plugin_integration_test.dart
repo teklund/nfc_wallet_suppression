@@ -28,32 +28,33 @@ void main() {
     expect(suppressed, false, reason: 'Initial state should be not suppressed');
 
     // Request suppression
-    final requestStatus = await NfcWalletSuppression.requestSuppression();
+    final requestResult = await NfcWalletSuppression.requestSuppression();
 
     // Verify suppression was either successful or device doesn't support it
     expect(
       [
         SuppressionStatus.suppressed,
         SuppressionStatus.notSupported,
+        SuppressionStatus.nfcDisabled,
         SuppressionStatus.unavailable,
         SuppressionStatus.denied,
       ],
-      contains(requestStatus),
+      contains(requestResult.status),
       reason: 'Request should return a valid status',
     );
 
     // Only continue with lifecycle test if suppression was successful
-    if (requestStatus == SuppressionStatus.suppressed) {
+    if (requestResult.isSuppressed) {
       // Verify suppression is active
       suppressed = await NfcWalletSuppression.isSuppressed();
       expect(suppressed, true, reason: 'Should be suppressed after request');
 
       // Release suppression
-      final releaseStatus = await NfcWalletSuppression.releaseSuppression();
+      final releaseResult = await NfcWalletSuppression.releaseSuppression();
       expect(
-        [SuppressionStatus.notSuppressed, SuppressionStatus.unavailable],
-        contains(releaseStatus),
-        reason: 'Release should return a valid status',
+        releaseResult.status,
+        SuppressionStatus.notSuppressed,
+        reason: 'Release of a held suppression must succeed',
       );
 
       // Verify suppression is no longer active

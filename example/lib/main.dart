@@ -16,6 +16,9 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   SuppressionStatus _suppressionStatus = SuppressionStatus.notSuppressed;
+
+  /// The platform's own account of the last outcome, for display only.
+  String? _statusDescription;
   String? _error;
   bool _isLoading = false;
   bool _isSupported = false;
@@ -52,6 +55,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     }
   }
 
+  void _showSnack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   Future<void> _restoreSuppression() async {
     // Only attempt if supported
     if (!_isSupported) return;
@@ -79,6 +89,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           _suppressionStatus = isSuppressed
               ? SuppressionStatus.suppressed
               : SuppressionStatus.notSuppressed;
+          _statusDescription = null;
         });
       } else {
         setState(() {
@@ -105,9 +116,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       final result = await NfcWalletSuppression.requestSuppression();
       if (!mounted) return;
       setState(() {
-        _suppressionStatus = result;
+        _suppressionStatus = result.status;
+        _statusDescription = result.description;
         _isLoading = false;
       });
+      if (result.status == SuppressionStatus.nfcDisabled) {
+        // The one failure the user can fix. A real app would deep-link to
+        // `android.settings.NFC_SETTINGS` here.
+        _showSnack('Turn NFC on in system settings, then try again.');
+      }
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -129,7 +146,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       final result = await NfcWalletSuppression.releaseSuppression();
       if (!mounted) return;
       setState(() {
-        _suppressionStatus = result;
+        _suppressionStatus = result.status;
+        _statusDescription = result.description;
         _isLoading = false;
       });
     } catch (error) {
@@ -156,6 +174,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         _suppressionStatus = result
             ? SuppressionStatus.suppressed
             : SuppressionStatus.notSuppressed;
+        _statusDescription = null;
         _isLoading = false;
       });
     } catch (error) {
@@ -279,6 +298,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 fontWeight: FontWeight.w500,
               ),
             ),
+            // Diagnostic detail from the platform. Handy in logs and bug
+            // reports; never branch on the wording.
+            if (_statusDescription != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                _statusDescription!,
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+              ),
+            ],
             if (_error != null) ...[
               const SizedBox(height: 8),
               Container(
