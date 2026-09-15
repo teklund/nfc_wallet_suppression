@@ -655,9 +655,9 @@ class RunnerTests: XCTestCase {
 
   func testRequest_lateHandlerForAReusedTokenValue_doesNotEndLiveSuppression() {
     let (plugin, fake, clock) = makeSUT()
-    // PassKit hands out the same numeric value twice. Apple documents the token
-    // as identifying a request but never promises the value is unique for the
-    // lifetime of the process, so the plugin must not assume it is.
+    // PassKit hands out the same numeric value twice. Current iOS never does —
+    // tokens come from a per-process counter — but Apple documents no uniqueness
+    // guarantee, so the plugin must stay correct if that ever changes.
     fake.tokensToReturn = [42, 42]
 
     plugin.requestSuppression { _ in }
@@ -676,6 +676,33 @@ class RunnerTests: XCTestCase {
     XCTAssertEqual(
       fake.endedTokens, [42],
       "A late handler must not end a token whose value matches the one we now hold")
+  }
+
+  func testRequest_lateHandlerForAReusedTokenValue_doesNotEndTheInFlightRequestsToken() {
+    let (plugin, fake, clock) = makeSUT()
+    // The same reuse as above, delivered in the other order: request 1's handler
+    // lands while request 2 is still in flight, so the value is not yet held —
+    // only the running request knows it.
+    fake.tokensToReturn = [42, 42]
+
+    plugin.requestSuppression { _ in }
+    clock.fire()  // orphan (request 1, token 42)
+    fake.isSuppressingAutomaticPassPresentation = false
+
+    var second: SuppressionStatusCode?
+    plugin.requestSuppression { second = (try? $0.get())?.status }
+    XCTAssertEqual(fake.requestCount, 2)
+    XCTAssertEqual(fake.endedTokens, [42], "The unconfirmed token is ended before re-requesting")
+
+    // Request 1's handler arrives while request 2 is still in flight.
+    fake.deliver(.success, forRequest: 1)
+    XCTAssertEqual(
+      fake.endedTokens, [42],
+      "A late handler must not end the token the in-flight request is using")
+
+    fake.deliver(.success, forRequest: 2)
+    XCTAssertEqual(second, .suppressed)
+    XCTAssertEqual(fake.endedTokens, [42], "and suppression must still be on")
   }
 
   func testRequest_orphanEviction_endsTheEvictedTokenRatherThanStrandingIt() {
@@ -701,6 +728,32 @@ class RunnerTests: XCTestCase {
       newlyEnded.contains(101),
       "An evicted orphan must be ended as it is dropped — once its record is gone, "
         + "no later handler can ever end it")
+  }
+
+  func testRequest_orphanEvictionOfAReusedTokenValue_doesNotEndTheTokenStillTracked() {
+    let (plugin, fake, clock) = makeSUT()
+    // Nine unanswered requests; the ninth is issued the first one's value again.
+    // As above, current iOS never reuses a value, but nothing documents that.
+    fake.tokensToReturn = Array(42...49) + [42]
+
+    for _ in 0..<9 {
+      plugin.requestSuppression { _ in }
+      clock.fire()
+    }
+
+    // Every retry ended the previous unconfirmed token, 42 through 49. The ninth
+    // timeout then evicts orphan (request 1, token 42) — but 42 is also the token
+    // the plugin is still tracking as unconfirmed, so it must not be ended here.
+    XCTAssertEqual(
+      fake.endedTokens, Array(42...49),
+      "Eviction must not end a token whose value the plugin is still tracking")
+
+    var releaseStatus: SuppressionStatusCode?
+    plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }
+    XCTAssertEqual(releaseStatus, .notSuppressed)
+    XCTAssertEqual(
+      fake.endedTokens, Array(42...49) + [42],
+      "The tracked token is still ended exactly once, by the release that owns it")
   }
 
   // MARK: - Completion re-entrancy

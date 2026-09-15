@@ -465,7 +465,7 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
         // nothing for that id, so nothing could ever end it. End it as we evict.
         // Free if PassKit never granted it — invalid tokens are a documented
         // no-op — and the only way to turn it off if it did.
-        library.endSuppression(withRequestToken: orphanedTokens.removeFirst().token)
+        endStaleToken(orphanedTokens.removeFirst().token)
       }
     }
     flight.group.deliver(
@@ -504,13 +504,20 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
     // superseded it. End it defensively: the API ignores invalid and
     // already-ended tokens, so a second end costs nothing, and it is the only
     // way to turn off suppression that PassKit granted after we gave up on it.
-    //
-    // The one token we must NOT end here is the one we currently hold. Apple
-    // documents the token as identifying a request but never promises the
-    // numeric value is unique for the lifetime of the process, so a reissued
-    // value would otherwise let this late reconcile switch off *live*
-    // suppression while `tokenState` still claims to hold it.
-    guard tokenState.token != token else { return }
+    endStaleToken(token)
+  }
+
+  /// Ends a token left over from an earlier request, unless its value is one the
+  /// held token or the in-flight request is still using.
+  ///
+  /// Current iOS issues tokens from a per-process counter, so a stale value never
+  /// matches a live one and this guard never fires. Apple documents no uniqueness
+  /// guarantee, though, and PassKit tracks live tokens by value: if a value were
+  /// ever reissued, ending the stale copy would switch off the request that now
+  /// owns it. Skipping is safe either way, because that owner still ends the value
+  /// when it is released or superseded.
+  private func endStaleToken(_ token: PKSuppressionRequestToken) {
+    guard tokenState.token != token, inFlight?.token != token else { return }
     library.endSuppression(withRequestToken: token)
   }
 
