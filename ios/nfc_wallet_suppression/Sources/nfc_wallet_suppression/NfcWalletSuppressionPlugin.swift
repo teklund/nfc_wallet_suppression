@@ -364,9 +364,10 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
 
   /// Adopts a token as confirmed-held.
   ///
-  /// Clearing the orphan entry is load-bearing: without it a late handler for the
-  /// same request would later take the "not ours any more" branch of
-  /// `reconcileLate` and end a token we are actively holding.
+  /// The request's orphan record is retired because it no longer describes an
+  /// orphan, freeing one of the capped slots. That is tidiness, not safety: if the
+  /// late handler still arrives, `endStaleToken` skips the value because it is now
+  /// the held token.
   private func promoteToHeld(_ token: PKSuppressionRequestToken) {
     if case .unconfirmed(_, let requestID) = tokenState {
       orphanedTokens.removeAll { $0.id == requestID }
