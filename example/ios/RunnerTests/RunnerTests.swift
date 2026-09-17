@@ -18,14 +18,10 @@ private extension Result where Success == SuppressionResult {
 ///
 /// Mirrors PassKit's contract: `requestSuppression` returns the token
 /// synchronously and the response handler fires later, when the test calls
-/// `deliver(_:)`. (In production `SystemPassLibrary` guarantees the handler is
-/// delivered asynchronously on the main thread, so synchronous delivery is not
-/// modelled here.)
+/// `deliver(_:)`.
 ///
-/// Handlers are retained per request number rather than as a single slot, so a
-/// test can deliver a *late* handler for request 1 after request 2 has already
-/// started — the case that proves a stale response cannot resolve the wrong
-/// caller.
+/// Handlers are kept per request number, so a test can deliver a late handler
+/// for request 1 after request 2 has started.
 final class FakePassLibrary: PassPresentationSuppressing {
   typealias Handler = (PKAutomaticPassPresentationSuppressionResult) -> Void
 
@@ -520,9 +516,9 @@ class RunnerTests: XCTestCase {
     plugin.releaseSuppression { _ in }
     XCTAssertEqual(fake.endedTokens, [42])
 
-    // PassKit grants the suppression after we gave up AND after the caller
-    // released. Ending an already-ended token is a documented no-op, and it is
-    // the only way to turn off suppression that arrived this late.
+    // PassKit grants suppression after we gave up AND after the caller released.
+    // Ending an already-ended token is a no-op; PassKit drops a grant that lands
+    // once every token has been ended.
     fake.deliver(.success, forRequest: 1)
     XCTAssertEqual(fake.endedTokens, [42, 42])
   }

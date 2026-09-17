@@ -101,18 +101,10 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
 
   /// Default deadline for a PassKit suppression request.
   ///
-  /// Apple DTS puts the request → callback gap at 50–300 ms and explicitly calls
-  /// it non-deterministic, so 5 s is roughly 16× that ceiling and should never
-  /// fire in steady state.
-  ///
-  /// This deadline is DEFENSIVE, not evidence-driven: there are no reported
-  /// cases of PassKit failing to invoke the handler. It exists because Apple
-  /// documents no delivery guarantee (the only promise is that the handler is
-  /// still called on the unsupported-device path), and because the effect of the
-  /// first-run "Apple Pay is unavailable" alert on callback timing is unknown.
-  /// Without it, a handler that never arrives wedges the plugin for the lifetime
-  /// of the process: every later request coalesces onto the dead one and every
-  /// release parks behind it forever.
+  /// Apple DTS puts the request → callback gap at 50–300 ms and calls it
+  /// non-deterministic; Apple documents no delivery guarantee. Defensive only —
+  /// no case of a missing handler has been reported — but without it one lost
+  /// callback parks every later operation behind a request that never ends.
   static let defaultRequestTimeout: TimeInterval = 5.0
 
   /// Upper bound on retained timed-out tokens. In practice this is always empty;
@@ -121,19 +113,12 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
 
   // MARK: State
   //
-  // Ordering was previously encoded as *roles* on a single enum
-  // (`inFlight(waiters:release:token:)`), which cannot express "these operations
-  // happened in this order" and produced two distinct ordering bugs. It is now
-  // split into three independent concerns:
-  //
   //   - `tokenState` — what we own. No notion of order.
-  //   - `queue`      — the order operations were submitted in. Order lives here,
-  //                    and only here.
-  //   - `inFlight`   — bookkeeping for the single outstanding PassKit request.
+  //   - `queue`      — submission order. Ordering lives here and only here.
+  //   - `inFlight`   — the single outstanding PassKit request.
   //
-  // All access is confined to the main thread: pigeon dispatches the API methods
-  // there, and `SystemPassLibrary` delivers the PassKit callback there too, so no
-  // locking is required.
+  // Main-thread confined: pigeon dispatches the API methods there, and
+  // `SystemPassLibrary` delivers the PassKit callback there too, so no locking.
 
   /// The suppression token the plugin owns, if any.
   private enum TokenState: Equatable {
@@ -212,9 +197,9 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
 
   /// Tokens from requests that hit the deadline, oldest first.
   ///
-  /// Kept so that a handler arriving after we gave up can still end the token —
-  /// including when the caller has already released in the meantime, which is the
-  /// only way to turn off suppression PassKit granted after the deadline.
+  /// Kept so a handler arriving after we gave up can still end the token. PassKit
+  /// drops a grant that lands once every token has been ended, so this is belt
+  /// and braces rather than the only lever.
   private var orphanedTokens: [(id: UInt64, token: PKSuppressionRequestToken)] = []
 
   private let library: PassPresentationSuppressing
@@ -348,14 +333,14 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
   private func startOrShortCircuit(_ group: RequestGroup) {
     if let token = tokenState.token {
       // Reconcile intent against the OS before reporting success. This also
-      // covers a token retained past its deadline: if PassKit granted it late,
-      // the OS says so and we adopt it rather than issuing a second request.
+      // adopts a token retained past its deadline, if PassKit granted it late.
       if library.isSuppressingAutomaticPassPresentation {
         promoteToHeld(token)
         group.deliver(SuppressionResult(status: .suppressed, message: Message.alreadySuppressed))
         return
       }
-      // Stale: suppression was ended outside the plugin, or was never granted.
+      // Not suppressing: ended outside the plugin, never granted, or still
+      // pending. Indistinguishable here, and all three want a fresh request.
       library.endSuppression(withRequestToken: token)
       tokenState = .none
     }
@@ -395,21 +380,15 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
       self?.handleResponse(id: id, passResult: passResult)
     }
 
-    // `flight.token` is recorded only *after* `requestSuppression` returns, so a
-    // handler invoked synchronously would settle this flight while its token is
-    // still unrecorded: the caller would be told `.unknown` for a request that
-    // actually succeeded, and the granted token would be referenced by nothing,
-    // stranding suppression on for the lifetime of the process.
-    // `PassPresentationSuppressing` requires asynchronous delivery precisely for
-    // this reason, and `SystemPassLibrary` guarantees it with a main-queue hop.
-    // Assert it so a refactor that drops that hop fails loudly in tests rather
-    // than silently in the field.
+    // Recorded only after `requestSuppression` returns: a synchronously invoked
+    // handler would settle this flight before the token exists, answering
+    // `.unknown` for a granted request and stranding the token. The protocol
+    // requires async delivery; assert so a lost main-queue hop fails in tests.
     assert(inFlight === flight, "response handler must not be invoked synchronously")
 
-    // A `0` token means PassKit refused to submit, so there is nothing we could
-    // ever end. We still wait for the handler: Apple documents that PassKit calls
-    // it anyway, and it carries the real reason (typically `.notSupported`),
-    // which beats a synthesised one. The deadline bounds that wait.
+    // A `0` token means PassKit refused to submit, so there is nothing to end.
+    // We still wait for the handler — Apple documents it is called anyway and it
+    // carries the real reason. The deadline bounds that wait.
     flight.token = (token == 0) ? nil : token
   }
 
@@ -462,10 +441,9 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
       tokenState = .unconfirmed(token: token, requestID: id)
       orphanedTokens.append((id: id, token: token))
       if orphanedTokens.count > Self.maxOrphanedTokens {
-        // Dropping the record alone would strand the token: `reconcileLate` finds
-        // nothing for that id, so nothing could ever end it. End it as we evict.
-        // Free if PassKit never granted it — invalid tokens are a documented
-        // no-op — and the only way to turn it off if it did.
+        // The record is the only way to reach this token later, so end it as we
+        // drop it. Free when PassKit never granted it: ending an invalid token
+        // is a documented no-op.
         endStaleToken(orphanedTokens.removeFirst().token)
       }
     }
@@ -501,22 +479,18 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
       return
     }
 
-    // The caller released this token in the meantime, or a later request
-    // superseded it. End it defensively: the API ignores invalid and
-    // already-ended tokens, so a second end costs nothing, and it is the only
-    // way to turn off suppression that PassKit granted after we gave up on it.
+    // Released in the meantime, or superseded by a later request. End it
+    // defensively: ending an invalid token is a documented no-op, and PassKit
+    // drops a grant that lands after every token has been ended.
     endStaleToken(token)
   }
 
-  /// Ends a token left over from an earlier request, unless its value is one the
-  /// held token or the in-flight request is still using.
+  /// Ends a token from an earlier request, unless the held token or the in-flight
+  /// request is using that value.
   ///
-  /// Current iOS issues tokens from a per-process counter, so a stale value never
-  /// matches a live one and this guard never fires. Apple documents no uniqueness
-  /// guarantee, though, and PassKit tracks live tokens by value: if a value were
-  /// ever reissued, ending the stale copy would switch off the request that now
-  /// owns it. Skipping is safe either way, because that owner still ends the value
-  /// when it is released or superseded.
+  /// Tokens come from a per-process counter today, so this never fires. Apple
+  /// documents no uniqueness guarantee though, and PassKit tracks tokens by
+  /// value: a reissued value would switch off the request that now owns it.
   private func endStaleToken(_ token: PKSuppressionRequestToken) {
     guard tokenState.token != token, inFlight?.token != token else { return }
     library.endSuppression(withRequestToken: token)
