@@ -5,6 +5,15 @@ import XCTest
 
 @testable import nfc_wallet_suppression
 
+/// Reads the status out of a plugin callback result.
+///
+/// Every assertion here wants the status and nothing else; unwrapping it inline
+/// 50-odd times only added noise.
+private extension Result where Success == SuppressionResult {
+  var status: SuppressionStatusCode? { (try? get())?.status }
+  var message: String? { (try? get())?.message }
+}
+
 /// Controllable fake of the PassKit suppression API.
 ///
 /// Mirrors PassKit's contract: `requestSuppression` returns the token
@@ -114,11 +123,6 @@ class RunnerTests: XCTestCase {
     return (plugin, fake, clock)
   }
 
-  private func status(_ result: Result<SuppressionResult, Error>?) -> SuppressionStatusCode? {
-    guard let result = result else { return nil }
-    return (try? result.get())?.status
-  }
-
   // MARK: - Pure result mapping
 
   func testMapping_coversEverySuppressionResult() {
@@ -135,7 +139,7 @@ class RunnerTests: XCTestCase {
     let (plugin, fake, _) = makeSUT(token: 42)
 
     var status: SuppressionStatusCode?
-    plugin.requestSuppression { status = (try? $0.get())?.status }
+    plugin.requestSuppression { status = $0.status }
     fake.deliver(.success)
 
     XCTAssertEqual(status, .suppressed)
@@ -147,14 +151,14 @@ class RunnerTests: XCTestCase {
     let (plugin, fake, _) = makeSUT(token: 7)
 
     var status: SuppressionStatusCode?
-    plugin.requestSuppression { status = (try? $0.get())?.status }
+    plugin.requestSuppression { status = $0.status }
     fake.deliver(.denied)
 
     XCTAssertEqual(status, .denied)
     XCTAssertEqual(fake.endedTokens, [7], "A failed request must release the issued token")
 
     var releaseStatus: SuppressionStatusCode?
-    plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }
+    plugin.releaseSuppression { releaseStatus = $0.status }
     XCTAssertEqual(releaseStatus, .unavailable, "No token should linger after a failed request")
   }
 
@@ -168,7 +172,7 @@ class RunnerTests: XCTestCase {
     var status: SuppressionStatusCode?
     plugin.requestSuppression {
       callCount += 1
-      status = (try? $0.get())?.status
+      status = $0.status
     }
 
     XCTAssertEqual(callCount, 0, "Must not synthesise an answer while the handler is still coming")
@@ -187,7 +191,7 @@ class RunnerTests: XCTestCase {
     var status: SuppressionStatusCode?
     plugin.requestSuppression {
       callCount += 1
-      status = (try? $0.get())?.status
+      status = $0.status
     }
     clock.fire()
 
@@ -197,7 +201,7 @@ class RunnerTests: XCTestCase {
 
     // No phantom token was retained, so a following release has nothing to end.
     var releaseStatus: SuppressionStatusCode?
-    plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }
+    plugin.releaseSuppression { releaseStatus = $0.status }
     XCTAssertEqual(releaseStatus, .unavailable)
   }
 
@@ -206,14 +210,14 @@ class RunnerTests: XCTestCase {
     // Formatting it as an `Int` would report a 0.5 s timeout as "0s".
     let (halfSecond, _, halfClock) = makeSUT(requestTimeout: 0.5)
     var message: String?
-    halfSecond.requestSuppression { message = (try? $0.get())?.message }
+    halfSecond.requestSuppression { message = $0.message }
     halfClock.fire()
     XCTAssertEqual(
       message, "PassKit did not answer the suppression request within 0.5s.")
 
     // A whole number of seconds still reads "5s", not "5.0s".
     let (whole, _, wholeClock) = makeSUT(requestTimeout: 5)
-    whole.requestSuppression { message = (try? $0.get())?.message }
+    whole.requestSuppression { message = $0.message }
     wholeClock.fire()
     XCTAssertEqual(
       message, "PassKit did not answer the suppression request within 5s.")
@@ -223,14 +227,14 @@ class RunnerTests: XCTestCase {
     let (plugin, fake, _) = makeSUT(token: 0)
 
     var status: SuppressionStatusCode?
-    plugin.requestSuppression { status = (try? $0.get())?.status }
+    plugin.requestSuppression { status = $0.status }
     fake.deliver(.success)  // refused to submit, yet reported success
 
     XCTAssertEqual(status, .unknown, "We hold nothing we could ever end, so we claim nothing")
     XCTAssertTrue(fake.endedTokens.isEmpty)
 
     var releaseStatus: SuppressionStatusCode?
-    plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }
+    plugin.releaseSuppression { releaseStatus = $0.status }
     XCTAssertEqual(releaseStatus, .unavailable)
   }
 
@@ -240,9 +244,9 @@ class RunnerTests: XCTestCase {
     var first: SuppressionStatusCode?
     var second: SuppressionStatusCode?
     var release: SuppressionStatusCode?
-    plugin.requestSuppression { first = (try? $0.get())?.status }
-    plugin.requestSuppression { second = (try? $0.get())?.status }  // coalesces
-    plugin.releaseSuppression { release = (try? $0.get())?.status }  // queued behind
+    plugin.requestSuppression { first = $0.status }
+    plugin.requestSuppression { second = $0.status }  // coalesces
+    plugin.releaseSuppression { release = $0.status }  // queued behind
 
     XCTAssertEqual(fake.requestCount, 1)
     XCTAssertTrue(fake.endedTokens.isEmpty)
@@ -260,8 +264,8 @@ class RunnerTests: XCTestCase {
 
     var first: SuppressionStatusCode?
     var second: SuppressionStatusCode?
-    plugin.requestSuppression { first = (try? $0.get())?.status }
-    plugin.requestSuppression { second = (try? $0.get())?.status }  // in flight -> coalesces
+    plugin.requestSuppression { first = $0.status }
+    plugin.requestSuppression { second = $0.status }  // in flight -> coalesces
 
     XCTAssertEqual(fake.requestCount, 1, "A second in-flight request must not issue another PassKit request")
 
@@ -278,7 +282,7 @@ class RunnerTests: XCTestCase {
     fake.isSuppressingAutomaticPassPresentation = true  // OS confirms still suppressing
 
     var status: SuppressionStatusCode?
-    plugin.requestSuppression { status = (try? $0.get())?.status }
+    plugin.requestSuppression { status = $0.status }
 
     XCTAssertEqual(status, .suppressed)
     XCTAssertEqual(fake.requestCount, 1, "Must not re-request while genuinely active")
@@ -293,7 +297,7 @@ class RunnerTests: XCTestCase {
     fake.tokenToReturn = 9
 
     var status: SuppressionStatusCode?
-    plugin.requestSuppression { status = (try? $0.get())?.status }
+    plugin.requestSuppression { status = $0.status }
     XCTAssertEqual(fake.requestCount, 2, "Stale token should trigger a fresh request")
     XCTAssertTrue(fake.endedTokens.contains(8), "Stale token must be released")
 
@@ -310,7 +314,7 @@ class RunnerTests: XCTestCase {
     fake.tokenToReturn = 9
 
     var status: SuppressionStatusCode?
-    plugin.requestSuppression { status = (try? $0.get())?.status }
+    plugin.requestSuppression { status = $0.status }
     fake.deliver(.denied)  // the fresh re-request fails
 
     XCTAssertEqual(status, .denied)
@@ -319,7 +323,7 @@ class RunnerTests: XCTestCase {
 
     // State is idle, so a subsequent release reports unavailable.
     var releaseStatus: SuppressionStatusCode?
-    plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }
+    plugin.releaseSuppression { releaseStatus = $0.status }
     XCTAssertEqual(releaseStatus, .unavailable)
   }
 
@@ -336,9 +340,9 @@ class RunnerTests: XCTestCase {
     var first: SuppressionStatusCode?
     var release: SuppressionStatusCode?
     var second: SuppressionStatusCode?
-    plugin.requestSuppression { first = (try? $0.get())?.status }
-    plugin.releaseSuppression { release = (try? $0.get())?.status }
-    plugin.requestSuppression { second = (try? $0.get())?.status }
+    plugin.requestSuppression { first = $0.status }
+    plugin.releaseSuppression { release = $0.status }
+    plugin.requestSuppression { second = $0.status }
 
     fake.deliver(.success)  // resolves request 1, then drains release, then starts request 2
     XCTAssertEqual(first, .suppressed)
@@ -352,7 +356,7 @@ class RunnerTests: XCTestCase {
 
     // The end state matches the last intent, and the second token is the live one.
     var releaseStatus: SuppressionStatusCode?
-    plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }
+    plugin.releaseSuppression { releaseStatus = $0.status }
     XCTAssertEqual(releaseStatus, .notSuppressed)
     XCTAssertEqual(fake.endedTokens, [42, 43], "Suppression was genuinely held by token 43")
   }
@@ -378,8 +382,8 @@ class RunnerTests: XCTestCase {
     var third: SuppressionStatusCode?
     plugin.requestSuppression { _ in }
     plugin.releaseSuppression { _ in }
-    plugin.requestSuppression { second = (try? $0.get())?.status }
-    plugin.requestSuppression { third = (try? $0.get())?.status }  // joins the queued tail
+    plugin.requestSuppression { second = $0.status }
+    plugin.requestSuppression { third = $0.status }  // joins the queued tail
 
     fake.deliver(.success)
     fake.deliver(.success)
@@ -394,10 +398,10 @@ class RunnerTests: XCTestCase {
     fake.tokensToReturn = [1, 2]
 
     var statuses: [SuppressionStatusCode?] = []
-    plugin.requestSuppression { statuses.append((try? $0.get())?.status) }
-    plugin.releaseSuppression { statuses.append((try? $0.get())?.status) }
-    plugin.requestSuppression { statuses.append((try? $0.get())?.status) }
-    plugin.releaseSuppression { statuses.append((try? $0.get())?.status) }
+    plugin.requestSuppression { statuses.append($0.status) }
+    plugin.releaseSuppression { statuses.append($0.status) }
+    plugin.requestSuppression { statuses.append($0.status) }
+    plugin.releaseSuppression { statuses.append($0.status) }
 
     fake.deliver(.success)
     fake.deliver(.success)
@@ -411,7 +415,7 @@ class RunnerTests: XCTestCase {
 
     var releaseStatus: SuppressionStatusCode?
     plugin.requestSuppression { _ in
-      plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }
+      plugin.releaseSuppression { releaseStatus = $0.status }
     }
     fake.deliver(.success)
 
@@ -441,7 +445,7 @@ class RunnerTests: XCTestCase {
     fake.tokensToReturn = [42, 43]
 
     var first: SuppressionStatusCode?
-    plugin.requestSuppression { first = (try? $0.get())?.status }
+    plugin.requestSuppression { first = $0.status }
     clock.fire()
 
     XCTAssertEqual(first, .unknown)
@@ -450,7 +454,7 @@ class RunnerTests: XCTestCase {
     // coalescing onto the abandoned one forever.
     fake.isSuppressingAutomaticPassPresentation = false
     var second: SuppressionStatusCode?
-    plugin.requestSuppression { second = (try? $0.get())?.status }
+    plugin.requestSuppression { second = $0.status }
     fake.deliver(.success)
     XCTAssertEqual(second, .suppressed)
   }
@@ -462,7 +466,7 @@ class RunnerTests: XCTestCase {
     clock.fire()
 
     var releaseStatus: SuppressionStatusCode?
-    plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }
+    plugin.releaseSuppression { releaseStatus = $0.status }
 
     XCTAssertEqual(releaseStatus, .notSuppressed)
   }
@@ -489,7 +493,7 @@ class RunnerTests: XCTestCase {
     XCTAssertEqual(callCount, 1, "A late handler must not answer an already-answered caller")
 
     var releaseStatus: SuppressionStatusCode?
-    plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }
+    plugin.releaseSuppression { releaseStatus = $0.status }
     XCTAssertEqual(releaseStatus, .notSuppressed)
     XCTAssertEqual(fake.endedTokens, [42], "The late-granted suppression is still releasable")
   }
@@ -504,7 +508,7 @@ class RunnerTests: XCTestCase {
     XCTAssertEqual(fake.endedTokens, [42])
 
     var releaseStatus: SuppressionStatusCode?
-    plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }
+    plugin.releaseSuppression { releaseStatus = $0.status }
     XCTAssertEqual(releaseStatus, .unavailable, "Nothing is held once the late failure is reconciled")
   }
 
@@ -531,7 +535,7 @@ class RunnerTests: XCTestCase {
     fake.isSuppressingAutomaticPassPresentation = true  // it was granted after all
 
     var status: SuppressionStatusCode?
-    plugin.requestSuppression { status = (try? $0.get())?.status }
+    plugin.requestSuppression { status = $0.status }
 
     XCTAssertEqual(status, .suppressed)
     XCTAssertEqual(fake.requestCount, 1, "Adopt the live token rather than requesting again")
@@ -550,7 +554,7 @@ class RunnerTests: XCTestCase {
     XCTAssertTrue(fake.endedTokens.isEmpty, "A late handler must not end a token we now hold")
 
     var releaseStatus: SuppressionStatusCode?
-    plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }
+    plugin.releaseSuppression { releaseStatus = $0.status }
     XCTAssertEqual(releaseStatus, .notSuppressed)
     XCTAssertEqual(fake.endedTokens, [42])
   }
@@ -564,7 +568,7 @@ class RunnerTests: XCTestCase {
     fake.isSuppressingAutomaticPassPresentation = false
 
     var status: SuppressionStatusCode?
-    plugin.requestSuppression { status = (try? $0.get())?.status }
+    plugin.requestSuppression { status = $0.status }
 
     XCTAssertEqual(fake.requestCount, 2)
     XCTAssertTrue(fake.endedTokens.contains(42), "The unconfirmed token is released before re-requesting")
@@ -582,11 +586,11 @@ class RunnerTests: XCTestCase {
     var second: SuppressionStatusCode?
     plugin.requestSuppression {
       firstCount += 1
-      first = (try? $0.get())?.status
+      first = $0.status
     }
     plugin.requestSuppression {
       secondCount += 1
-      second = (try? $0.get())?.status
+      second = $0.status
     }
     clock.fire()
 
@@ -604,7 +608,7 @@ class RunnerTests: XCTestCase {
     clock.fire()  // request 1 abandoned
 
     var second: SuppressionStatusCode?
-    plugin.requestSuppression { second = (try? $0.get())?.status }
+    plugin.requestSuppression { second = $0.status }
     XCTAssertEqual(fake.requestCount, 2)
 
     fake.deliver(.denied, forRequest: 1)  // request 1's stale handler arrives
@@ -619,8 +623,8 @@ class RunnerTests: XCTestCase {
 
     var request: SuppressionStatusCode?
     var release: SuppressionStatusCode?
-    plugin.requestSuppression { request = (try? $0.get())?.status }
-    plugin.releaseSuppression { release = (try? $0.get())?.status }
+    plugin.requestSuppression { request = $0.status }
+    plugin.releaseSuppression { release = $0.status }
 
     XCTAssertNil(release, "The release waits behind the in-flight request")
 
@@ -665,7 +669,7 @@ class RunnerTests: XCTestCase {
     fake.isSuppressingAutomaticPassPresentation = false
 
     var second: SuppressionStatusCode?
-    plugin.requestSuppression { second = (try? $0.get())?.status }
+    plugin.requestSuppression { second = $0.status }
     XCTAssertEqual(fake.requestCount, 2)
     XCTAssertEqual(fake.endedTokens, [42], "The unconfirmed token is ended before re-requesting")
 
@@ -690,7 +694,7 @@ class RunnerTests: XCTestCase {
     fake.isSuppressingAutomaticPassPresentation = false
 
     var second: SuppressionStatusCode?
-    plugin.requestSuppression { second = (try? $0.get())?.status }
+    plugin.requestSuppression { second = $0.status }
     XCTAssertEqual(fake.requestCount, 2)
     XCTAssertEqual(fake.endedTokens, [42], "The unconfirmed token is ended before re-requesting")
 
@@ -749,7 +753,7 @@ class RunnerTests: XCTestCase {
       "Eviction must not end a token whose value the plugin is still tracking")
 
     var releaseStatus: SuppressionStatusCode?
-    plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }
+    plugin.releaseSuppression { releaseStatus = $0.status }
     XCTAssertEqual(releaseStatus, .notSuppressed)
     XCTAssertEqual(
       fake.endedTokens, Array(42...49) + [42],
@@ -765,7 +769,7 @@ class RunnerTests: XCTestCase {
     fake.isSuppressingAutomaticPassPresentation = false
 
     var second: SuppressionStatusCode?
-    plugin.requestSuppression { second = (try? $0.get())?.status }
+    plugin.requestSuppression { second = $0.status }
     XCTAssertEqual(fake.endedTokens, [42], "The retry ends the unconfirmed token first")
 
     // Request 1 is granted after it was superseded, while request 2 is still in
@@ -778,7 +782,7 @@ class RunnerTests: XCTestCase {
     XCTAssertEqual(fake.endedTokens, [42, 42], "Request 2's token is left alone")
 
     var releaseStatus: SuppressionStatusCode?
-    plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }
+    plugin.releaseSuppression { releaseStatus = $0.status }
     XCTAssertEqual(releaseStatus, .notSuppressed)
     XCTAssertEqual(fake.endedTokens, [42, 42, 43])
   }
@@ -798,7 +802,7 @@ class RunnerTests: XCTestCase {
     // work enqueued here.
     var release: SuppressionStatusCode?
     plugin.requestSuppression { _ in
-      plugin.releaseSuppression { release = (try? $0.get())?.status }
+      plugin.releaseSuppression { release = $0.status }
     }
 
     XCTAssertEqual(
@@ -815,7 +819,7 @@ class RunnerTests: XCTestCase {
       // A caller retrying on timeout. The retained token is visible at this
       // point, so the retry must reconcile it rather than stack a second
       // suppression on top of it.
-      plugin.requestSuppression { second = (try? $0.get())?.status }
+      plugin.requestSuppression { second = $0.status }
     }
     clock.fire()
 
@@ -845,7 +849,7 @@ class RunnerTests: XCTestCase {
     fake.deliver(.success)
 
     var status: SuppressionStatusCode?
-    plugin.releaseSuppression { status = (try? $0.get())?.status }
+    plugin.releaseSuppression { status = $0.status }
 
     XCTAssertEqual(fake.endedTokens, [5])
     XCTAssertEqual(status, .notSuppressed)
@@ -856,8 +860,8 @@ class RunnerTests: XCTestCase {
 
     var requestStatus: SuppressionStatusCode?
     var releaseStatus: SuppressionStatusCode?
-    plugin.requestSuppression { requestStatus = (try? $0.get())?.status }
-    plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }  // deferred
+    plugin.requestSuppression { requestStatus = $0.status }
+    plugin.releaseSuppression { releaseStatus = $0.status }  // deferred
 
     XCTAssertTrue(fake.endedTokens.isEmpty, "Release must wait for the in-flight request")
 
@@ -872,7 +876,7 @@ class RunnerTests: XCTestCase {
 
     var releaseStatus: SuppressionStatusCode?
     plugin.requestSuppression { _ in }
-    plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }  // deferred
+    plugin.releaseSuppression { releaseStatus = $0.status }  // deferred
 
     fake.deliver(.denied)
     XCTAssertEqual(releaseStatus, .unavailable, "Nothing to release after a failed request")
@@ -885,8 +889,8 @@ class RunnerTests: XCTestCase {
     var firstRelease: SuppressionStatusCode?
     var secondRelease: SuppressionStatusCode?
     plugin.requestSuppression { _ in }
-    plugin.releaseSuppression { firstRelease = (try? $0.get())?.status }
-    plugin.releaseSuppression { secondRelease = (try? $0.get())?.status }
+    plugin.releaseSuppression { firstRelease = $0.status }
+    plugin.releaseSuppression { secondRelease = $0.status }
 
     XCTAssertNil(firstRelease, "Both releases wait behind the in-flight request")
     XCTAssertNil(secondRelease)
