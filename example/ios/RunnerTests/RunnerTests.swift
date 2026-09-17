@@ -756,6 +756,33 @@ class RunnerTests: XCTestCase {
       "The tracked token is still ended exactly once, by the release that owns it")
   }
 
+  func testRequest_lateSuccessForSupersededRequest_doesNotDisturbTheRunningRequest() {
+    let (plugin, fake, clock) = makeSUT()
+    fake.tokensToReturn = [42, 43]
+
+    plugin.requestSuppression { _ in }
+    clock.fire()  // orphan (request 1, token 42)
+    fake.isSuppressingAutomaticPassPresentation = false
+
+    var second: SuppressionStatusCode?
+    plugin.requestSuppression { second = (try? $0.get())?.status }
+    XCTAssertEqual(fake.endedTokens, [42], "The retry ends the unconfirmed token first")
+
+    // Request 1 is granted after it was superseded, while request 2 is still in
+    // flight. Its token is reconciled; the running request must be untouched.
+    fake.deliver(.success, forRequest: 1)
+    XCTAssertEqual(fake.endedTokens, [42, 42])
+
+    fake.deliver(.success, forRequest: 2)
+    XCTAssertEqual(second, .suppressed)
+    XCTAssertEqual(fake.endedTokens, [42, 42], "Request 2's token is left alone")
+
+    var releaseStatus: SuppressionStatusCode?
+    plugin.releaseSuppression { releaseStatus = (try? $0.get())?.status }
+    XCTAssertEqual(releaseStatus, .notSuppressed)
+    XCTAssertEqual(fake.endedTokens, [42, 42, 43])
+  }
+
   // MARK: - Completion re-entrancy
 
   func testCompletionReentrancy_requestFromAShortCircuitedCompletionIsNotDropped() {
