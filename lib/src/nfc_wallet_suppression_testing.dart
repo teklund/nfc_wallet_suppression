@@ -189,7 +189,7 @@ class NfcWalletSuppressionTestScenarios {
     return fake;
   }
 
-  /// Scenario: User cancelled the suppression prompt (iOS)
+  /// Scenario: the request was cancelled before it completed (iOS)
   static FakeNfcWalletSuppression userCancelled() {
     final fake = FakeNfcWalletSuppression();
     fake.setSupported(true);

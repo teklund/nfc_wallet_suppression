@@ -165,13 +165,14 @@ if (await NfcWalletSuppression.isSupported()) {
 final result = await NfcWalletSuppression.requestSuppression();
 switch (result.status) {
   case SuppressionStatus.suppressed:
-    // Proceed
+    startNfcSession();
   case SuppressionStatus.nfcDisabled:
-    // Prompt the user to switch NFC on
+    promptToEnableNfc();
   case SuppressionStatus.notSupported:
-    // Inform user
+    showUnsupportedDeviceUi();
   default:
-    // Handle error; `result.description` is safe to log, not to parse
+    // `result.description` is safe to log, never to parse.
+    reportProblem(result.status);
 }
 
 // ❌ Bad: Forgetting to release
