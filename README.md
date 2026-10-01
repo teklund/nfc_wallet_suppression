@@ -21,6 +21,7 @@ A lightweight Flutter plugin that **suppresses NFC wallet presentation** — pre
 - [Installation](#installation)
 - [Platform Setup](#platform-setup)
 - [API Usage](#api-usage)
+- [Migrating from 0.1.x](#migrating-from-01x)
 - [Testing](#testing)
 - [Troubleshooting](#troubleshooting)
 - [Example App](#example-app)
@@ -202,6 +203,43 @@ channel itself does.
 - ❌ Does NOT read/write NFC tags
 - ❌ Does NOT persist across app restarts
 - ⚠️ Best-effort (not guaranteed on all devices due to manufacturer customizations)
+
+## Migrating from 0.1.x
+
+`requestSuppression()` and `releaseSuppression()` return a `SuppressionResult`
+instead of a bare `SuppressionStatus`:
+
+```dart
+// 0.1.x
+final status = await NfcWalletSuppression.requestSuppression();
+if (status == SuppressionStatus.suppressed) { /* ... */ }
+
+// 1.0.0
+final result = await NfcWalletSuppression.requestSuppression();
+if (result.isSuppressed) { /* ... */ }
+// or: result.status == SuppressionStatus.suppressed
+```
+
+**The compiler will not reliably catch this.** An explicit type annotation
+(`SuppressionStatus status = await ...`) fails to compile, but a bare
+comparison does not: comparing a `SuppressionResult` to a `SuppressionStatus`
+is reported by `unrelated_type_equality_checks` as an *info*, not an error. Left
+unchanged, such a condition simply evaluates to `false` forever.
+
+When upgrading, search for `== SuppressionStatus.` and `!= SuppressionStatus.`
+and check each one.
+
+Two status meanings also changed:
+
+| Situation | 0.1.x | 1.0.0 |
+| :--- | :--- | :--- |
+| Release when nothing is suppressed | `unavailable` | `notSuppressed` — release is idempotent |
+| Android, NFC switched off in settings | `unavailable` | `nfcDisabled` — the one failure a user can fix |
+
+`unavailable` now means only "transient, retry may work" — on Android, no
+foreground Activity.
+
+---
 
 ## Troubleshooting
 
