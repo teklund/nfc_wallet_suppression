@@ -15,6 +15,12 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  /// Snack bars are shown through this rather than `ScaffoldMessenger.of`:
+  /// this State's own context sits *above* the `MaterialApp` built below, so a
+  /// lookup from it finds no messenger and throws.
+  final GlobalKey<ScaffoldMessengerState> _messengerKey =
+      GlobalKey<ScaffoldMessengerState>();
+
   SuppressionStatus _suppressionStatus = SuppressionStatus.notSuppressed;
 
   /// The platform's own account of the last outcome, for display only.
@@ -57,19 +63,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   void _showSnack(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    _messengerKey.currentState?.showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _restoreSuppression() async {
     // Only attempt if supported
     if (!_isSupported) return;
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Restoring NFC suppression...')),
-    );
+    _showSnack('Restoring NFC suppression...');
 
     await _onRequestSuppression();
   }
@@ -298,13 +299,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                 fontWeight: FontWeight.w500,
               ),
             ),
-            // Diagnostic detail from the platform. Handy in logs and bug
-            // reports; never branch on the wording.
+            // Diagnostic text from the platform, shown here only because this
+            // is a demo of the API. A real app logs it; it is not user-facing
+            // copy and its wording is not part of the contract.
             if (_statusDescription != null) ...[
               const SizedBox(height: 4),
               Text(
-                _statusDescription!,
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                'Diagnostic: ${_statusDescription!}',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
               ),
             ],
             if (_error != null) ...[
@@ -343,6 +345,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      scaffoldMessengerKey: _messengerKey,
       home: Builder(
         builder: (context) => Scaffold(
           appBar: AppBar(
