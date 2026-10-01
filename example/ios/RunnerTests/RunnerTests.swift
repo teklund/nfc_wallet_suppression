@@ -580,6 +580,32 @@ class RunnerTests: XCTestCase {
       "A token PassKit refused must not be ended — the live assertion may be another suppressor's")
   }
 
+  func testRequest_lateRefusalForAReusedTokenValue_doesNotClearTheLiveHold() {
+    let (plugin, fake, clock) = makeSUT()
+    fake.tokensToReturn = [42, 42]
+
+    plugin.requestSuppression { _ in }
+    clock.fire()  // orphan (request 1, token 42)
+    fake.isSuppressingAutomaticPassPresentation = false
+
+    var second: SuppressionStatusCode?
+    plugin.requestSuppression { second = $0.status }
+    XCTAssertEqual(fake.endedTokens, [42], "The unconfirmed token is ended before re-requesting")
+
+    fake.deliver(.success, forRequest: 2)
+    XCTAssertEqual(second, .suppressed, "Request 2 genuinely holds the reissued value")
+
+    // Request 1 was refused. Its token value matches the one request 2 now holds,
+    // so a value-based withdrawal would clear a live hold.
+    fake.deliver(.denied, forRequest: 1)
+
+    var releaseStatus: SuppressionStatusCode?
+    plugin.releaseSuppression { releaseStatus = $0.status }
+    XCTAssertEqual(
+      releaseStatus, .notSuppressed, "Request 2's hold must survive request 1's refusal")
+    XCTAssertEqual(fake.endedTokens, [42, 42], "and the release must actually end it")
+  }
+
   func testRequest_afterTimeout_whenOsDeniesSuppression_endsRetainedTokenAndReRequests() {
     let (plugin, fake, clock) = makeSUT()
     fake.tokensToReturn = [42, 43]

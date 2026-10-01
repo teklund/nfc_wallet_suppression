@@ -124,8 +124,11 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
   private enum TokenState: Equatable {
     /// Nothing held.
     case none
-    /// PassKit answered `.success` for this token.
-    case held(PKSuppressionRequestToken)
+    /// PassKit answered `.success` for this token, issued by this request.
+    ///
+    /// The request id is carried so a late handler can be matched to the hold it
+    /// actually produced. A token value never identifies a request on its own.
+    case held(token: PKSuppressionRequestToken, requestID: UInt64)
     /// The token was issued but PassKit did not answer before the deadline.
     ///
     /// Retained, never discarded: PassKit may still grant it, and ending an
@@ -136,7 +139,7 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
     var token: PKSuppressionRequestToken? {
       switch self {
       case .none: return nil
-      case .held(let token): return token
+      case .held(let token, _): return token
       case .unconfirmed(let token, _): return token
       }
     }
@@ -335,7 +338,7 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
       // Reconcile intent against the OS before reporting success. This also
       // adopts a token retained past its deadline, if PassKit granted it late.
       if library.isSuppressingAutomaticPassPresentation {
-        promoteToHeld(token)
+        promoteToHeld()
         group.deliver(SuppressionResult(status: .suppressed, message: Message.alreadySuppressed))
         return
       }
@@ -353,8 +356,9 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
   /// which says *this app* holds suppression — not that this token was granted —
   /// so the claim is provisional until the handler arrives. `reconcileLate` needs
   /// the record to withdraw it if PassKit refuses.
-  private func promoteToHeld(_ token: PKSuppressionRequestToken) {
-    tokenState = .held(token)
+  private func promoteToHeld() {
+    guard case .unconfirmed(let token, let requestID) = tokenState else { return }
+    tokenState = .held(token: token, requestID: requestID)
   }
 
   /// Issues a new PassKit request. Precondition: nothing held, nothing in flight.
@@ -410,7 +414,7 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
     let result: SuppressionResult
     switch (passResult, flight.token) {
     case (.success, .some(let token)):
-      tokenState = .held(token)
+      tokenState = .held(token: token, requestID: id)
       result = Self.suppressionResult(for: .success)
     case (.success, .none):
       // Anomalous: PassKit refused to submit (`0` token) and then reported
@@ -481,7 +485,7 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
     if isStillOurs {
       if passResult == .success {
         // It really did turn on, late. Adopt it so a later release can end it.
-        tokenState = .held(token)
+        tokenState = .held(token: token, requestID: id)
       } else {
         // PassKit refused after we had already given up. End the token we were
         // holding on spec and go idle.
@@ -495,13 +499,17 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
     // defensively: ending an invalid token is a documented no-op, and PassKit
     // drops a grant that lands after every token has been ended.
     // Promoted on the strength of `isSuppressing`, but PassKit has now refused
-    // this request, so the token was never ours. Withdraw the claim rather than
-    // keep reporting `.suppressed` for a grant that never happened.
+    // *this* request, so the claim it created was never real. Withdraw it.
+    //
+    // Matched on the request id, never the token value: a reissued value would
+    // otherwise let this refusal clear a different request's live hold.
     //
     // Deliberately not ended: PassKit clears every token in the process on this
     // path, so an end would find an empty set and invalidate whichever assertion
     // is still live — which may belong to another suppressor in this app.
-    if passResult != .success, tokenState.token == token {
+    if passResult != .success, case .held(_, let heldRequestID) = tokenState,
+      heldRequestID == id
+    {
       tokenState = .none
       return
     }
@@ -530,7 +538,7 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
     case .none:
       completion(
         .success(SuppressionResult(status: .unavailable, message: Message.noActiveToRelease)))
-    case .held(let token), .unconfirmed(let token, _):
+    case .held(let token, _), .unconfirmed(let token, _):
       library.endSuppression(withRequestToken: token)
       tokenState = .none
       completion(.success(SuppressionResult(status: .notSuppressed, message: Message.released)))
