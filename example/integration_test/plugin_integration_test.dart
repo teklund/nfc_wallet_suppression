@@ -32,13 +32,11 @@ void main() {
 
     // Verify suppression was either successful or device doesn't support it
     expect(
-      [
-        SuppressionStatus.suppressed,
-        SuppressionStatus.notSupported,
-        SuppressionStatus.nfcDisabled,
-        SuppressionStatus.unavailable,
-        SuppressionStatus.denied,
-      ],
+      // Every documented request outcome except `notSuppressed`, which only
+      // `releaseSuppression` produces.
+      SuppressionStatus.values
+          .where((s) => s != SuppressionStatus.notSuppressed)
+          .toList(),
       contains(requestResult.status),
       reason: 'Request should return a valid status',
     );

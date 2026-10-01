@@ -89,13 +89,12 @@ void main() {
       // All should return a valid status. `nfcDisabled` is in the set because
       // `isSupported` only checks for NFC *hardware* on Android, so this runs
       // on a device that has NFC switched off in settings.
-      const validRequestStatuses = [
-        SuppressionStatus.suppressed,
-        SuppressionStatus.nfcDisabled,
-        SuppressionStatus.unavailable,
-        SuppressionStatus.denied,
-        SuppressionStatus.alreadyPresenting,
-      ];
+      // Every documented request outcome. Only `notSuppressed` is excluded:
+      // that one belongs to `releaseSuppression`. Derived from the enum so a
+      // real platform result is never rejected as "invalid" by a stale list.
+      final validRequestStatuses = SuppressionStatus.values
+          .where((s) => s != SuppressionStatus.notSuppressed)
+          .toList();
       expect(validRequestStatuses, contains(status1.status));
       expect(validRequestStatuses, contains(status2.status));
       expect(validRequestStatuses, contains(status3.status));
