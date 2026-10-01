@@ -349,14 +349,11 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
 
   /// Adopts a token as confirmed-held.
   ///
-  /// The request's orphan record is retired because it no longer describes an
-  /// orphan, freeing one of the capped slots. That is tidiness, not safety: if the
-  /// late handler still arrives, `endStaleToken` skips the value because it is now
-  /// the held token.
+  /// The orphan record is deliberately kept. Promotion rests on `isSuppressing`,
+  /// which says *this app* holds suppression — not that this token was granted —
+  /// so the claim is provisional until the handler arrives. `reconcileLate` needs
+  /// the record to withdraw it if PassKit refuses.
   private func promoteToHeld(_ token: PKSuppressionRequestToken) {
-    if case .unconfirmed(_, let requestID) = tokenState {
-      orphanedTokens.removeAll { $0.id == requestID }
-    }
     tokenState = .held(token)
   }
 
@@ -497,6 +494,18 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
     // Released in the meantime, or superseded by a later request. End it
     // defensively: ending an invalid token is a documented no-op, and PassKit
     // drops a grant that lands after every token has been ended.
+    // Promoted on the strength of `isSuppressing`, but PassKit has now refused
+    // this request, so the token was never ours. Withdraw the claim rather than
+    // keep reporting `.suppressed` for a grant that never happened.
+    //
+    // Deliberately not ended: PassKit clears every token in the process on this
+    // path, so an end would find an empty set and invalidate whichever assertion
+    // is still live — which may belong to another suppressor in this app.
+    if passResult != .success, tokenState.token == token {
+      tokenState = .none
+      return
+    }
+
     endStaleToken(token)
   }
 

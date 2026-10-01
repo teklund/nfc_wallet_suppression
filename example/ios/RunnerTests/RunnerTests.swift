@@ -555,6 +555,31 @@ class RunnerTests: XCTestCase {
     XCTAssertEqual(fake.endedTokens, [42])
   }
 
+  func testRequest_promotedOnDeviceFlagThenRefused_withdrawsTheClaim() {
+    let (plugin, fake, clock) = makeSUT(token: 42)
+
+    plugin.requestSuppression { _ in }
+    clock.fire()  // orphan (request 1, token 42)
+
+    // Suppression is on because another suppressor in this process holds it, not
+    // because token 42 was granted.
+    fake.isSuppressingAutomaticPassPresentation = true
+    var second: SuppressionStatusCode?
+    plugin.requestSuppression { second = $0.status }
+    XCTAssertEqual(second, .suppressed)
+    XCTAssertEqual(fake.requestCount, 1, "Promotion must not issue a new request")
+
+    fake.deliver(.denied, forRequest: 1)  // PassKit never granted 42
+
+    var releaseStatus: SuppressionStatusCode?
+    plugin.releaseSuppression { releaseStatus = $0.status }
+    XCTAssertEqual(
+      releaseStatus, .unavailable, "The provisional claim was withdrawn, so nothing is held")
+    XCTAssertTrue(
+      fake.endedTokens.isEmpty,
+      "A token PassKit refused must not be ended — the live assertion may be another suppressor's")
+  }
+
   func testRequest_afterTimeout_whenOsDeniesSuppression_endsRetainedTokenAndReRequests() {
     let (plugin, fake, clock) = makeSUT()
     fake.tokensToReturn = [42, 43]
