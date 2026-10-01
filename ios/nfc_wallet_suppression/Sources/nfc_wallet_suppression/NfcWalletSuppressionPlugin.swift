@@ -427,8 +427,7 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
 
     // State is settled before completions fire, so a re-entrant caller sees the
     // post-operation world.
-    flight.group.deliver(result)
-    drain()
+    deliver(flight.group, result)
   }
 
   private func handleDeadline(id: UInt64) {
@@ -447,9 +446,25 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
         endStaleToken(orphanedTokens.removeFirst().token)
       }
     }
-    flight.group.deliver(
+    deliver(
+      flight.group,
       SuppressionResult(status: .unknown, message: Message.timedOut(after: requestTimeout)))
-    drain()
+  }
+
+  /// Answers every caller in a group, then runs the queue.
+  ///
+  /// The drain guard is held across delivery so an operation submitted from one
+  /// caller's completion is queued rather than run immediately. Without it the
+  /// first caller could release the suppression the remaining callers are about to
+  /// be told they hold — the group's answer would already be false when delivered.
+  private func deliver(_ group: RequestGroup, _ result: SuppressionResult) {
+    let wasDraining = isDraining
+    isDraining = true
+    defer {
+      isDraining = wasDraining
+      drain()
+    }
+    group.deliver(result)
   }
 
   /// Handles a response whose request was already answered.

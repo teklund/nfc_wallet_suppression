@@ -785,6 +785,68 @@ class RunnerTests: XCTestCase {
 
   // MARK: - Completion re-entrancy
 
+  func testCompletionReentrancy_releaseFromOneCoalescedCallerDoesNotFalsifyTheOthers() {
+    let (plugin, fake, _) = makeSUT(token: 42)
+
+    // Order is the whole point: final state is identical either way, so only the
+    // sequence reveals whether the release ran before the group was answered.
+    var order: [String] = []
+    var first: SuppressionStatusCode?
+    var second: SuppressionStatusCode?
+    var release: SuppressionStatusCode?
+
+    plugin.requestSuppression { result in
+      order.append("first")
+      first = result.status
+      plugin.releaseSuppression {  // re-enters from inside the completion
+        order.append("release")
+        release = $0.status
+      }
+    }
+    plugin.requestSuppression {  // coalesces onto the same PassKit request
+      order.append("second")
+      second = $0.status
+    }
+    XCTAssertEqual(fake.requestCount, 1, "Both callers share one PassKit request")
+
+    fake.deliver(.success)
+
+    XCTAssertEqual(
+      order, ["first", "second", "release"],
+      "The re-entrant release must run only after every coalesced caller is answered, "
+        + "or the later callers are handed a `.suppressed` it has already undone")
+    XCTAssertEqual(first, .suppressed)
+    XCTAssertEqual(second, .suppressed)
+    XCTAssertEqual(release, .notSuppressed)
+    XCTAssertEqual(fake.endedTokens, [42])
+  }
+
+  func testCompletionReentrancy_requestFromASuccessCompletionIsQueuedThenStarts() {
+    let (plugin, fake, _) = makeSUT()
+    fake.tokensToReturn = [7, 8]
+
+    var order: [String] = []
+    var secondStatus: SuppressionStatusCode?
+
+    plugin.requestSuppression { _ in
+      order.append("first")
+      plugin.releaseSuppression { _ in order.append("release") }
+      plugin.requestSuppression { order.append("request2"); secondStatus = $0.status }
+    }
+    fake.deliver(.success)
+
+    // Both re-entrant operations are queued behind the delivery, then run in
+    // submission order: the release, then the request — which is left in flight
+    // rather than answered.
+    XCTAssertEqual(order, ["first", "release"])
+    XCTAssertEqual(fake.requestCount, 2, "The re-entrant request must still reach PassKit")
+
+    fake.deliver(.success, forRequest: 2)
+    XCTAssertEqual(secondStatus, .suppressed)
+    XCTAssertEqual(order, ["first", "release", "request2"])
+  }
+
+
   func testCompletionReentrancy_requestFromAShortCircuitedCompletionIsNotDropped() {
     let (plugin, fake, _) = makeSUT(token: 42)
 
