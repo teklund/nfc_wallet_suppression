@@ -156,6 +156,7 @@ class RunnerTests: XCTestCase {
     var releaseStatus: SuppressionStatusCode?
     plugin.releaseSuppression { releaseStatus = $0.status }
     XCTAssertEqual(releaseStatus, .notSuppressed, "No token should linger after a failed request")
+    XCTAssertEqual(fake.endedTokens, [7], "and the release found nothing left to end")
   }
 
   func testRequest_zeroToken_waitsForHandlerAndReportsItsReason() {
@@ -199,6 +200,7 @@ class RunnerTests: XCTestCase {
     var releaseStatus: SuppressionStatusCode?
     plugin.releaseSuppression { releaseStatus = $0.status }
     XCTAssertEqual(releaseStatus, .notSuppressed)
+    XCTAssertTrue(fake.endedTokens.isEmpty, "and the release still ended nothing")
   }
 
   func testRequest_timeoutMessage_statesTheTimeoutWithoutTruncatingIt() {
@@ -232,6 +234,7 @@ class RunnerTests: XCTestCase {
     var releaseStatus: SuppressionStatusCode?
     plugin.releaseSuppression { releaseStatus = $0.status }
     XCTAssertEqual(releaseStatus, .notSuppressed)
+    XCTAssertTrue(fake.endedTokens.isEmpty, "and the release still ended nothing")
   }
 
   func testRequest_coalescedRequestAndDeferredReleaseResolveTogether() {
@@ -321,6 +324,7 @@ class RunnerTests: XCTestCase {
     var releaseStatus: SuppressionStatusCode?
     plugin.releaseSuppression { releaseStatus = $0.status }
     XCTAssertEqual(releaseStatus, .notSuppressed)
+    XCTAssertEqual(fake.endedTokens, [8, 9], "and the idempotent release ended nothing more")
   }
 
   // MARK: - Ordering
@@ -456,7 +460,7 @@ class RunnerTests: XCTestCase {
   }
 
   func testRequest_timeout_retainsTokenSoALaterReleaseEndsIt() {
-    let (plugin, _, clock) = makeSUT(token: 42)
+    let (plugin, fake, clock) = makeSUT(token: 42)
 
     plugin.requestSuppression { _ in }
     clock.fire()
@@ -465,6 +469,9 @@ class RunnerTests: XCTestCase {
     plugin.releaseSuppression { releaseStatus = $0.status }
 
     XCTAssertEqual(releaseStatus, .notSuppressed)
+    // The status alone cannot show this: release reports `.notSuppressed`
+    // whether or not anything was held. Ending the token is the actual claim.
+    XCTAssertEqual(fake.endedTokens, [42], "The retained token is ended by the release")
   }
 
   func testRequest_timeout_releaseEndsTheRetainedToken() {
@@ -506,6 +513,7 @@ class RunnerTests: XCTestCase {
     var releaseStatus: SuppressionStatusCode?
     plugin.releaseSuppression { releaseStatus = $0.status }
     XCTAssertEqual(releaseStatus, .notSuppressed, "Nothing is held once the late failure is reconciled")
+    XCTAssertEqual(fake.endedTokens, [42], "and the release ends nothing further")
   }
 
   func testRequest_lateSuccessAfterTimeoutAndRelease_endsTokenDefensivelyASecondTime() {
