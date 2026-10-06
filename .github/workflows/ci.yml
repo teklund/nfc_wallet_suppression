@@ -335,7 +335,9 @@ jobs:
   native-tests-ios:
     name: iOS Native Tests
     runs-on: macos-latest
-    timeout-minutes: 15
+    # Above the sum of the per-step limits below, so a hang is always reported
+    # by the step it happened in rather than as an anonymous job cancellation.
+    timeout-minutes: 20
     needs: [analyze, check_changes]
     if: needs.check_changes.outputs.ios == 'true'
     
@@ -403,15 +405,26 @@ jobs:
           echo "udid=$SIMULATOR" >> $GITHUB_OUTPUT
           echo "Selected simulator: $SIMULATOR"
 
+      - name: Boot iOS simulator
+        # Left to itself, `xcodebuild test` cold-boots the simulator while
+        # launching the test runner. On a fresh runner that intermittently hangs
+        # until xcodebuild's own 600 s launch timeout, with no output at all, and
+        # the job cap cancelled it first — reported only as "cancelled". Booting
+        # here makes the phase explicit and bounded: `bootstatus -b` boots the
+        # device if needed and blocks until it is fully up.
+        timeout-minutes: 5
+        run: xcrun simctl bootstatus "${{ steps.simulator.outputs.udid }}" -b
+
       - name: Run iOS tests with coverage
         working-directory: example/ios
+        timeout-minutes: 8
         run: |
           set -o pipefail
           rm -rf TestResults.xcresult
           xcodebuild test \
             -workspace Runner.xcworkspace \
             -scheme Runner \
-            -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}' \
+            -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }},arch=arm64' \
             -only-testing:RunnerTests \
             -enableCodeCoverage YES \
             -resultBundlePath TestResults.xcresult \
