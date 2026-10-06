@@ -50,6 +50,7 @@ jobs:
               - 'test/**'
               - 'pigeons/**'
               - 'pubspec.yaml'
+              - 'example/pubspec.yaml'
             ios:
               - '.github/workflows/ci.yml'
               - 'ios/**'
@@ -58,6 +59,7 @@ jobs:
               - 'test/**'
               - 'pigeons/**'
               - 'pubspec.yaml'
+              - 'example/pubspec.yaml'
             # web and macos guard the plugin's platform declaration rather than
             # any native source we own: both have Dart-only stub implementations,
             # and the way they are declared in pubspec.yaml is what the Flutter
@@ -69,12 +71,14 @@ jobs:
               - 'example/lib/**'
               - 'example/web/**'
               - 'pubspec.yaml'
+              - 'example/pubspec.yaml'
             macos:
               - '.github/workflows/ci.yml'
               - 'lib/**'
               - 'example/lib/**'
               - 'example/macos/**'
               - 'pubspec.yaml'
+              - 'example/pubspec.yaml'
             dart:
               - '.github/workflows/ci.yml'
               - 'lib/**'
@@ -83,6 +87,7 @@ jobs:
               - 'example/test/**'
               - 'pigeons/**'
               - 'pubspec.yaml'
+              - 'example/pubspec.yaml'
               - 'analysis_options.yaml'
 
   format:
