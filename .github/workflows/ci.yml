@@ -337,7 +337,7 @@ jobs:
     runs-on: macos-latest
     # Above the sum of the per-step limits below, so a hang is always reported
     # by the step it happened in rather than as an anonymous job cancellation.
-    timeout-minutes: 25
+    timeout-minutes: 30
     needs: [analyze, check_changes]
     if: needs.check_changes.outputs.ios == 'true'
     
@@ -435,7 +435,9 @@ jobs:
 
       - name: Run iOS tests with coverage
         working-directory: example/ios
-        timeout-minutes: 8
+        # Includes the coverage-instrumented rebuild, which alone took 4m38s on
+        # a slow runner, so this limit leaves room for that.
+        timeout-minutes: 12
         run: |
           set -o pipefail
           rm -rf TestResults.xcresult
@@ -445,6 +447,7 @@ jobs:
             -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }},arch=arm64' \
             -only-testing:RunnerTests \
             -enableCodeCoverage YES \
+            -parallel-testing-enabled NO \
             -resultBundlePath TestResults.xcresult \
             | xcpretty --color --simple
       
