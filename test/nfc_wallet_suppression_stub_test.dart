@@ -20,14 +20,14 @@ void main() {
     group('requestSuppression', () {
       test('returns notSupported', () async {
         final result = await stub.requestSuppression();
-        expect(result, SuppressionStatus.notSupported);
+        expect(result.status, SuppressionStatus.notSupported);
       });
     });
 
     group('releaseSuppression', () {
       test('returns notSuppressed', () async {
         final result = await stub.releaseSuppression();
-        expect(result, SuppressionStatus.notSuppressed);
+        expect(result.status, SuppressionStatus.notSuppressed);
       });
     });
 

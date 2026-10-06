@@ -99,9 +99,11 @@ internal class NfcWalletSuppressionPluginTest {
   }
 
   @Test
-  fun request_returnsUnavailableWhenNfcDisabled() {
+  fun request_returnsNfcDisabledWhenNfcSwitchedOff() {
+    // Distinct from UNAVAILABLE and NOT_SUPPORTED because it is the one failure
+    // the user can fix: an app can deep-link to android.settings.NFC_SETTINGS.
     val fake = FakeWalletSuppressor().apply { nfcEnabled = false }
-    assertEquals(SuppressionStatusCode.UNAVAILABLE, requestStatus(pluginWithActivity(fake)))
+    assertEquals(SuppressionStatusCode.NFC_DISABLED, requestStatus(pluginWithActivity(fake)))
   }
 
   @Test
@@ -139,9 +141,12 @@ internal class NfcWalletSuppressionPluginTest {
   // releaseSuppression
 
   @Test
-  fun release_withoutActiveSuppression_returnsUnavailable() {
+  fun release_withoutActiveSuppression_isAnIdempotentNoOp() {
+    // Releasing when nothing is suppressed is a success: the caller asked for
+    // suppression to be off and it is off, so `finally { release() }` needs no
+    // special case for a request that failed.
     val plugin = pluginWithActivity(FakeWalletSuppressor())
-    assertEquals(SuppressionStatusCode.UNAVAILABLE, releaseStatus(plugin))
+    assertEquals(SuppressionStatusCode.NOT_SUPPRESSED, releaseStatus(plugin))
   }
 
   @Test
@@ -258,7 +263,7 @@ internal class NfcWalletSuppressionPluginTest {
 
     assertFalse(suppressed(plugin), "A failed re-arm must drop suppression")
     assertEquals(
-      SuppressionStatusCode.UNAVAILABLE,
+      SuppressionStatusCode.NOT_SUPPRESSED,
       releaseStatus(plugin),
       "suppressionActive must have been cleared on re-arm failure",
     )

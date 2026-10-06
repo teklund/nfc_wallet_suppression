@@ -4,7 +4,7 @@ import 'package:nfc_wallet_suppression/nfc_wallet_suppression.dart';
 void main() {
   group('SuppressionStatus', () {
     test('enum contains all expected values', () {
-      expect(SuppressionStatus.values.length, 8);
+      expect(SuppressionStatus.values.length, 9);
       expect(
         SuppressionStatus.values,
         contains(SuppressionStatus.notSuppressed),
@@ -22,6 +22,7 @@ void main() {
         contains(SuppressionStatus.alreadyPresenting),
       );
       expect(SuppressionStatus.values, contains(SuppressionStatus.unknown));
+      expect(SuppressionStatus.values, contains(SuppressionStatus.nfcDisabled));
     });
   });
 }

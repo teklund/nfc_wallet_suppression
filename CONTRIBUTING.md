@@ -136,12 +136,12 @@ import 'package:nfc_wallet_suppression/nfc_wallet_suppression.dart';
 
 void main() {
   group('NfcWalletSuppression', () {
-    test('requestSuppression should return status', () async {
+    test('requestSuppression should return a result', () async {
       // Arrange
       // Act
-      final status = await NfcWalletSuppression.requestSuppression();
+      final result = await NfcWalletSuppression.requestSuppression();
       // Assert
-      expect(status, isNotNull);
+      expect(result.status, isNotNull);
     });
 
     test('should throw exception for invalid calls', () async {
@@ -201,9 +201,9 @@ This plugin uses [Pigeon](https://pub.dev/packages/pigeon) for type-safe communi
   ```dart
   /// Requests NFC wallet suppression for iOS/Android devices.
   ///
-  /// Returns a [Future] that completes with the [SuppressionStatus].
+  /// Returns a [Future] that completes with a [SuppressionResult].
   /// Throws an exception if suppression cannot be requested.
-  Future<SuppressionStatus> requestSuppression() async {
+  Future<SuppressionResult> requestSuppression() async {
     // Implementation
   }
   ```
