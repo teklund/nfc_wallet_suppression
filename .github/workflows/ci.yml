@@ -433,25 +433,35 @@ jobs:
             -only-testing:RunnerTests \
             -enableCodeCoverage YES \
             -parallel-testing-enabled NO \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             -resultBundlePath TestResults.xcresult \
             | xcpretty --color --simple
       
       - name: Convert iOS coverage to lcov
-        if: always()
+        # The plugin's code is compiled into nfc_wallet_suppression.framework,
+        # which may be built for several architectures, so llvm-cov is pointed
+        # at that binary with an explicit -arch. Paths are cut back to the
+        # `ios/nfc_wallet_suppression/Sources/` prefix the `ios` flag in
+        # codecov.yml uses, whatever the checkout path or symlinks look like.
+        # The step fails if the plugin's
+        # source has no recorded coverage, so a broken pipeline cannot pass
+        # silently again: until this existed, Codecov reported 0% for iOS.
         working-directory: example/ios
         run: |
-          # Install xcov for coverage conversion
-          gem install slather
-          
-          # Extract coverage from xcresult
-          xcrun xccov view --report --json TestResults.xcresult > coverage.json || true
-          
-          # Convert to lcov format using xcresult
-          if command -v xcresultparser &> /dev/null; then
-            xcresultparser --output-format cobertura TestResults.xcresult > coverage.xml || true
+          set -euo pipefail
+          DD="$RUNNER_TEMP/DerivedData"
+          PROFILE=$(ls "$DD"/Build/ProfileData/*/Coverage.profdata)
+          BINARY="$DD/Build/Products/Debug-iphonesimulator/Runner.app/Frameworks/nfc_wallet_suppression.framework/nfc_wallet_suppression"
+          xcrun llvm-cov export -format=lcov -arch arm64 -instr-profile "$PROFILE" "$BINARY" \
+            | sed -E 's|^SF:.*/(ios/nfc_wallet_suppression/Sources/)|SF:\1|' > coverage.lcov
+          PLUGIN=ios/nfc_wallet_suppression/Sources/nfc_wallet_suppression/NfcWalletSuppressionPlugin.swift
+          HIT=$(awk -F: -v f="$PLUGIN" '$1=="SF"{m=($2==f)} m&&$1=="LH"{print $2; exit}' coverage.lcov)
+          if [ -z "$HIT" ] || [ "$HIT" -eq 0 ]; then
+            echo "::error::No coverage recorded for $PLUGIN. The plugin binary or coverage profile was not where this step expects."
+            exit 1
           fi
-        continue-on-error: true
-      
+          echo "$PLUGIN: $HIT lines covered"
+
       - name: Parse test results
         if: always()
         working-directory: example/ios
@@ -468,20 +478,22 @@ jobs:
           else
             echo "⚠️ Test results not found" >> $GITHUB_STEP_SUMMARY
           fi
-          if [ -f "coverage.json" ]; then
+          if [ -f "coverage.lcov" ]; then
             echo "✅ Coverage data extracted" >> $GITHUB_STEP_SUMMARY
           fi
       
       - name: Upload iOS coverage to Codecov
-        if: always()
         uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: example/ios/coverage.json
+          files: example/ios/coverage.lcov
+          # Upload only that file, and skip the uploader's automatic Swift
+          # processing, which inspects the wrong binaries for this layout.
+          disable_search: true
+          plugins: noop
           flags: ios
           name: ios-coverage
           fail_ci_if_error: false
-        continue-on-error: true
       
       - name: Upload iOS test results
         if: always()
