@@ -335,7 +335,9 @@ jobs:
   native-tests-ios:
     name: iOS Native Tests
     runs-on: macos-latest
-    timeout-minutes: 15
+    # Above the sum of the per-step limits below, so a hang is always reported
+    # by the step it happened in rather than as an anonymous job cancellation.
+    timeout-minutes: 35
     needs: [analyze, check_changes]
     if: needs.check_changes.outputs.ios == 'true'
     
@@ -403,17 +405,34 @@ jobs:
           echo "udid=$SIMULATOR" >> $GITHUB_OUTPUT
           echo "Selected simulator: $SIMULATOR"
 
+      - name: Boot iOS simulator
+        # The runner's simulator has never been booted, so its first boot runs
+        # iOS's data migrators. On hosted runners that is slow and erratic —
+        # CoreLocationMigrator alone has taken from 36 s to over 4 minutes — but
+        # it finishes. Inside `xcodebuild test` the same boot ran into
+        # xcodebuild's 600 s launch timeout with no output, so it happens here,
+        # explicitly. The limit is generous because a slow boot is the common
+        # case; there is no retry because recreating the device restarts the
+        # migration. After the build on purpose: booting during the compile
+        # competes for the runner's CPU.
+        timeout-minutes: 10
+        run: xcrun simctl bootstatus "${{ steps.simulator.outputs.udid }}" -b
+
       - name: Run iOS tests with coverage
         working-directory: example/ios
+        # Includes the coverage-instrumented rebuild, which alone took 4m38s on
+        # a slow runner, so this limit leaves room for that.
+        timeout-minutes: 12
         run: |
           set -o pipefail
           rm -rf TestResults.xcresult
           xcodebuild test \
             -workspace Runner.xcworkspace \
             -scheme Runner \
-            -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}' \
+            -destination 'platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }},arch=arm64' \
             -only-testing:RunnerTests \
             -enableCodeCoverage YES \
+            -parallel-testing-enabled NO \
             -resultBundlePath TestResults.xcresult \
             | xcpretty --color --simple
       
