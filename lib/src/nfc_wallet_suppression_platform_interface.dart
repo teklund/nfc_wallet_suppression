@@ -1,7 +1,7 @@
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'nfc_wallet_suppression_pigeon_impl.dart';
-import 'nfc_wallet_suppression_status.dart';
+import 'nfc_wallet_suppression_result.dart';
 
 /// An interface for a platform-specific implementation of the `nfc_wallet_suppression` plugin.
 ///
@@ -31,15 +31,15 @@ abstract class NfcWalletSuppressionPlatform extends PlatformInterface {
 
   /// Request suppression of the NFC wallet.
   ///
-  /// Returns a [SuppressionStatus] indicating the result of the operation.
-  Future<SuppressionStatus> requestSuppression() {
+  /// Returns a [SuppressionResult] describing the outcome of the operation.
+  Future<SuppressionResult> requestSuppression() {
     throw UnimplementedError('requestSuppression() has not been implemented.');
   }
 
   /// Release suppression of the NFC wallet.
   ///
-  /// Returns a [SuppressionStatus] indicating the result of the operation.
-  Future<SuppressionStatus> releaseSuppression() {
+  /// Returns a [SuppressionResult] describing the outcome of the operation.
+  Future<SuppressionResult> releaseSuppression() {
     throw UnimplementedError('releaseSuppression() has not been implemented.');
   }
 

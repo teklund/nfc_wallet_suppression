@@ -34,8 +34,8 @@ void main() {
     
     // Use the plugin normally in your test
     final result = await NfcWalletSuppression.requestSuppression();
-    
-    expect(result, SuppressionStatus.suppressed);
+
+    expect(result.status, SuppressionStatus.suppressed);
   });
 }
 ```
@@ -53,17 +53,18 @@ fake.setSupported(true);  // Simulate device with NFC
 fake.setSupported(false); // Simulate device without NFC
 ```
 
-### `setRequestResult(SuppressionStatus result)`
+### `setRequestResult(SuppressionStatus result, {String? description})`
 
-Set what `requestSuppression()` will return.
+Set what `requestSuppression()` will return. Pass `description` when your test
+needs to assert on the diagnostic text the platform would have supplied.
 
 ```dart
 fake.setRequestResult(SuppressionStatus.suppressed);
-fake.setRequestResult(SuppressionStatus.unavailable);
-fake.setRequestResult(SuppressionStatus.denied);
+fake.setRequestResult(SuppressionStatus.nfcDisabled);
+fake.setRequestResult(SuppressionStatus.denied, description: 'Entitlement missing');
 ```
 
-### `setReleaseResult(SuppressionStatus result)`
+### `setReleaseResult(SuppressionStatus result, {String? description})`
 
 Set what `releaseSuppression()` will return.
 
@@ -126,13 +127,25 @@ NfcWalletSuppressionPlatform.instance = fake;
 // Device does not have NFC hardware
 ```
 
-### NFC Unavailable
+### NFC Disabled (Android)
+
+```dart
+final fake = NfcWalletSuppressionTestScenarios.nfcDisabled();
+NfcWalletSuppressionPlatform.instance = fake;
+
+// Device has NFC hardware but it is switched off in settings — the one
+// failure the user can fix, so this is the scenario for testing your
+// "turn NFC on" prompt.
+```
+
+### Transiently Unavailable
 
 ```dart
 final fake = NfcWalletSuppressionTestScenarios.nfcUnavailable();
 NfcWalletSuppressionPlatform.instance = fake;
 
-// Device has NFC but it's disabled or unavailable
+// Suppression cannot be attempted right now (e.g. no foreground Activity),
+// but a retry may succeed with no user action.
 ```
 
 ### User Denied (iOS)
@@ -194,7 +207,7 @@ void main() {
 
     test('handles NFC disabled', () async {
       fake.setSupported(true);
-      fake.setRequestResult(SuppressionStatus.unavailable);
+      fake.setRequestResult(SuppressionStatus.nfcDisabled);
 
       await startNfcReading();
 
@@ -249,7 +262,7 @@ void main() {
     
     if (supported) {
       final result = await NfcWalletSuppression.requestSuppression();
-      expect(result, isA<SuppressionStatus>());
+      expect(result, isA<SuppressionResult>());
     }
   });
 }
