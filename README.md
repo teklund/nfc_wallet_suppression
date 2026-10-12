@@ -200,6 +200,7 @@ channel itself does.
 
 - ✅ Only affects NFC-enabled devices (iPhone 7+, most modern Android phones)
 - ✅ Auto-releases when app backgrounds or closes
+- ✅ On Android, resumes by itself when NFC is switched off and back on
 - ❌ Does NOT read/write NFC tags
 - ❌ Does NOT persist across app restarts
 - ⚠️ Best-effort (not guaranteed on all devices due to manufacturer customizations)

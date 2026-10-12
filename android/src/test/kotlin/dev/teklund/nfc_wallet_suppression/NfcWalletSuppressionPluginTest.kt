@@ -9,6 +9,7 @@ import io.flutter.plugin.common.BinaryMessenger
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import org.mockito.Mockito
 
@@ -32,6 +33,7 @@ internal class NfcWalletSuppressionPluginTest {
     var stopError: Exception? = null
     var startCount = 0
     var stopCount = 0
+    var onNfcEnabled: (() -> Unit)? = null
 
     override fun hasNfcHardware(context: Context) = hasHardware
     override fun isNfcEnabled(context: Context) = nfcEnabled
@@ -43,6 +45,26 @@ internal class NfcWalletSuppressionPluginTest {
       stopError?.let { throw it }
       stopCount++
     }
+    override fun observeNfcEnabled(context: Context, onEnabled: () -> Unit): AutoCloseable {
+      onNfcEnabled = onEnabled
+      return AutoCloseable { onNfcEnabled = null }
+    }
+
+    fun switchNfcOff() {
+      nfcEnabled = false
+    }
+
+    fun switchNfcOn() {
+      nfcEnabled = true
+      onNfcEnabled?.invoke()
+    }
+  }
+
+  private fun engineBinding(): FlutterPlugin.FlutterPluginBinding {
+    val binding = Mockito.mock(FlutterPlugin.FlutterPluginBinding::class.java)
+    Mockito.`when`(binding.binaryMessenger).thenReturn(Mockito.mock(BinaryMessenger::class.java))
+    Mockito.`when`(binding.applicationContext).thenReturn(Mockito.mock(Context::class.java))
+    return binding
   }
 
   private fun activityBinding(activity: Activity): ActivityPluginBinding {
@@ -56,6 +78,8 @@ internal class NfcWalletSuppressionPluginTest {
     activity: Activity = Mockito.mock(Activity::class.java),
   ): NfcWalletSuppressionPlugin {
     val plugin = NfcWalletSuppressionPlugin(fake)
+    // Flutter attaches the engine before any activity.
+    plugin.onAttachedToEngine(engineBinding())
     plugin.onAttachedToActivity(activityBinding(activity))
     return plugin
   }
@@ -209,10 +233,7 @@ internal class NfcWalletSuppressionPluginTest {
     val plugin = NfcWalletSuppressionPlugin(fake)
     // Attach the engine (sets the application context) but no activity, mirroring
     // a call made before the activity attaches.
-    val engineBinding = Mockito.mock(FlutterPlugin.FlutterPluginBinding::class.java)
-    Mockito.`when`(engineBinding.binaryMessenger).thenReturn(Mockito.mock(BinaryMessenger::class.java))
-    Mockito.`when`(engineBinding.applicationContext).thenReturn(Mockito.mock(Context::class.java))
-    plugin.onAttachedToEngine(engineBinding)
+    plugin.onAttachedToEngine(engineBinding())
 
     assertTrue(supported(plugin), "isSupported must work via application context without an activity")
   }
@@ -235,18 +256,22 @@ internal class NfcWalletSuppressionPluginTest {
   }
 
   @Test
-  fun reattach_whenNfcDisabled_dropsSuppression() {
+  fun reattach_whenNfcDisabled_defersReArmUntilNfcIsSwitchedOn() {
     val fake = FakeWalletSuppressor()
     val activity = Mockito.mock(Activity::class.java)
     val plugin = pluginWithActivity(fake, activity)
     requestStatus(plugin)
 
-    fake.nfcEnabled = false  // NFC turned off while detached
+    fake.switchNfcOff()  // while detached
     plugin.onDetachedFromActivityForConfigChanges()
     plugin.onReattachedToActivityForConfigChanges(activityBinding(activity))
 
     assertEquals(1, fake.startCount, "Must not re-arm when NFC is disabled")
     assertFalse(suppressed(plugin))
+
+    fake.switchNfcOn()
+    assertEquals(2, fake.startCount)
+    assertTrue(suppressed(plugin))
   }
 
   @Test
@@ -282,5 +307,87 @@ internal class NfcWalletSuppressionPluginTest {
     plugin.onAttachedToActivity(activityBinding(activity))
     assertEquals(2, fake.startCount)
     assertTrue(suppressed(plugin))
+  }
+
+  // NFC switched off and on
+
+  @Test
+  fun nfcSwitchedBackOn_reArmsReaderMode() {
+    // Android discards reader mode when NFC is switched off and does not restore
+    // it when NFC returns, so the plugin must re-arm it.
+    val fake = FakeWalletSuppressor()
+    val plugin = pluginWithActivity(fake)
+    requestStatus(plugin)
+
+    fake.switchNfcOff()
+    assertFalse(suppressed(plugin))
+
+    fake.switchNfcOn()
+    assertEquals(2, fake.startCount)
+    assertTrue(suppressed(plugin))
+  }
+
+  @Test
+  fun request_whileNfcOff_reportsNfcDisabledAndKeepsTheEarlierRequest() {
+    val fake = FakeWalletSuppressor()
+    val plugin = pluginWithActivity(fake)
+    requestStatus(plugin)
+
+    fake.switchNfcOff()
+    assertEquals(SuppressionStatusCode.NFC_DISABLED, requestStatus(plugin))
+
+    fake.switchNfcOn()
+    assertEquals(2, fake.startCount)
+    assertEquals(SuppressionStatusCode.SUPPRESSED, requestStatus(plugin))
+  }
+
+  @Test
+  fun release_whileNfcOff_preventsReArmWhenNfcReturns() {
+    val fake = FakeWalletSuppressor()
+    val plugin = pluginWithActivity(fake)
+    requestStatus(plugin)
+
+    fake.switchNfcOff()
+    assertEquals(SuppressionStatusCode.NOT_SUPPRESSED, releaseStatus(plugin))
+    assertEquals(1, fake.stopCount)
+
+    fake.switchNfcOn()
+    assertEquals(1, fake.startCount)
+    assertFalse(suppressed(plugin))
+  }
+
+  @Test
+  fun nfcSwitchedOn_withoutSuppression_doesNotArmReaderMode() {
+    val fake = FakeWalletSuppressor()
+    pluginWithActivity(fake)
+
+    fake.switchNfcOff()
+    fake.switchNfcOn()
+    assertEquals(0, fake.startCount)
+  }
+
+  @Test
+  fun nfcSwitchedOn_withoutActivity_reArmsOnAttach() {
+    val fake = FakeWalletSuppressor()
+    val activity = Mockito.mock(Activity::class.java)
+    val plugin = pluginWithActivity(fake, activity)
+    requestStatus(plugin)
+
+    plugin.onDetachedFromActivity()
+    fake.switchNfcOff()
+    fake.switchNfcOn()
+    assertEquals(1, fake.startCount, "No activity to arm reader mode against")
+
+    plugin.onAttachedToActivity(activityBinding(activity))
+    assertEquals(2, fake.startCount)
+    assertTrue(suppressed(plugin))
+  }
+
+  @Test
+  fun detachFromEngine_stopsObservingNfcState() {
+    val fake = FakeWalletSuppressor()
+    val plugin = pluginWithActivity(fake)
+    plugin.onDetachedFromEngine(engineBinding())
+    assertNull(fake.onNfcEnabled)
   }
 }
