@@ -8,10 +8,12 @@ import 'nfc_wallet_suppression_status.dart';
 /// [description] of what happened, which is useful in logs and bug reports but
 /// is not meant to be shown to users or parsed.
 ///
-/// You never construct this yourself; the plugin returns it.
+/// The plugin returns these; tests can construct one directly. The class is
+/// `final`, so it can't be implemented or extended — mocks included — which is
+/// what lets members be added later without a breaking change.
 @immutable
-class SuppressionResult {
-  /// Creates a result. Exposed mainly so tests and fakes can build one.
+final class SuppressionResult {
+  /// Creates a result, for tests and fakes that need one.
   const SuppressionResult({required this.status, this.description});
 
   /// What happened.
@@ -29,26 +31,6 @@ class SuppressionResult {
   /// `null` when the platform gave no detail.
   final String? description;
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is SuppressionResult &&
-          other.status == status &&
-          other.description == description;
-
-  @override
-  int get hashCode => Object.hash(status, description);
-
-  @override
-  String toString() =>
-      'SuppressionResult(status: $status, description: $description)';
-}
-
-/// Convenience predicates over a [SuppressionResult].
-///
-/// These live in an extension rather than on the class so that adding more of
-/// them later stays non-breaking.
-extension SuppressionResultGetters on SuppressionResult {
   /// Whether automatic wallet presentation is now suppressed.
   ///
   /// True for a successful `requestSuppression`, including the already-active
@@ -70,4 +52,18 @@ extension SuppressionResultGetters on SuppressionResult {
   bool get isRetryable =>
       status == SuppressionStatus.nfcDisabled ||
       status == SuppressionStatus.unavailable;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SuppressionResult &&
+          other.status == status &&
+          other.description == description;
+
+  @override
+  int get hashCode => Object.hash(status, description);
+
+  @override
+  String toString() =>
+      'SuppressionResult(status: $status, description: $description)';
 }

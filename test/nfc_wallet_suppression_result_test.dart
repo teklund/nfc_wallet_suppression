@@ -44,7 +44,7 @@ void main() {
     });
   });
 
-  group('SuppressionResultGetters', () {
+  group('convenience getters', () {
     SuppressionResult of(SuppressionStatus status) =>
         SuppressionResult(status: status);
 

@@ -229,6 +229,13 @@ unchanged, such a condition simply evaluates to `false` forever.
 When upgrading, search for `== SuppressionStatus.` and `!= SuppressionStatus.`
 and check each one.
 
+In tests, construct a result instead of mocking it. `SuppressionResult` is a
+`final class`, so it can't be implemented, but its constructor is public:
+
+```dart
+const result = SuppressionResult(status: SuppressionStatus.suppressed);
+```
+
 Two status meanings also changed:
 
 | Situation | 0.1.x | 1.0.0 |
