@@ -18,6 +18,20 @@ import 'nfc_wallet_suppression_status.dart';
 /// - **Android**: Requires Android 5.0+ (API 21) with NFC hardware enabled.
 ///   The NFC permission is automatically added to your app's manifest.
 ///
+/// ## Suppression lifecycle
+///
+/// - A successful [requestSuppression] holds suppression until you call
+///   [releaseSuppression] or the app is closed. Requesting again while it is
+///   held reports on that hold rather than adding another, so one release
+///   ends it.
+/// - Suppression only takes effect while your app is in the foreground. In
+///   the background the wallet works normally, and suppression resumes by
+///   itself when the app returns. On Android the same applies while NFC is
+///   switched off.
+/// - Call [releaseSuppression] once you are done, whatever the request
+///   returned. It is always safe, and it is the only way to be sure no
+///   suppression is left held.
+///
 /// ## Usage Example
 ///
 /// ```dart
@@ -54,10 +68,13 @@ class NfcWalletSuppression {
   /// system wallet.
   ///
   /// **Important:** On iOS, this may prompt the user for permission. Rapid or
-  /// overlapping calls are safe: on both platforms a call made while suppression
-  /// is already active returns [SuppressionStatus.suppressed] without re-arming.
-  /// On iOS, overlapping (un-awaited) calls made while a request is in flight
-  /// share that request's result.
+  /// overlapping calls are safe: a call made while suppression is held reports
+  /// on that hold instead of adding another (see "Suppression lifecycle" on
+  /// [NfcWalletSuppression]). It returns [SuppressionStatus.suppressed] while
+  /// the hold is in effect. On Android with NFC switched off it returns
+  /// [SuppressionStatus.nfcDisabled] instead, and the hold resumes once NFC is
+  /// back on. On iOS, overlapping (un-awaited) calls made while a request is in
+  /// flight share that request's result.
   ///
   /// Calls do not have to be awaited before the next one is issued. Operations
   /// run in the order you issued them, and each caller is told the outcome of
@@ -90,14 +107,18 @@ class NfcWalletSuppression {
   /// **iOS:**
   /// - Uses PassKit's `requestAutomaticPassPresentationSuppression`
   /// - May show a system permission dialog on first use
-  /// - Suppression persists until explicitly released
+  /// - Paused by iOS while the app is in the background, and restored when it
+  ///   returns
   /// - Survives configuration changes (screen rotation)
   ///
   /// **Android:**
   /// - Uses the NFC Adapter's reader mode (`enableReaderMode`), which takes over
   ///   the NFC stack and suppresses wallet / host-card-emulation apps
   /// - No permission prompt required
-  /// - Automatically restored after activity recreation
+  /// - Paused by Android while the app is in the background, and restored when
+  ///   it returns
+  /// - Restored automatically after activity recreation and when NFC is
+  ///   switched back on
   /// - Requires NFC to be enabled in device settings
   ///
   /// ## Example
@@ -155,10 +176,10 @@ class NfcWalletSuppression {
   /// version bump, so still include a fallback when switching.
   ///
   /// Release reports on the suppression *you* requested, not on live device
-  /// state: it returns [SuppressionStatus.notSuppressed] even if suppression had
-  /// already lapsed in the meantime (e.g. the app was backgrounded or the user
-  /// turned NFC off). Use [isSuppressed] to query whether suppression is
-  /// actually in effect right now. Both platforms behave identically here.
+  /// state: it returns [SuppressionStatus.notSuppressed] whether or not the hold
+  /// was in effect at that moment (for example while NFC is switched off on
+  /// Android). Use [isSuppressed] to query whether suppression is actually in
+  /// effect right now. Both platforms behave identically here.
   ///
   /// ## Platform Behavior
   ///
@@ -191,9 +212,10 @@ class NfcWalletSuppression {
 
   /// Checks if the system's NFC wallet behavior is currently suppressed.
   ///
-  /// Returns `true` if wallet presentation is currently suppressed (i.e., after
-  /// a successful call to [requestSuppression] and before [releaseSuppression]),
-  /// or `false` otherwise.
+  /// Returns `true` if wallet presentation is suppressed right now, or `false`
+  /// otherwise. A held suppression is not always in effect (see "Suppression
+  /// lifecycle" on [NfcWalletSuppression]), so this can be `false` between a
+  /// successful [requestSuppression] and [releaseSuppression].
   ///
   /// ## Returns
   ///
@@ -205,13 +227,14 @@ class NfcWalletSuppression {
   ///
   /// **iOS:**
   /// - Uses PassKit's static `isSuppressingAutomaticPassPresentation` method
-  /// - Accurately reflects system-wide suppression state
+  /// - Can still return `true` right after [releaseSuppression] completes;
+  ///   PassKit updates the state a moment later
   ///
   /// **Android:**
-  /// - Returns `true` only while suppression is active, an activity is attached,
-  ///   and NFC is still enabled
-  /// - Suppression is re-armed across activity recreation (e.g., screen rotation)
-  /// - Returns `false` if the activity is detached or NFC was turned off
+  /// - Returns `true` only while suppression is held, an activity is attached
+  ///   and NFC is enabled
+  /// - Returns `false` while NFC is switched off, even though the hold resumes
+  ///   once NFC is switched back on
   ///
   /// ## Example
   ///

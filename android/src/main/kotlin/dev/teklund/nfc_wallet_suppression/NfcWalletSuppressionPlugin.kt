@@ -9,6 +9,7 @@ import android.content.pm.ApplicationInfo
 import android.nfc.NfcAdapter
 import android.nfc.Tag
 import android.util.Log
+import androidx.core.content.ContextCompat
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -28,7 +29,8 @@ internal interface WalletSuppressor {
   /**
    * Enables reader mode for [activity]. Reader mode takes over the NFC stack,
    * which suppresses wallet / host-card-emulation apps. Throws if it cannot be
-   * enabled (e.g., no adapter, or a security restriction).
+   * enabled (e.g., no adapter, or a security restriction), and then leaves
+   * reader mode disabled for [activity].
    */
   fun startReaderMode(activity: Activity, callback: NfcAdapter.ReaderCallback)
 
@@ -62,7 +64,15 @@ internal class SystemWalletSuppressor : WalletSuppressor {
       NfcAdapter.FLAG_READER_NFC_V or
       NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK or
       NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS
-    adapter.enableReaderMode(activity, callback, flags, null)
+    try {
+      adapter.enableReaderMode(activity, callback, flags, null)
+    } catch (e: Exception) {
+      // Android records reader mode for the activity before the call can fail,
+      // and re-applies it each time the activity resumes. Clear it, so a failed
+      // call leaves nothing behind that release would no longer know to undo.
+      runCatching { adapter.disableReaderMode(activity) }.onFailure(e::addSuppressed)
+      throw e
+    }
   }
 
   override fun stopReaderMode(activity: Activity) {
@@ -76,9 +86,12 @@ internal class SystemWalletSuppressor : WalletSuppressor {
         if (state == NfcAdapter.STATE_ON) onEnabled()
       }
     }
-    // A system broadcast, so no RECEIVER_EXPORTED / RECEIVER_NOT_EXPORTED flag
-    // is required on Android 14+.
-    context.registerReceiver(receiver, IntentFilter(NfcAdapter.ACTION_ADAPTER_STATE_CHANGED))
+    val filter = IntentFilter(NfcAdapter.ACTION_ADAPTER_STATE_CHANGED)
+    // Sent by the NFC service, which runs as its own UID rather than the system
+    // UID, so the receiver must be exported: RECEIVER_NOT_EXPORTED never gets it.
+    // Exporting is safe because the action is a protected broadcast that only
+    // the platform can send.
+    ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_EXPORTED)
     return AutoCloseable { context.unregisterReceiver(receiver) }
   }
 }
@@ -97,8 +110,22 @@ class NfcWalletSuppressionPlugin internal constructor(
   /**
    * Whether the app holds a suppression request. Reader mode is armed whenever
    * this is set, an activity is attached and NFC is on.
+   *
+   * NFC state is observed exactly while this is set: switching NFC off discards
+   * reader mode, and switching it back on does not restore it until the
+   * activity next resumes — which a quick-settings toggle does not cause.
    */
   private var suppressionActive: Boolean = false
+    set(active) {
+      if (active == field) return
+      field = active
+      nfcEnabledObserver = if (active) {
+        context?.let { suppressor.observeNfcEnabled(it) { reestablish() } }
+      } else {
+        nfcEnabledObserver?.close()
+        null
+      }
+    }
 
   private var nfcEnabledObserver: AutoCloseable? = null
 
@@ -115,18 +142,12 @@ class NfcWalletSuppressionPlugin internal constructor(
     context = flutterPluginBinding.applicationContext
     // Set automatically by the build system (debug vs. release); mirrors iOS's #if DEBUG.
     isDebug = ((context?.applicationInfo?.flags ?: 0) and ApplicationInfo.FLAG_DEBUGGABLE) != 0
-    // Switching NFC off discards reader mode, and switching it back on does not
-    // restore it until the activity next resumes — which a quick-settings toggle
-    // does not cause. Re-arm as soon as NFC returns.
-    nfcEnabledObserver = suppressor.observeNfcEnabled(flutterPluginBinding.applicationContext) {
-      if (suppressionActive) reestablish()
-    }
   }
 
   override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
     NfcWalletSuppressionApi.setUp(binding.binaryMessenger, null)
-    nfcEnabledObserver?.close()
-    nfcEnabledObserver = null
+    // Without an engine nothing can hold the request; this also stops observing NFC state.
+    suppressionActive = false
     if (isDebug) Log.d(TAG, "Detached from engine")
     context = null
   }
@@ -164,6 +185,10 @@ class NfcWalletSuppressionPlugin internal constructor(
       suppressor.startReaderMode(activity, this)
       if (isDebug) Log.d(TAG, "Re-established NFC suppression")
     } catch (e: Exception) {
+      // Drop the request rather than hold one that is not in effect. The likely
+      // causes (a conflicting NFC mode on this activity, or a failing NFC
+      // service) do not clear by themselves, and startReaderMode has already
+      // left reader mode disabled.
       if (isDebug) Log.e(TAG, "Failed to re-establish suppression", e)
       suppressionActive = false
     }
@@ -185,14 +210,21 @@ class NfcWalletSuppressionPlugin internal constructor(
       // Distinct from UNAVAILABLE: this is the one failure the user can fix, so
       // an app can act on it by deep-linking to android.settings.NFC_SETTINGS.
       // An earlier request is kept and resumes when NFC is switched back on.
-      callback(Result.success(SuppressionResult(
-        SuppressionStatusCode.NFC_DISABLED, "NFC is disabled. Please enable NFC in device settings")))
+      val message = if (suppressionActive) {
+        "NFC is disabled. Suppression resumes when NFC is enabled"
+      } else {
+        "NFC is disabled. Please enable NFC in device settings"
+      }
+      callback(Result.success(SuppressionResult(SuppressionStatusCode.NFC_DISABLED, message)))
       return
     }
-    // Already active (and NFC enabled): reader mode is held, because it is
-    // re-armed on every activity attach and every time NFC is switched on.
-    // Return idempotent success without re-arming, so a re-arm that failed could
-    // never leave the active flag inconsistent. Mirrors iOS.
+    // Already active (and NFC enabled): reader mode is held, because Android
+    // re-applies it on every resume, and the plugin re-arms it on every activity
+    // attach and every time NFC is switched on. In the moment between NFC coming
+    // on and that broadcast arriving (measured at well under a second), this
+    // reports the hold before reader mode is back. Return idempotent success
+    // without re-arming, so a re-arm that failed could never leave the active
+    // flag inconsistent. Mirrors iOS.
     if (suppressionActive) {
       callback(Result.success(SuppressionResult(
         SuppressionStatusCode.SUPPRESSED, "Suppression already active")))
@@ -262,11 +294,7 @@ class NfcWalletSuppressionPlugin internal constructor(
   }
 
   override fun isSupported(callback: (Result<Boolean>) -> Unit) {
-    val ctx = context ?: activity
-    if (ctx == null) {
-      callback(Result.success(false))
-      return
-    }
-    callback(Result.success(suppressor.hasNfcHardware(ctx)))
+    val context = context
+    callback(Result.success(context != null && suppressor.hasNfcHardware(context)))
   }
 }
