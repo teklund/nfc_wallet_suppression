@@ -118,13 +118,14 @@ class NfcWalletSuppressionPlugin internal constructor(
   private var suppressionActive: Boolean = false
     set(active) {
       if (active == field) return
-      field = active
-      nfcEnabledObserver = if (active) {
-        context?.let { suppressor.observeNfcEnabled(it) { reestablish() } }
+      if (active) {
+        // Observe first, so a failure to observe leaves nothing held.
+        nfcEnabledObserver = context?.let { suppressor.observeNfcEnabled(it) { reestablish() } }
       } else {
         nfcEnabledObserver?.close()
-        null
+        nfcEnabledObserver = null
       }
+      field = active
     }
 
   private var nfcEnabledObserver: AutoCloseable? = null
@@ -170,7 +171,13 @@ class NfcWalletSuppressionPlugin internal constructor(
   }
 
   override fun onDetachedFromActivity() {
-    activity = null
+    // Reader mode belongs to the activity, which can outlive Flutter (a removed
+    // FlutterFragment). A destroyed one has already lost it and rejects the call.
+    val activity = activity
+    if (suppressionActive && activity != null && !activity.isDestroyed) {
+      runCatching { suppressor.stopReaderMode(activity) }
+    }
+    this.activity = null
   }
 
   /** Re-arms reader mode against the current activity. Precondition: suppressionActive. */
@@ -191,6 +198,17 @@ class NfcWalletSuppressionPlugin internal constructor(
       // left reader mode disabled.
       if (isDebug) Log.e(TAG, "Failed to re-establish suppression", e)
       suppressionActive = false
+    }
+  }
+
+  /** Arms reader mode and holds the request, or leaves neither in place. */
+  private fun hold(activity: Activity) {
+    suppressor.startReaderMode(activity, this)
+    try {
+      suppressionActive = true
+    } catch (e: Exception) {
+      runCatching { suppressor.stopReaderMode(activity) }.onFailure(e::addSuppressed)
+      throw e
     }
   }
 
@@ -231,8 +249,7 @@ class NfcWalletSuppressionPlugin internal constructor(
       return
     }
     try {
-      suppressor.startReaderMode(activity, this)
-      suppressionActive = true
+      hold(activity)
       if (isDebug) Log.d(TAG, "NFC wallet suppression enabled")
       callback(Result.success(SuppressionResult(SuppressionStatusCode.SUPPRESSED, "Suppressed")))
     } catch (e: SecurityException) {

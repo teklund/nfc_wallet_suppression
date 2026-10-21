@@ -33,6 +33,7 @@ internal class NfcWalletSuppressionPluginTest {
     var nfcEnabled = true
     var startError: Exception? = null
     var stopError: Exception? = null
+    var observeError: Exception? = null
     var startCount = 0
     var stopCount = 0
     var onNfcEnabled: (() -> Unit)? = null
@@ -48,6 +49,7 @@ internal class NfcWalletSuppressionPluginTest {
       stopCount++
     }
     override fun observeNfcEnabled(context: Context, onEnabled: () -> Unit): AutoCloseable {
+      observeError?.let { throw it }
       onNfcEnabled = onEnabled
       return AutoCloseable { onNfcEnabled = null }
     }
@@ -308,11 +310,37 @@ internal class NfcWalletSuppressionPluginTest {
     requestStatus(plugin)
 
     plugin.onDetachedFromActivity()
+    assertEquals(1, fake.stopCount, "An activity that lives on must not keep reader mode")
     assertFalse(suppressed(plugin), "No activity -> not actually suppressed")
 
     plugin.onAttachedToActivity(activityBinding(activity))
     assertEquals(2, fake.startCount)
     assertTrue(suppressed(plugin))
+  }
+
+  @Test
+  fun permanentDetach_fromDestroyedActivity_leavesReaderModeToAndroid() {
+    // Android has already discarded a destroyed activity's reader mode and
+    // throws if asked to change it.
+    val fake = FakeWalletSuppressor()
+    val activity = Mockito.mock(Activity::class.java)
+    val plugin = pluginWithActivity(fake, activity)
+    requestStatus(plugin)
+
+    Mockito.`when`(activity.isDestroyed).thenReturn(true)
+    plugin.onDetachedFromActivity()
+
+    assertEquals(0, fake.stopCount)
+  }
+
+  @Test
+  fun permanentDetach_withoutRequest_leavesReaderModeAlone() {
+    val fake = FakeWalletSuppressor()
+    val plugin = pluginWithActivity(fake)
+
+    plugin.onDetachedFromActivity()
+
+    assertEquals(0, fake.stopCount)
   }
 
   // NFC switched off and on
@@ -423,6 +451,24 @@ internal class NfcWalletSuppressionPluginTest {
     val fake = FakeWalletSuppressor().apply { startError = IllegalStateException("boom") }
     requestStatus(pluginWithActivity(fake))
     assertNull(fake.onNfcEnabled)
+  }
+
+  @Test
+  fun request_whenObservingNfcStateFails_holdsNothing() {
+    // For example when the app already has the maximum number of receivers.
+    val fake = FakeWalletSuppressor().apply {
+      observeError = IllegalStateException("Too many receivers")
+    }
+    val plugin = pluginWithActivity(fake)
+
+    assertEquals(SuppressionStatusCode.UNKNOWN, requestStatus(plugin))
+    assertEquals(1, fake.stopCount, "Reader mode must be turned back off")
+    assertFalse(suppressed(plugin))
+
+    fake.observeError = null
+    assertEquals(SuppressionStatusCode.SUPPRESSED, requestStatus(plugin))
+    assertEquals(2, fake.startCount, "A retry must arm again, not report the failed request as held")
+    assertNotNull(fake.onNfcEnabled)
   }
 
   @Test
