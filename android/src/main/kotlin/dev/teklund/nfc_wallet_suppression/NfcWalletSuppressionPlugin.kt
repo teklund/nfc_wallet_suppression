@@ -67,9 +67,8 @@ internal class SystemWalletSuppressor : WalletSuppressor {
     try {
       adapter.enableReaderMode(activity, callback, flags, null)
     } catch (e: Exception) {
-      // Android records reader mode for the activity before the call can fail,
-      // and re-applies it each time the activity resumes. Clear it, so a failed
-      // call leaves nothing behind that release would no longer know to undo.
+      // Android records reader mode before this can fail, and re-applies it on
+      // resume. Clear it: release only undoes a request that succeeded.
       runCatching { adapter.disableReaderMode(activity) }.onFailure(e::addSuppressed)
       throw e
     }
@@ -87,10 +86,9 @@ internal class SystemWalletSuppressor : WalletSuppressor {
       }
     }
     val filter = IntentFilter(NfcAdapter.ACTION_ADAPTER_STATE_CHANGED)
-    // Sent by the NFC service, which runs as its own UID rather than the system
-    // UID, so the receiver must be exported: RECEIVER_NOT_EXPORTED never gets it.
-    // Exporting is safe because the action is a protected broadcast that only
-    // the platform can send.
+    // The NFC service sends this from its own UID, not the system UID, so
+    // RECEIVER_NOT_EXPORTED never gets it. Exporting is safe: it is a protected
+    // broadcast only the platform can send.
     ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_EXPORTED)
     return AutoCloseable { context.unregisterReceiver(receiver) }
   }
@@ -111,9 +109,8 @@ class NfcWalletSuppressionPlugin internal constructor(
    * Whether the app holds a suppression request. Reader mode is armed whenever
    * this is set, an activity is attached and NFC is on.
    *
-   * NFC state is observed exactly while this is set: switching NFC off discards
-   * reader mode, and switching it back on does not restore it until the
-   * activity next resumes — which a quick-settings toggle does not cause.
+   * NFC state is observed only while this is set, because switching NFC back on
+   * (as from quick settings) does not restore reader mode until the next resume.
    */
   private var suppressionActive: Boolean = false
     set(active) {
@@ -192,10 +189,8 @@ class NfcWalletSuppressionPlugin internal constructor(
       suppressor.startReaderMode(activity, this)
       if (isDebug) Log.d(TAG, "Re-established NFC suppression")
     } catch (e: Exception) {
-      // Drop the request rather than hold one that is not in effect. The likely
-      // causes (a conflicting NFC mode on this activity, or a failing NFC
-      // service) do not clear by themselves, and startReaderMode has already
-      // left reader mode disabled.
+      // Drop the request, so isSuppressed stops reporting it and the next
+      // request arms reader mode again instead of reporting the failed hold.
       if (isDebug) Log.e(TAG, "Failed to re-establish suppression", e)
       suppressionActive = false
     }
@@ -236,13 +231,9 @@ class NfcWalletSuppressionPlugin internal constructor(
       callback(Result.success(SuppressionResult(SuppressionStatusCode.NFC_DISABLED, message)))
       return
     }
-    // Already active (and NFC enabled): reader mode is held, because Android
-    // re-applies it on every resume, and the plugin re-arms it on every activity
-    // attach and every time NFC is switched on. In the moment between NFC coming
-    // on and that broadcast arriving (measured at well under a second), this
-    // reports the hold before reader mode is back. Return idempotent success
-    // without re-arming, so a re-arm that failed could never leave the active
-    // flag inconsistent. Mirrors iOS.
+    // Already held: reader mode is re-armed on every resume, attach and NFC-on,
+    // and Android has no API to query it, so report the hold. Arming again would
+    // risk a failure that clears the reader mode already in effect.
     if (suppressionActive) {
       callback(Result.success(SuppressionResult(
         SuppressionStatusCode.SUPPRESSED, "Suppression already active")))

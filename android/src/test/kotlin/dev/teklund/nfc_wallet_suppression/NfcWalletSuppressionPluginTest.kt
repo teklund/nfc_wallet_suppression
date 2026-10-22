@@ -373,6 +373,10 @@ internal class NfcWalletSuppressionPluginTest {
 
     assertFalse(suppressed(plugin), "A failed re-arm must drop suppression")
     assertNull(fake.onNfcEnabled, "A dropped request must stop observing NFC state")
+
+    fake.startError = null
+    assertEquals(SuppressionStatusCode.SUPPRESSED, requestStatus(plugin))
+    assertEquals(2, fake.startCount, "The next request must arm reader mode again")
     assertEquals(SuppressionStatusCode.NOT_SUPPRESSED, releaseStatus(plugin))
   }
 

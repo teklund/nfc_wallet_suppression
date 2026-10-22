@@ -49,7 +49,7 @@ enum SuppressionStatus {
   ///
   /// The platform failed in an unexpected way, or did not answer in time. The
   /// operation may or may not have taken effect; call `isSuppressed` if you need
-  /// to know the live state.
+  /// to know the current state.
   unknown,
 
   /// NFC hardware is present but switched off in system settings.
