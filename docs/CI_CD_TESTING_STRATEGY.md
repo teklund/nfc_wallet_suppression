@@ -16,8 +16,8 @@ CI is consolidated into a single workflow, `ci.yml`, supplemented by an integrat
 ## ci.yml Job Map
 
 ```text
-Check Changes ─┬─ Check Formatting ──┬─ Analyze Code (3.35.x | stable)
-               │                     ├─ Run Tests & Coverage (3.35.x | stable)
+Check Changes ─┬─ Check Formatting ──┬─ Analyze Code (3.44.x | stable)
+               │                     ├─ Run Tests & Coverage (3.44.x | stable)
                │                     ├─ Pub Score Check
                │                     └─ Publish Dry Run
                │
@@ -67,7 +67,7 @@ cd example/android && ./gradlew :nfc_wallet_suppression:testDebugUnitTest
 | Job                         | Dart Coverage           | Android Coverage    | iOS Coverage         |
 | --------------------------- | ----------------------- | ------------------- | -------------------- |
 | Run Tests & Coverage (stable) | Uploaded as `dart` flag | —                   | —                    |
-| Run Tests & Coverage (3.35.x) | Generated, not uploaded | —                   | —                    |
+| Run Tests & Coverage (3.44.x) | Generated, not uploaded | —                   | —                    |
 | Android Native Tests        | —                       | Uploaded as `android` flag | —             |
 | iOS Native Tests            | —                       | —                   | Uploaded as `ios` flag |
 

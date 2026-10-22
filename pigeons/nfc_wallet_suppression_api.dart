@@ -72,26 +72,26 @@ abstract class NfcWalletSuppressionApi {
   /// Returns a [SuppressionResult] indicating the outcome of the request.
   /// On iOS, this uses PassKit's automatic pass presentation suppression.
   /// On Android, this uses NFC reader mode to prevent wallet apps.
-  @async
+  @asyncCallback
   SuppressionResult requestSuppression();
 
   /// Release suppression of the NFC wallet
   ///
   /// Returns a [SuppressionResult] indicating the outcome of the release.
   /// Should be called when NFC operations are complete to restore normal behavior.
-  @async
+  @asyncCallback
   SuppressionResult releaseSuppression();
 
   /// Check if NFC wallet is currently suppressed
   ///
   /// Returns true if suppression is currently active, false otherwise.
-  @async
+  @asyncCallback
   bool isSuppressed();
 
   /// Check if device supports NFC wallet suppression
   ///
   /// Returns true if the device has the necessary hardware and OS support,
   /// false otherwise. Should be called before attempting to use suppression.
-  @async
+  @asyncCallback
   bool isSupported();
 }
