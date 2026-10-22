@@ -68,6 +68,11 @@ android {
     }
 
     dependencies {
+        // The lowest version with ContextCompat.registerReceiver(..., flags). Apps
+        // resolve it to the newer copy Flutter's embedding already brings, so it
+        // never forces an upgrade on them.
+        implementation("androidx.core:core:1.9.0")
+
         testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:$kotlin_version")
         testImplementation("org.mockito:mockito-core:5.14.2")
     }

@@ -36,7 +36,7 @@ A lightweight Flutter plugin that **suppresses NFC wallet presentation** — pre
 - ✅ **Simple API** - Three methods: request, release, and check suppression status
 - ✅ **Cross-platform** - Works on iOS (PassKit) and Android (NFC Adapter)
 - ✅ **All platforms supported** - Graceful fallback on web/desktop (returns `notSupported`)
-- ✅ **Lifecycle-aware** - Automatic cleanup when app backgrounds
+- ✅ **Lifecycle-aware** - Pauses while the app is in the background and resumes when it returns
 - ✅ **Type-safe status** - Detailed status enum for handling different scenarios
 
 ---
@@ -199,7 +199,8 @@ channel itself does.
 **Important Notes:**
 
 - ✅ Only affects NFC-enabled devices (iPhone 7+, most modern Android phones)
-- ✅ Auto-releases when app backgrounds or closes
+- ✅ Pauses while the app is in the background and resumes by itself when it returns
+- ✅ On Android, held suppression also pauses while NFC is switched off and resumes when it is switched back on
 - ❌ Does NOT read/write NFC tags
 - ❌ Does NOT persist across app restarts
 - ⚠️ Best-effort (not guaranteed on all devices due to manufacturer customizations)
@@ -256,14 +257,14 @@ foreground Activity.
 | :--- | :--- | :--- |
 | Entitlement not found | iOS | Ensure Apple approved the entitlement and it's in your provisioning profile |
 | NFC not available | Android | Enable NFC in device settings |
-| Auto-released | Both | Use `WidgetsBindingObserver` to re-request on app resume |
+| Wallet appears while the app is in the background | Both | Expected: suppression only applies in the foreground, and resumes by itself when the app returns |
 | Doesn't work on device | iOS | Test on physical iPhone 7+, verify entitlement in Xcode |
 | Payment apps still appear | Android | Some manufacturers override behavior, test on multiple devices |
 
 **FAQ:**
 
 - **Does this read NFC tags?** No, it only suppresses wallet presentation.
-- **How long does suppression last?** Until released or app backgrounds.
+- **How long does suppression last?** Until you release it or the app is closed. It pauses while the app is in the background and resumes when the app returns.
 - **Works in simulator?** Limited - always test on physical devices with NFC.
 
 ---

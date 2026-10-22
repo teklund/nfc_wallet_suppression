@@ -125,7 +125,7 @@ This plugin does NOT protect against:
 
 1. **iOS 13.0+ Required:** Plugin minimum (Flutter SDK floor); PassKit suppression API (`requestAutomaticPassPresentationSuppression`) available from iOS 9.0+
 2. **User Consent:** User can deny suppression request (by design)
-3. **Background Limitations:** Suppression releases when app backgrounds (OS behavior)
+3. **Foreground Only:** iOS pauses suppression while the app is in the background and restores it when the app returns (OS behavior)
 4. **PassKit Dependency:** Requires PassKit framework availability
 
 ### Android
@@ -138,7 +138,7 @@ This plugin does NOT protect against:
 ### Both Platforms
 
 1. **No Persistent Suppression:** Suppression is session-based, not persistent across app restarts
-2. **Activity Lifecycle:** May need to re-establish suppression after certain lifecycle events
+2. **App Lifecycle:** Suppression pauses while the app is in the background and resumes by itself when the app returns; it does not need to be requested again
 3. **Single App Instance:** Cannot suppress across multiple app instances
 
 ---
