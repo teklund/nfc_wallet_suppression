@@ -103,10 +103,6 @@ internal class NfcWalletSuppressionPluginTest {
     return result!!.status
   }
 
-  private fun suppressed(plugin: NfcWalletSuppressionPlugin): Boolean = plugin.isSuppressed()
-
-  private fun supported(plugin: NfcWalletSuppressionPlugin): Boolean = plugin.isSupported()
-
   // requestSuppression
 
   @Test
@@ -135,7 +131,7 @@ internal class NfcWalletSuppressionPluginTest {
     val plugin = pluginWithActivity(fake)
     assertEquals(SuppressionStatusCode.SUPPRESSED, requestStatus(plugin))
     assertEquals(1, fake.startCount)
-    assertTrue(suppressed(plugin))
+    assertTrue(plugin.isSuppressed())
   }
 
   @Test
@@ -180,7 +176,7 @@ internal class NfcWalletSuppressionPluginTest {
 
     fake.stopError = SecurityException("denied")
     assertEquals(SuppressionStatusCode.DENIED, releaseStatus(plugin))
-    assertTrue(suppressed(plugin), "A failed tear-down must keep suppression active (truthful)")
+    assertTrue(plugin.isSuppressed(), "A failed tear-down must keep suppression active (truthful)")
   }
 
   @Test
@@ -191,7 +187,7 @@ internal class NfcWalletSuppressionPluginTest {
 
     fake.stopError = IllegalStateException("boom")
     assertEquals(SuppressionStatusCode.UNKNOWN, releaseStatus(plugin))
-    assertTrue(suppressed(plugin))
+    assertTrue(plugin.isSuppressed())
   }
 
   @Test
@@ -201,14 +197,14 @@ internal class NfcWalletSuppressionPluginTest {
     requestStatus(plugin)
     assertEquals(SuppressionStatusCode.NOT_SUPPRESSED, releaseStatus(plugin))
     assertEquals(1, fake.stopCount)
-    assertFalse(suppressed(plugin))
+    assertFalse(plugin.isSuppressed())
   }
 
   // isSuppressed / isSupported
 
   @Test
   fun isSuppressed_falseWhenNoActivity() {
-    assertFalse(suppressed(NfcWalletSuppressionPlugin(FakeWalletSuppressor())))
+    assertFalse(NfcWalletSuppressionPlugin(FakeWalletSuppressor()).isSuppressed())
   }
 
   @Test
@@ -217,13 +213,15 @@ internal class NfcWalletSuppressionPluginTest {
     val plugin = pluginWithActivity(fake)
     requestStatus(plugin)
     fake.nfcEnabled = false  // user turned NFC off after suppressing
-    assertFalse(suppressed(plugin))
+    assertFalse(plugin.isSuppressed())
   }
 
   @Test
   fun isSupported_reflectsHardwarePresence() {
-    assertTrue(supported(pluginWithActivity(FakeWalletSuppressor().apply { hasHardware = true })))
-    assertFalse(supported(pluginWithActivity(FakeWalletSuppressor().apply { hasHardware = false })))
+    assertTrue(
+        pluginWithActivity(FakeWalletSuppressor().apply { hasHardware = true }).isSupported())
+    assertFalse(
+        pluginWithActivity(FakeWalletSuppressor().apply { hasHardware = false }).isSupported())
   }
 
   @Test
@@ -234,7 +232,8 @@ internal class NfcWalletSuppressionPluginTest {
     // a call made before the activity attaches.
     plugin.onAttachedToEngine(engineBinding())
 
-    assertTrue(supported(plugin), "isSupported must work via application context without an activity")
+    assertTrue(
+        plugin.isSupported(), "isSupported must work via application context without an activity")
   }
 
   // lifecycle
@@ -251,7 +250,7 @@ internal class NfcWalletSuppressionPluginTest {
     plugin.onReattachedToActivityForConfigChanges(activityBinding(activity))
 
     assertEquals(2, fake.startCount, "Reader mode must be re-armed against the new activity")
-    assertTrue(suppressed(plugin))
+    assertTrue(plugin.isSuppressed())
   }
 
   @Test
@@ -266,11 +265,11 @@ internal class NfcWalletSuppressionPluginTest {
     plugin.onReattachedToActivityForConfigChanges(activityBinding(activity))
 
     assertEquals(1, fake.startCount, "Must not re-arm when NFC is disabled")
-    assertFalse(suppressed(plugin))
+    assertFalse(plugin.isSuppressed())
 
     fake.switchNfcOn()
     assertEquals(2, fake.startCount)
-    assertTrue(suppressed(plugin))
+    assertTrue(plugin.isSuppressed())
   }
 
   @Test
@@ -285,7 +284,7 @@ internal class NfcWalletSuppressionPluginTest {
     plugin.onDetachedFromActivityForConfigChanges()
     plugin.onReattachedToActivityForConfigChanges(activityBinding(activity))
 
-    assertFalse(suppressed(plugin), "A failed re-arm must drop suppression")
+    assertFalse(plugin.isSuppressed(), "A failed re-arm must drop suppression")
     assertNull(fake.onNfcEnabled, "A dropped request must stop observing NFC state")
     assertEquals(
       SuppressionStatusCode.NOT_SUPPRESSED,
@@ -303,11 +302,11 @@ internal class NfcWalletSuppressionPluginTest {
 
     plugin.onDetachedFromActivity()
     assertEquals(1, fake.stopCount, "An activity that lives on must not keep reader mode")
-    assertFalse(suppressed(plugin), "No activity -> not actually suppressed")
+    assertFalse(plugin.isSuppressed(), "No activity -> not actually suppressed")
 
     plugin.onAttachedToActivity(activityBinding(activity))
     assertEquals(2, fake.startCount)
-    assertTrue(suppressed(plugin))
+    assertTrue(plugin.isSuppressed())
   }
 
   @Test
@@ -346,11 +345,11 @@ internal class NfcWalletSuppressionPluginTest {
     requestStatus(plugin)
 
     fake.switchNfcOff()
-    assertFalse(suppressed(plugin))
+    assertFalse(plugin.isSuppressed())
 
     fake.switchNfcOn()
     assertEquals(2, fake.startCount)
-    assertTrue(suppressed(plugin))
+    assertTrue(plugin.isSuppressed())
   }
 
   @Test
@@ -363,7 +362,7 @@ internal class NfcWalletSuppressionPluginTest {
     fake.startError = IllegalStateException("conflicting NFC mode")
     fake.switchNfcOn()
 
-    assertFalse(suppressed(plugin), "A failed re-arm must drop suppression")
+    assertFalse(plugin.isSuppressed(), "A failed re-arm must drop suppression")
     assertNull(fake.onNfcEnabled, "A dropped request must stop observing NFC state")
 
     fake.startError = null
@@ -407,7 +406,7 @@ internal class NfcWalletSuppressionPluginTest {
 
     fake.switchNfcOn()
     assertEquals(1, fake.startCount)
-    assertFalse(suppressed(plugin))
+    assertFalse(plugin.isSuppressed())
   }
 
   @Test
@@ -424,7 +423,7 @@ internal class NfcWalletSuppressionPluginTest {
 
     plugin.onAttachedToActivity(activityBinding(activity))
     assertEquals(2, fake.startCount)
-    assertTrue(suppressed(plugin))
+    assertTrue(plugin.isSuppressed())
   }
 
   // NFC state observation
@@ -459,7 +458,7 @@ internal class NfcWalletSuppressionPluginTest {
 
     assertEquals(SuppressionStatusCode.UNKNOWN, requestStatus(plugin))
     assertEquals(1, fake.stopCount, "Reader mode must be turned back off")
-    assertFalse(suppressed(plugin))
+    assertFalse(plugin.isSuppressed())
 
     fake.observeError = null
     assertEquals(SuppressionStatusCode.SUPPRESSED, requestStatus(plugin))
