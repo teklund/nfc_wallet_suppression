@@ -327,12 +327,12 @@ protocol NfcWalletSuppressionApi {
   /// Check if NFC wallet is currently suppressed
   ///
   /// Returns true if suppression is currently active, false otherwise.
-  func isSuppressed(completion: @escaping (Result<Bool, Error>) -> Void)
+  func isSuppressed() throws -> Bool
   /// Check if device supports NFC wallet suppression
   ///
   /// Returns true if the device has the necessary hardware and OS support,
   /// false otherwise. Should be called before attempting to use suppression.
-  func isSupported(completion: @escaping (Result<Bool, Error>) -> Void)
+  func isSupported() throws -> Bool
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
@@ -386,13 +386,11 @@ class NfcWalletSuppressionApiSetup {
     let isSuppressedChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.isSuppressed\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       isSuppressedChannel.setMessageHandler { _, reply in
-        api.isSuppressed { result in
-          switch result {
-          case .success(let res):
-            reply(wrapResult(res))
-          case .failure(let error):
-            reply(wrapError(error))
-          }
+        do {
+          let result = try api.isSuppressed()
+          reply(wrapResult(result))
+        } catch {
+          reply(wrapError(error))
         }
       }
     } else {
@@ -405,13 +403,11 @@ class NfcWalletSuppressionApiSetup {
     let isSupportedChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.isSupported\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       isSupportedChannel.setMessageHandler { _, reply in
-        api.isSupported { result in
-          switch result {
-          case .success(let res):
-            reply(wrapResult(res))
-          case .failure(let error):
-            reply(wrapError(error))
-          }
+        do {
+          let result = try api.isSupported()
+          reply(wrapResult(result))
+        } catch {
+          reply(wrapError(error))
         }
       }
     } else {

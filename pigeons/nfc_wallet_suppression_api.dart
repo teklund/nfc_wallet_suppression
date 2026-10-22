@@ -85,13 +85,11 @@ abstract class NfcWalletSuppressionApi {
   /// Check if NFC wallet is currently suppressed
   ///
   /// Returns true if suppression is currently active, false otherwise.
-  @asyncCallback
   bool isSuppressed();
 
   /// Check if device supports NFC wallet suppression
   ///
   /// Returns true if the device has the necessary hardware and OS support,
   /// false otherwise. Should be called before attempting to use suppression.
-  @asyncCallback
   bool isSupported();
 }

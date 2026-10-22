@@ -341,14 +341,14 @@ interface NfcWalletSuppressionApi {
    *
    * Returns true if suppression is currently active, false otherwise.
    */
-  fun isSuppressed(callback: (Result<Boolean>) -> Unit)
+  fun isSuppressed(): Boolean
   /**
    * Check if device supports NFC wallet suppression
    *
    * Returns true if the device has the necessary hardware and OS support,
    * false otherwise. Should be called before attempting to use suppression.
    */
-  fun isSupported(callback: (Result<Boolean>) -> Unit)
+  fun isSupported(): Boolean
 
   companion object {
     /** The codec used by NfcWalletSuppressionApi. */
@@ -399,15 +399,12 @@ interface NfcWalletSuppressionApi {
         val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.isSuppressed$separatedMessageChannelSuffix", codec)
         if (api != null) {
           channel.setMessageHandler { _, reply ->
-            api.isSuppressed{ result: Result<Boolean> ->
-              val error = result.exceptionOrNull()
-              if (error != null) {
-                reply.reply(NfcWalletSuppressionPigeonPigeonUtils.wrapError(error))
-              } else {
-                val data = result.getOrNull()
-                reply.reply(NfcWalletSuppressionPigeonPigeonUtils.wrapResult(data))
-              }
+            val wrapped: List<Any?> = try {
+              listOf(api.isSuppressed())
+            } catch (exception: Throwable) {
+              NfcWalletSuppressionPigeonPigeonUtils.wrapError(exception)
             }
+            reply.reply(wrapped)
           }
         } else {
           channel.setMessageHandler(null)
@@ -417,15 +414,12 @@ interface NfcWalletSuppressionApi {
         val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.isSupported$separatedMessageChannelSuffix", codec)
         if (api != null) {
           channel.setMessageHandler { _, reply ->
-            api.isSupported{ result: Result<Boolean> ->
-              val error = result.exceptionOrNull()
-              if (error != null) {
-                reply.reply(NfcWalletSuppressionPigeonPigeonUtils.wrapError(error))
-              } else {
-                val data = result.getOrNull()
-                reply.reply(NfcWalletSuppressionPigeonPigeonUtils.wrapResult(data))
-              }
+            val wrapped: List<Any?> = try {
+              listOf(api.isSupported())
+            } catch (exception: Throwable) {
+              NfcWalletSuppressionPigeonPigeonUtils.wrapError(exception)
             }
+            reply.reply(wrapped)
           }
         } else {
           channel.setMessageHandler(null)
