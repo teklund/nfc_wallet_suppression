@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Changed
+
+- **Minimum SDK**: Flutter 3.44.0+ and Dart 3.12.0+, required by Pigeon 29, which
+  generates the platform channel code. No change to the Dart API.
+
 ## 1.0.0-dev.1
 
 Pre-release of 1.0.0, published to exercise the release pipeline end to end.

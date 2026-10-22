@@ -174,10 +174,11 @@ This plugin uses [Pigeon](https://pub.dev/packages/pigeon) for type-safe communi
 
 1. **Do not** edit the generated files directly.
 2. Edit the interface definition in `pigeons/nfc_wallet_suppression_api.dart`.
-3. Run the generation command:
+3. Regenerate, then format (pigeon writes Dart in an older style than this package uses):
 
     ```bash
     dart run pigeon --input pigeons/nfc_wallet_suppression_api.dart
+    dart format .
     ```
 
 ### Code Organization

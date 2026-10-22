@@ -179,7 +179,7 @@ jobs:
           # porcelain also lists new files that git diff would miss.
           if [ -n "$(git status --porcelain)" ]; then
             git status --short
-            echo '::error::Committed pigeon output is stale. Run: dart run pigeon --input pigeons/nfc_wallet_suppression_api.dart'
+            echo '::error::Committed pigeon output is stale. Run: dart run pigeon --input pigeons/nfc_wallet_suppression_api.dart && dart format .'
             exit 1
           fi
           echo "Committed pigeon output is up to date."
