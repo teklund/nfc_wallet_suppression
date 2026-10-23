@@ -410,11 +410,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                   padding: EdgeInsets.all(16),
                   child: Text(
                     'About NFC Wallet Suppression:\n\n'
-                    'This plugin temporarily disables Apple Pay and Google Pay '
-                    'during NFC tag reading to prevent wallet apps from interfering '
-                    'with your app\'s NFC operations.\n\n'
-                    'iOS: Uses PKPassLibrary (requires iOS 13.0+)\n'
-                    'Android: Uses NFC Reader Mode (requires API 21+, NFC hardware)',
+                    'Keeps Apple Wallet (Apple Pay) and other wallet apps from '
+                    'popping up at NFC readers while this app is in the '
+                    'foreground. It does not read or write NFC tags.\n\n'
+                    'iOS: PassKit automatic pass presentation suppression '
+                    '(iOS 13.0+, needs an Apple entitlement)\n'
+                    'Android: NFC reader mode (needs NFC hardware)',
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                 ),

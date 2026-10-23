@@ -126,7 +126,7 @@ final result = await NfcWalletSuppression.requestSuppression();
 
 switch (result.status) {
   case SuppressionStatus.suppressed:
-    startNfcSession();
+    break; // The wallet stays hidden at NFC readers.
   case SuppressionStatus.nfcDisabled:
     // The one failure the user can fix — offer to open NFC settings.
     promptToEnableNfc();
