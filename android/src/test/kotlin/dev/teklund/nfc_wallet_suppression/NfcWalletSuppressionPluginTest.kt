@@ -90,7 +90,7 @@ internal class NfcWalletSuppressionPluginTest {
 
   private fun request(plugin: NfcWalletSuppressionPlugin): SuppressionResult {
     var result: SuppressionResult? = null
-    plugin.requestSuppression { result = it.getOrThrow() }
+    plugin.requestSuppression { result = it.getOrNull() }
     return result!!
   }
 
@@ -98,9 +98,9 @@ internal class NfcWalletSuppressionPluginTest {
     request(plugin).status
 
   private fun releaseStatus(plugin: NfcWalletSuppressionPlugin): SuppressionStatusCode {
-    var result: SuppressionResult? = null
-    plugin.releaseSuppression { result = it.getOrThrow() }
-    return result!!.status
+    var status: SuppressionStatusCode? = null
+    plugin.releaseSuppression { status = it.getOrNull()?.status }
+    return status!!
   }
 
   // requestSuppression
