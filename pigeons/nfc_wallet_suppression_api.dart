@@ -72,6 +72,8 @@ abstract class NfcWalletSuppressionApi {
   /// Returns a [SuppressionResult] indicating the outcome of the request.
   /// On iOS, this uses PassKit's automatic pass presentation suppression.
   /// On Android, this uses NFC reader mode to prevent wallet apps.
+  // Callbacks, not @async: @async starts each call in its own Swift Task, which keeps
+  // arrival order only with the Swift 6 compiler, and a release must never overtake a request.
   @asyncCallback
   SuppressionResult requestSuppression();
 
