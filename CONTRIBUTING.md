@@ -21,7 +21,8 @@ By participating in this project, you agree to maintain a respectful and inclusi
 
 ### Prerequisites
 
-- [Flutter SDK](https://flutter.dev/docs/get-started/install) 3.44.0 or higher
+- [Flutter SDK](https://flutter.dev/docs/get-started/install), latest stable. CI formats
+  and analyzes with it; 3.44.0 is the oldest version the package supports.
 - [Dart SDK](https://dart.dev/get-dart) ^3.12.0 or higher
 - Git
 - Xcode (for iOS development on macOS)
