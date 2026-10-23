@@ -184,7 +184,7 @@ private func nilOrValue<T>(_ value: Any?) -> T? {
 }
 
 
-/// Status result from suppression operations
+/// Wire form of the public `SuppressionStatus`, whose docs define each value.
 enum SuppressionStatusCode: Int, CaseIterable {
   /// Suppression is active
   case suppressed = 0
@@ -194,7 +194,7 @@ enum SuppressionStatusCode: Int, CaseIterable {
   case notSupported = 2
   /// Device is already presenting passes
   case alreadyPresenting = 3
-  /// User cancelled the suppression request
+  /// The request was cancelled before it completed
   case cancelled = 4
   /// User or system denied the suppression request
   case denied = 5
@@ -210,9 +210,6 @@ enum SuppressionStatusCode: Int, CaseIterable {
   /// Distinct from [unavailable] and [notSupported] because it is the one
   /// condition the user can fix: an app can deep-link to NFC settings and
   /// prompt them to enable it.
-  ///
-  /// Appended last on purpose — pigeon serialises enums by index, so new
-  /// values must go at the end to keep existing wire values stable.
   case nfcDisabled = 8
 }
 
@@ -324,14 +321,10 @@ protocol NfcWalletSuppressionApi {
   /// Returns a [SuppressionResult] indicating the outcome of the release.
   /// Should be called when NFC operations are complete to restore normal behavior.
   func releaseSuppression(completion: @escaping (Result<SuppressionResult, Error>) -> Void)
-  /// Check if NFC wallet is currently suppressed
-  ///
-  /// Returns true if suppression is currently active, false otherwise.
+  /// Whether suppression is in effect; see `NfcWalletSuppression.isSuppressed`.
   func isSuppressed() throws -> Bool
-  /// Check if device supports NFC wallet suppression
-  ///
-  /// Returns true if the device has the necessary hardware and OS support,
-  /// false otherwise. Should be called before attempting to use suppression.
+  /// Whether this device can suppress wallet presentation; see
+  /// `NfcWalletSuppression.isSupported`.
   func isSupported() throws -> Bool
 }
 
@@ -380,9 +373,7 @@ class NfcWalletSuppressionApiSetup {
     } else {
       releaseSuppressionChannel.setMessageHandler(nil)
     }
-    /// Check if NFC wallet is currently suppressed
-    ///
-    /// Returns true if suppression is currently active, false otherwise.
+    /// Whether suppression is in effect; see `NfcWalletSuppression.isSuppressed`.
     let isSuppressedChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.isSuppressed\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       isSuppressedChannel.setMessageHandler { _, reply in
@@ -396,10 +387,8 @@ class NfcWalletSuppressionApiSetup {
     } else {
       isSuppressedChannel.setMessageHandler(nil)
     }
-    /// Check if device supports NFC wallet suppression
-    ///
-    /// Returns true if the device has the necessary hardware and OS support,
-    /// false otherwise. Should be called before attempting to use suppression.
+    /// Whether this device can suppress wallet presentation; see
+    /// `NfcWalletSuppression.isSupported`.
     let isSupportedChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.isSupported\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       isSupportedChannel.setMessageHandler { _, reply in

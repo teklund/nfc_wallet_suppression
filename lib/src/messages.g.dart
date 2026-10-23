@@ -97,7 +97,7 @@ int _deepHash(Object? value) {
   return value.hashCode;
 }
 
-/// Status result from suppression operations
+/// Wire form of the public `SuppressionStatus`, whose docs define each value.
 enum SuppressionStatusCode {
   /// Suppression is active
   suppressed,
@@ -111,7 +111,7 @@ enum SuppressionStatusCode {
   /// Device is already presenting passes
   alreadyPresenting,
 
-  /// User cancelled the suppression request
+  /// The request was cancelled before it completed
   cancelled,
 
   /// User or system denied the suppression request
@@ -131,9 +131,6 @@ enum SuppressionStatusCode {
   /// Distinct from [unavailable] and [notSupported] because it is the one
   /// condition the user can fix: an app can deep-link to NFC settings and
   /// prompt them to enable it.
-  ///
-  /// Appended last on purpose — pigeon serialises enums by index, so new
-  /// values must go at the end to keep existing wire values stable.
   nfcDisabled,
 }
 
@@ -286,9 +283,7 @@ class NfcWalletSuppressionApi {
     return pigeonVar_replyValue! as SuppressionResult;
   }
 
-  /// Check if NFC wallet is currently suppressed
-  ///
-  /// Returns true if suppression is currently active, false otherwise.
+  /// Whether suppression is in effect; see `NfcWalletSuppression.isSuppressed`.
   Future<bool> isSuppressed() async {
     final pigeonVar_channelName =
         'dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.isSuppressed$pigeonVar_messageChannelSuffix';
@@ -308,10 +303,8 @@ class NfcWalletSuppressionApi {
     return pigeonVar_replyValue! as bool;
   }
 
-  /// Check if device supports NFC wallet suppression
-  ///
-  /// Returns true if the device has the necessary hardware and OS support,
-  /// false otherwise. Should be called before attempting to use suppression.
+  /// Whether this device can suppress wallet presentation; see
+  /// `NfcWalletSuppression.isSupported`.
   Future<bool> isSupported() async {
     final pigeonVar_channelName =
         'dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.isSupported$pigeonVar_messageChannelSuffix';
