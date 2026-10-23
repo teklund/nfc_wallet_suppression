@@ -110,8 +110,12 @@ final class FakeMessenger: NSObject, FlutterBinaryMessenger {
     let channel = "dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.\(method)"
     let handler = try XCTUnwrap(handlers[channel], "No handler registered for \(method)")
     handler(nil) { data in
-      let wrapped = MessagesPigeonCodec.shared.decode(data) as? [Any?]
-      reply(wrapped?.first as? SuppressionResult)
+      // pigeon replies [result] on success and [code, message, details] on error.
+      let wrapped = MessagesPigeonCodec.shared.decode(data) as? [Any?] ?? []
+      if wrapped.count != 1 {
+        XCTFail("\(method) did not reply with a result: \(wrapped.map { "\($0 ?? "nil")" })")
+      }
+      reply(wrapped.first as? SuppressionResult)
     }
   }
 
