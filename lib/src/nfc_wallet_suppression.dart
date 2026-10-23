@@ -98,7 +98,7 @@ abstract final class NfcWalletSuppression {
   /// | [SuppressionStatus.unavailable] — transient; no foreground Activity | | ✔ |
   /// | [SuppressionStatus.denied] — iOS: usually a missing entitlement; Android: a `SecurityException` | ✔ | ✔ |
   /// | [SuppressionStatus.alreadyPresenting] — the wallet is already showing a pass | ✔ | |
-  /// | [SuppressionStatus.cancelled] — the request was cancelled before it completed | ✔ | |
+  /// | [SuppressionStatus.canceled] — the request was canceled before it completed | ✔ | |
   /// | [SuppressionStatus.unknown] — unexpected failure, or no answer in time; call [isSuppressed] if you need the current state | ✔ | ✔ |
   ///
   /// [SuppressionStatus.notSuppressed] is never returned here — it belongs to

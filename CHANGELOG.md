@@ -18,6 +18,8 @@ All notable changes to this project will be documented in this file.
   and the `supported`, `requestResult`, `releaseResult` and `suppressed`
   properties. `NfcWalletSuppressionTestScenarios`, the `set…` methods and
   `reset()` are removed.
+- **Breaking**: `SuppressionStatus.cancelled` is renamed `canceled`, the spelling
+  Flutter and Dart use.
 
 ## 1.0.0-dev.1
 

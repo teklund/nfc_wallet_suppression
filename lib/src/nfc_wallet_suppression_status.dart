@@ -35,8 +35,8 @@ enum SuppressionStatus {
   /// Android, the NFC call threw a `SecurityException`.
   denied,
 
-  /// The request was cancelled before it completed.
-  cancelled,
+  /// The request was canceled before it completed.
+  canceled,
 
   /// The device or OS cannot suppress wallet presentation at all.
   ///

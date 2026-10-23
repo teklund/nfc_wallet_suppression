@@ -118,14 +118,14 @@ void main() {
         expect(result.status, SuppressionStatus.alreadyPresenting);
       });
 
-      test('returns cancelled status', () async {
+      test('returns canceled status', () async {
         mockApi.mockRequestResult = SuppressionResult(
           status: SuppressionStatusCode.cancelled,
           message: 'Cancelled',
         );
 
         final result = await platform.requestSuppression();
-        expect(result.status, SuppressionStatus.cancelled);
+        expect(result.status, SuppressionStatus.canceled);
       });
 
       test('returns denied status', () async {
@@ -292,7 +292,7 @@ void main() {
           SuppressionStatusCode.notSupported: SuppressionStatus.notSupported,
           SuppressionStatusCode.alreadyPresenting:
               SuppressionStatus.alreadyPresenting,
-          SuppressionStatusCode.cancelled: SuppressionStatus.cancelled,
+          SuppressionStatusCode.cancelled: SuppressionStatus.canceled,
           SuppressionStatusCode.denied: SuppressionStatus.denied,
           SuppressionStatusCode.unavailable: SuppressionStatus.unavailable,
           SuppressionStatusCode.unknown: SuppressionStatus.unknown,

@@ -123,7 +123,7 @@ class PigeonNfcWalletSuppression extends NfcWalletSuppressionPlatform {
       case pigeon.SuppressionStatusCode.alreadyPresenting:
         return SuppressionStatus.alreadyPresenting;
       case pigeon.SuppressionStatusCode.cancelled:
-        return SuppressionStatus.cancelled;
+        return SuppressionStatus.canceled;
       case pigeon.SuppressionStatusCode.denied:
         return SuppressionStatus.denied;
       case pigeon.SuppressionStatusCode.unavailable:

@@ -12,7 +12,7 @@ void main() {
       expect(SuppressionStatus.values, contains(SuppressionStatus.suppressed));
       expect(SuppressionStatus.values, contains(SuppressionStatus.unavailable));
       expect(SuppressionStatus.values, contains(SuppressionStatus.denied));
-      expect(SuppressionStatus.values, contains(SuppressionStatus.cancelled));
+      expect(SuppressionStatus.values, contains(SuppressionStatus.canceled));
       expect(
         SuppressionStatus.values,
         contains(SuppressionStatus.notSupported),

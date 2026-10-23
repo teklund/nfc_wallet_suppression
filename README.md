@@ -187,7 +187,7 @@ without a major version bump, so **always include a `default` when switching.**
 | `nfcDisabled` | ✔ (Android) | | NFC hardware is present but switched off in settings. The one failure the user can fix: deep-link them to `android.settings.NFC_SETTINGS`. |
 | `unavailable` | ✔ (Android) | | Transient and retryable — no foreground Activity |
 | `denied` | ✔ | ✔ (Android) | Refused — iOS: usually a missing entitlement; Android: a `SecurityException` on the NFC call |
-| `cancelled` | ✔ (iOS) | | The request was cancelled before it completed |
+| `canceled` | ✔ (iOS) | | The request was canceled before it completed |
 | `notSupported` | ✔ | | Suppression isn't supported at all — Android: no NFC hardware; iOS: PassKit reports it unsupported |
 | `alreadyPresenting` | ✔ (iOS) | | Wallet is already presenting a pass |
 | `unknown` | ✔ | ✔ | Unexpected failure, or no answer in time. The operation may or may not have taken effect — call `isSuppressed()` if you need to know. |
