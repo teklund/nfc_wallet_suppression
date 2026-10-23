@@ -41,7 +41,7 @@ The first stable release. Compared with 0.1.1, requests and releases return a
 - A request while suppression is held reports on that hold instead of starting
   another, and overlapping calls run in the order they were made.
 - Android: no longer plays the system sound when a tag is held to the phone.
-- The plugin no longer prints to the console.
+- No longer logs in release builds.
 - Requires `plugin_platform_interface` 2.1.7 or later.
 
 ### Removed
