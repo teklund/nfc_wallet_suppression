@@ -59,7 +59,7 @@ import 'nfc_wallet_suppression_status.dart';
 /// - [requestSuppression] to suppress wallet presentation
 /// - [releaseSuppression] to restore wallet functionality
 /// - [isSuppressed] to check current suppression state
-class NfcWalletSuppression {
+abstract final class NfcWalletSuppression {
   /// Requests suppression of the system's NFC wallet behavior.
   ///
   /// When called, this method requests the operating system to temporarily
