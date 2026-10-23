@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nfc_wallet_suppression/src/nfc_wallet_suppression_pigeon.dart';
+import 'package:nfc_wallet_suppression/src/messages.g.dart';
 import 'package:nfc_wallet_suppression/src/nfc_wallet_suppression_pigeon_impl.dart';
 import 'package:nfc_wallet_suppression/src/nfc_wallet_suppression_platform_interface.dart';
 import 'package:nfc_wallet_suppression/src/nfc_wallet_suppression_status.dart';

@@ -55,7 +55,7 @@ private func wrapError(_ error: Any) -> [Any?] {
   ]
 }
 
-enum NfcWalletSuppressionPigeonPigeonInternal {
+enum MessagesPigeonInternal {
   static func isNullish(_ value: Any?) -> Bool {
     guard let innerValue = value else {
       return true
@@ -246,13 +246,13 @@ struct SuppressionResult: Hashable, CustomStringConvertible {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return NfcWalletSuppressionPigeonPigeonInternal.deepEquals(lhs.status, rhs.status) && NfcWalletSuppressionPigeonPigeonInternal.deepEquals(lhs.message, rhs.message)
+    return MessagesPigeonInternal.deepEquals(lhs.status, rhs.status) && MessagesPigeonInternal.deepEquals(lhs.message, rhs.message)
   }
 
   func hash(into hasher: inout Hasher) {
     hasher.combine("SuppressionResult")
-    NfcWalletSuppressionPigeonPigeonInternal.deepHash(value: status, hasher: &hasher)
-    NfcWalletSuppressionPigeonPigeonInternal.deepHash(value: message, hasher: &hasher)
+    MessagesPigeonInternal.deepHash(value: status, hasher: &hasher)
+    MessagesPigeonInternal.deepHash(value: message, hasher: &hasher)
   }
 
   public var description: String {
@@ -260,7 +260,7 @@ struct SuppressionResult: Hashable, CustomStringConvertible {
   }
 }
 
-private class NfcWalletSuppressionPigeonPigeonCodecReader: FlutterStandardReader {
+private class MessagesPigeonCodecReader: FlutterStandardReader {
   override func readValue(ofType type: UInt8) -> Any? {
     switch type {
     case 129:
@@ -277,7 +277,7 @@ private class NfcWalletSuppressionPigeonPigeonCodecReader: FlutterStandardReader
   }
 }
 
-private class NfcWalletSuppressionPigeonPigeonCodecWriter: FlutterStandardWriter {
+private class MessagesPigeonCodecWriter: FlutterStandardWriter {
   override func writeValue(_ value: Any) {
     if let value = value as? SuppressionStatusCode {
       super.writeByte(129)
@@ -291,18 +291,18 @@ private class NfcWalletSuppressionPigeonPigeonCodecWriter: FlutterStandardWriter
   }
 }
 
-private class NfcWalletSuppressionPigeonPigeonCodecReaderWriter: FlutterStandardReaderWriter {
+private class MessagesPigeonCodecReaderWriter: FlutterStandardReaderWriter {
   override func reader(with data: Data) -> FlutterStandardReader {
-    return NfcWalletSuppressionPigeonPigeonCodecReader(data: data)
+    return MessagesPigeonCodecReader(data: data)
   }
 
   override func writer(with data: NSMutableData) -> FlutterStandardWriter {
-    return NfcWalletSuppressionPigeonPigeonCodecWriter(data: data)
+    return MessagesPigeonCodecWriter(data: data)
   }
 }
 
-class NfcWalletSuppressionPigeonPigeonCodec: FlutterStandardMessageCodec, @unchecked Sendable {
-  static let shared = NfcWalletSuppressionPigeonPigeonCodec(readerWriter: NfcWalletSuppressionPigeonPigeonCodecReaderWriter())
+class MessagesPigeonCodec: FlutterStandardMessageCodec, @unchecked Sendable {
+  static let shared = MessagesPigeonCodec(readerWriter: MessagesPigeonCodecReaderWriter())
 }
 
 
@@ -337,7 +337,7 @@ protocol NfcWalletSuppressionApi {
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
 class NfcWalletSuppressionApiSetup {
-  static var codec: FlutterStandardMessageCodec { NfcWalletSuppressionPigeonPigeonCodec.shared }
+  static var codec: FlutterStandardMessageCodec { MessagesPigeonCodec.shared }
   /// Sets up an instance of `NfcWalletSuppressionApi` to handle messages through the `binaryMessenger`.
   static func setUp(binaryMessenger: FlutterBinaryMessenger, api: NfcWalletSuppressionApi?, messageChannelSuffix: String = "") {
     let channelSuffix = messageChannelSuffix.count > 0 ? ".\(messageChannelSuffix)" : ""

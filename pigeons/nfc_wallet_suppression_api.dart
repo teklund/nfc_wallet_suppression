@@ -2,12 +2,12 @@ import 'package:pigeon/pigeon.dart';
 
 @ConfigurePigeon(
   PigeonOptions(
-    dartOut: 'lib/src/nfc_wallet_suppression_pigeon.dart',
+    dartOut: 'lib/src/messages.g.dart',
     kotlinOut:
-        'android/src/main/kotlin/dev/teklund/nfc_wallet_suppression/NfcWalletSuppressionPigeon.kt',
+        'android/src/main/kotlin/dev/teklund/nfc_wallet_suppression/Messages.g.kt',
     kotlinOptions: KotlinOptions(package: 'dev.teklund.nfc_wallet_suppression'),
     swiftOut:
-        'ios/nfc_wallet_suppression/Sources/nfc_wallet_suppression/NfcWalletSuppressionPigeon.swift',
+        'ios/nfc_wallet_suppression/Sources/nfc_wallet_suppression/Messages.g.swift',
   ),
 )
 /// Status result from suppression operations

@@ -13,7 +13,7 @@ import io.flutter.plugin.common.StandardMethodCodec
 import io.flutter.plugin.common.StandardMessageCodec
 import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
-private object NfcWalletSuppressionPigeonPigeonUtils {
+private object MessagesPigeonUtils {
 
   fun wrapResult(result: Any?): List<Any?> {
     return listOf(result)
@@ -267,20 +267,20 @@ data class SuppressionResult (
       return true
     }
     val other = other as SuppressionResult
-    return NfcWalletSuppressionPigeonPigeonUtils.deepEquals(this.status, other.status) && NfcWalletSuppressionPigeonPigeonUtils.deepEquals(this.message, other.message)
+    return MessagesPigeonUtils.deepEquals(this.status, other.status) && MessagesPigeonUtils.deepEquals(this.message, other.message)
   }
 
   override fun hashCode(): Int {
     var result = javaClass.hashCode()
-    result = 31 * result + NfcWalletSuppressionPigeonPigeonUtils.deepHash(this.status)
-    result = 31 * result + NfcWalletSuppressionPigeonPigeonUtils.deepHash(this.message)
+    result = 31 * result + MessagesPigeonUtils.deepHash(this.status)
+    result = 31 * result + MessagesPigeonUtils.deepHash(this.message)
     return result
   }
   override fun toString(): String {
     return "SuppressionResult(status=$status, message=$message)"
   }
 }
-private open class NfcWalletSuppressionPigeonPigeonCodec : StandardMessageCodec() {
+private open class MessagesPigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
       129.toByte() -> {
@@ -353,7 +353,7 @@ interface NfcWalletSuppressionApi {
   companion object {
     /** The codec used by NfcWalletSuppressionApi. */
     val codec: MessageCodec<Any?> by lazy {
-      NfcWalletSuppressionPigeonPigeonCodec()
+      MessagesPigeonCodec()
     }
     /** Sets up an instance of `NfcWalletSuppressionApi` to handle messages through the `binaryMessenger`. */
     @JvmOverloads
@@ -366,10 +366,10 @@ interface NfcWalletSuppressionApi {
             api.requestSuppression{ result: Result<SuppressionResult> ->
               val error = result.exceptionOrNull()
               if (error != null) {
-                reply.reply(NfcWalletSuppressionPigeonPigeonUtils.wrapError(error))
+                reply.reply(MessagesPigeonUtils.wrapError(error))
               } else {
                 val data = result.getOrNull()
-                reply.reply(NfcWalletSuppressionPigeonPigeonUtils.wrapResult(data))
+                reply.reply(MessagesPigeonUtils.wrapResult(data))
               }
             }
           }
@@ -384,10 +384,10 @@ interface NfcWalletSuppressionApi {
             api.releaseSuppression{ result: Result<SuppressionResult> ->
               val error = result.exceptionOrNull()
               if (error != null) {
-                reply.reply(NfcWalletSuppressionPigeonPigeonUtils.wrapError(error))
+                reply.reply(MessagesPigeonUtils.wrapError(error))
               } else {
                 val data = result.getOrNull()
-                reply.reply(NfcWalletSuppressionPigeonPigeonUtils.wrapResult(data))
+                reply.reply(MessagesPigeonUtils.wrapResult(data))
               }
             }
           }
@@ -402,7 +402,7 @@ interface NfcWalletSuppressionApi {
             val wrapped: List<Any?> = try {
               listOf(api.isSuppressed())
             } catch (exception: Throwable) {
-              NfcWalletSuppressionPigeonPigeonUtils.wrapError(exception)
+              MessagesPigeonUtils.wrapError(exception)
             }
             reply.reply(wrapped)
           }
@@ -417,7 +417,7 @@ interface NfcWalletSuppressionApi {
             val wrapped: List<Any?> = try {
               listOf(api.isSupported())
             } catch (exception: Throwable) {
-              NfcWalletSuppressionPigeonPigeonUtils.wrapError(exception)
+              MessagesPigeonUtils.wrapError(exception)
             }
             reply.reply(wrapped)
           }

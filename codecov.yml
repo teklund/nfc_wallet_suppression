@@ -14,11 +14,8 @@ coverage:
         informational: true
 
 ignore:
-  # Pigeon-generated code, tested by pigeon itself.
-  - "lib/src/nfc_wallet_suppression_pigeon.dart"
-  - "android/src/main/kotlin/dev/teklund/nfc_wallet_suppression/NfcWalletSuppressionPigeon.kt"
-  - "ios/nfc_wallet_suppression/Sources/nfc_wallet_suppression/NfcWalletSuppressionPigeon.swift"
-  - "**/*.g.dart"
+  # Generated code, such as pigeon's messages.g.dart, Messages.g.kt and Messages.g.swift.
+  - "**/*.g.*"
   - "**/*.freezed.dart"
   - "example/**"
   - "test/**"

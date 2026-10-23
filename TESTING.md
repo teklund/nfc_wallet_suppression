@@ -321,8 +321,8 @@ flutter test integration_test/comprehensive_integration_test.dart
 
 ## Test Coverage
 
-All hand-written Dart files in `lib/` have **100% line coverage**. The generated
-`nfc_wallet_suppression_pigeon.dart` is excluded from coverage (see `codecov.yml`).
+All hand-written Dart files in `lib/` have **100% line coverage**. Generated files
+(`*.g.*`, such as pigeon's `messages.g.dart`) are excluded from coverage (see `codecov.yml`).
 
 To view detailed coverage:
 

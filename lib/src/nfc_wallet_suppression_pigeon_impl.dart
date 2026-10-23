@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 // The generated wire types include their own `SuppressionResult`, distinct from
 // the public one this class returns. Prefixed so every use site says which layer
 // it belongs to.
-import 'nfc_wallet_suppression_pigeon.dart' as pigeon;
+import 'messages.g.dart' as pigeon;
 import 'nfc_wallet_suppression_platform_interface.dart';
 import 'nfc_wallet_suppression_result.dart';
 import 'nfc_wallet_suppression_status.dart';
