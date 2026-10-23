@@ -226,7 +226,7 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
     static let notSupported = "Device does not support automatic pass presentation suppression."
     static let alreadyPresenting = "Wallet is already presenting a pass."
     static let canceled = "Suppression request was canceled."
-    static let denied = "Suppression request was denied by the user or system."
+    static let denied = "Suppression was denied: missing entitlement, user refusal or internal error."
     static let unknown = "Unknown error occurred during suppression request."
     static let couldNotSubmit = "Suppression request could not be submitted."
     static let released = "Suppression released"

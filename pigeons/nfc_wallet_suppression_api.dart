@@ -27,13 +27,10 @@ enum SuppressionStatusCode {
   /// The request was canceled before it completed
   canceled,
 
-  /// User or system denied the suppression request
+  /// The request was refused.
   denied,
 
-  /// Suppression could not be attempted right now, but may succeed later.
-  ///
-  /// Transient and retryable — e.g. no foreground Activity on Android. This
-  /// deliberately does *not* cover disabled NFC, which is [nfcDisabled].
+  /// Not attempted right now, but may succeed later.
   unavailable,
 
   /// Unknown status or error
@@ -58,33 +55,21 @@ class SuppressionResult {
   final String? message;
 }
 
-/// Host API for NFC wallet suppression
-///
-/// This API allows Flutter apps to suppress the automatic presentation
-/// of NFC wallet apps (Apple Wallet, Google Pay, etc.) during NFC operations.
 @HostApi()
 abstract class NfcWalletSuppressionApi {
-  /// Request suppression of the NFC wallet
-  ///
-  /// Returns a [SuppressionResult] indicating the outcome of the request.
-  /// On iOS, this uses PassKit's automatic pass presentation suppression.
-  /// On Android, this uses NFC reader mode to prevent wallet apps.
+  /// Requests suppression, returning the outcome.
   // Callbacks, not @async: @async starts each call in its own Swift Task, which keeps
   // arrival order only with the Swift 6 compiler, and a release must never overtake a request.
   @asyncCallback
   SuppressionResult requestSuppression();
 
-  /// Release suppression of the NFC wallet
-  ///
-  /// Returns a [SuppressionResult] indicating the outcome of the release.
-  /// Should be called when NFC operations are complete to restore normal behavior.
+  /// Ends suppression, returning the outcome.
   @asyncCallback
   SuppressionResult releaseSuppression();
 
-  /// Whether suppression is in effect; see `NfcWalletSuppression.isSuppressed`.
+  /// Whether suppression is in effect.
   bool isSuppressed();
 
-  /// Whether this device can suppress wallet presentation; see
-  /// `NfcWalletSuppression.isSupported`.
+  /// Whether this device can suppress wallet presentation.
   bool isSupported();
 }
