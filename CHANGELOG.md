@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - **Minimum SDK**: Flutter 3.44.0+ and Dart 3.12.0+, the oldest Flutter that Pigeon 29,
   the package's code generator, can be installed with, and so the oldest we can test.
   No change to the Dart API.
+- Requires `plugin_platform_interface` 2.1.7 or later.
 - **Breaking**: `NfcWalletSuppression` is an `abstract final class`; it only
   holds static methods, so it can no longer be created or extended.
 - **Breaking**: The main library exports only `NfcWalletSuppression`,
