@@ -6,6 +6,7 @@
 // For more information about Flutter integration tests, please see
 // https://flutter.dev/to/integration-testing
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -13,6 +14,12 @@ import 'package:nfc_wallet_suppression/nfc_wallet_suppression.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets('reports notSupported on the web', (WidgetTester tester) async {
+    final result = await NfcWalletSuppression.requestSuppression();
+    expect(result.status, SuppressionStatus.notSupported);
+    expect(await NfcWalletSuppression.isSupported(), isFalse);
+  }, skip: !kIsWeb);
 
   testWidgets('isSuppressed default state', (WidgetTester tester) async {
     final bool suppressed = await NfcWalletSuppression.isSuppressed();

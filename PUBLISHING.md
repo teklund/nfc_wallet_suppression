@@ -195,7 +195,7 @@ To approve the publish, go to the Actions tab, open the workflow run, and approv
 - [ ] Package score is displayed (wait ~10 minutes)
 - [ ] Documentation is generated correctly
 - [ ] Example tab works on pub.dev
-- [ ] All platforms show as supported
+- [ ] Android and iOS show as the supported platforms
 - [ ] Try installing in a fresh project: `flutter pub add nfc_wallet_suppression`
 
 ---

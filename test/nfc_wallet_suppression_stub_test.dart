@@ -45,17 +45,9 @@ void main() {
       });
     });
 
-    group('platform registration', () {
+    group('platform instance', () {
       test('can be set as platform instance', () {
         NfcWalletSuppressionPlatform.instance = stub;
-        expect(
-          NfcWalletSuppressionPlatform.instance,
-          isA<StubNfcWalletSuppression>(),
-        );
-      });
-
-      test('registerWith sets instance to StubNfcWalletSuppression', () {
-        StubNfcWalletSuppression.registerWith();
         expect(
           NfcWalletSuppressionPlatform.instance,
           isA<StubNfcWalletSuppression>(),

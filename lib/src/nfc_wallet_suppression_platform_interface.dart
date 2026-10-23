@@ -2,9 +2,10 @@
 /// @docImport 'nfc_wallet_suppression_testing.dart';
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
-import 'nfc_wallet_suppression_pigeon_impl.dart';
+import 'nfc_wallet_suppression_default_platform.dart';
 import 'nfc_wallet_suppression_result.dart';
 
 /// The platform implementation behind [NfcWalletSuppression].
@@ -18,7 +19,10 @@ abstract class NfcWalletSuppressionPlatform extends PlatformInterface {
 
   static final Object _token = Object();
 
-  static NfcWalletSuppressionPlatform _instance = PigeonNfcWalletSuppression();
+  static NfcWalletSuppressionPlatform _instance = defaultPlatform(
+    defaultTargetPlatform,
+    isWeb: kIsWeb,
+  );
 
   /// The implementation the plugin calls: native on Android and iOS, and a
   /// stub that reports `notSupported` on other platforms.
