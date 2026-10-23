@@ -12,7 +12,8 @@ import 'package:nfc_wallet_suppression/testing.dart';
 
 ## Using FakeNfcWalletSuppression
 
-The `FakeNfcWalletSuppression` class provides a controllable fake implementation for testing:
+`FakeNfcWalletSuppression` replaces the platform implementation, so the plugin
+returns what you configure:
 
 ```dart
 import 'package:flutter_test/flutter_test.dart';
@@ -28,10 +29,6 @@ void main() {
   });
 
   test('your test here', () async {
-    // Configure the fake behavior
-    fake.setSupported(true);
-    fake.setRequestResult(SuppressionStatus.suppressed);
-    
     // Use the plugin normally in your test
     final result = await NfcWalletSuppression.requestSuppression();
 
@@ -40,54 +37,36 @@ void main() {
 }
 ```
 
-## Configuration Methods
+## Configuring the Fake
 
-Control the fake's behavior with these methods:
+By default the fake is a supported device on which requests and releases
+succeed. Change that through the constructor or the properties:
 
-### `setSupported(bool supported)`
+| Property        | Controls                             | Default                                     |
+| --------------- | ------------------------------------ | ------------------------------------------- |
+| `supported`     | What `isSupported()` returns         | `true`                                      |
+| `requestResult` | What `requestSuppression()` returns  | A result with `SuppressionStatus.suppressed`    |
+| `releaseResult` | What `releaseSuppression()` returns  | A result with `SuppressionStatus.notSuppressed` |
+| `suppressed`    | What `isSuppressed()` returns        | `false`                                     |
 
-Set whether NFC is supported on the device.
-
-```dart
-fake.setSupported(true);  // Simulate device with NFC
-fake.setSupported(false); // Simulate device without NFC
-```
-
-### `setRequestResult(SuppressionStatus result, {String? description})`
-
-Set what `requestSuppression()` will return. Pass `description` when your test
-needs to assert on the diagnostic text the platform would have supplied.
+Like the real plugin, `requestSuppression()` sets `suppressed` from its result,
+and a successful `releaseSuppression()` clears it.
 
 ```dart
-fake.setRequestResult(SuppressionStatus.suppressed);
-fake.setRequestResult(SuppressionStatus.nfcDisabled);
-fake.setRequestResult(SuppressionStatus.denied, description: 'Entitlement missing');
+// A device without NFC hardware
+final fake = FakeNfcWalletSuppression(
+  supported: false,
+  requestResult: const SuppressionResult(status: SuppressionStatus.notSupported),
+);
+
+// Change the behavior mid-test, with a description to assert on
+fake.requestResult = const SuppressionResult(
+  status: SuppressionStatus.denied,
+  description: 'Entitlement missing',
+);
 ```
 
-### `setReleaseResult(SuppressionStatus result, {String? description})`
-
-Set what `releaseSuppression()` will return.
-
-```dart
-fake.setReleaseResult(SuppressionStatus.notSuppressed);
-```
-
-### `setSuppressed(bool suppressed)`
-
-Manually set the suppressed state (simulates external changes).
-
-```dart
-fake.setSuppressed(true);  // Simulate suppression becoming active
-fake.setSuppressed(false); // Simulate suppression becoming inactive
-```
-
-### `reset()`
-
-Clear all state and call history.
-
-```dart
-fake.reset(); // Start fresh
-```
+For a fresh fake in every test, create it in `setUp()`.
 
 ## Tracking Method Calls
 
@@ -107,63 +86,19 @@ test('tracks method calls', () async {
 
 ## Test Scenarios
 
-Use pre-configured scenarios for common test cases:
+Each scenario is a `requestResult` (or `releaseResult`) with the matching status:
 
-### Supported Device
-
-```dart
-final fake = NfcWalletSuppressionTestScenarios.supportedDevice();
-NfcWalletSuppressionPlatform.instance = fake;
-
-// Device has NFC and suppression works normally
-```
-
-### Unsupported Device
+| Scenario                                   | Configure                                              |
+| ------------------------------------------ | ------------------------------------------------------ |
+| Device without NFC hardware                | `supported: false`, request status `notSupported`      |
+| NFC switched off in settings (Android)     | Request status `nfcDisabled`, to test your "turn NFC on" prompt |
+| Transiently unavailable, e.g. no Activity  | Request status `unavailable`                           |
+| Refused, e.g. missing iOS entitlement      | Request status `denied`                                |
+| Wallet already presenting a pass (iOS)     | Request status `alreadyPresenting`                     |
+| Release failed                             | Release status `unknown`                               |
 
 ```dart
-final fake = NfcWalletSuppressionTestScenarios.unsupportedDevice();
-NfcWalletSuppressionPlatform.instance = fake;
-
-// Device does not have NFC hardware
-```
-
-### NFC Disabled (Android)
-
-```dart
-final fake = NfcWalletSuppressionTestScenarios.nfcDisabled();
-NfcWalletSuppressionPlatform.instance = fake;
-
-// Device has NFC hardware but it is switched off in settings — the one
-// failure the user can fix, so this is the scenario for testing your
-// "turn NFC on" prompt.
-```
-
-### Transiently Unavailable
-
-```dart
-final fake = NfcWalletSuppressionTestScenarios.nfcUnavailable();
-NfcWalletSuppressionPlatform.instance = fake;
-
-// Suppression cannot be attempted right now (e.g. no foreground Activity),
-// but a retry may succeed with no user action.
-```
-
-### User Denied (iOS)
-
-```dart
-final fake = NfcWalletSuppressionTestScenarios.userDenied();
-NfcWalletSuppressionPlatform.instance = fake;
-
-// User denied permission to suppress wallet
-```
-
-### Already Presenting (iOS)
-
-```dart
-final fake = NfcWalletSuppressionTestScenarios.alreadyPresenting();
-NfcWalletSuppressionPlatform.instance = fake;
-
-// System is already presenting passes
+fake.requestResult = const SuppressionResult(status: SuppressionStatus.nfcDisabled);
 ```
 
 ## Complete Example
@@ -185,9 +120,6 @@ void main() {
     });
 
     test('starts NFC reading with suppression', () async {
-      fake.setSupported(true);
-      fake.setRequestResult(SuppressionStatus.suppressed);
-
       // Your widget code here
       await startNfcReading();
 
@@ -196,8 +128,9 @@ void main() {
     });
 
     test('handles unsupported device gracefully', () async {
-      final fake = NfcWalletSuppressionTestScenarios.unsupportedDevice();
-      NfcWalletSuppressionPlatform.instance = fake;
+      fake.supported = false;
+      fake.requestResult =
+          const SuppressionResult(status: SuppressionStatus.notSupported);
 
       await startNfcReading();
 
@@ -206,8 +139,8 @@ void main() {
     });
 
     test('handles NFC disabled', () async {
-      fake.setSupported(true);
-      fake.setRequestResult(SuppressionStatus.nfcDisabled);
+      fake.requestResult =
+          const SuppressionResult(status: SuppressionStatus.nfcDisabled);
 
       await startNfcReading();
 
@@ -216,8 +149,6 @@ void main() {
     });
 
     test('releases suppression when done', () async {
-      fake.setSupported(true);
-
       await startNfcReading();
       await stopNfcReading();
 
@@ -234,9 +165,7 @@ For widget tests, set up the fake in `setUp()`:
 
 ```dart
 testWidgets('my widget test', (WidgetTester tester) async {
-  final fake = FakeNfcWalletSuppression();
-  NfcWalletSuppressionPlatform.instance = fake;
-  fake.setSupported(true);
+  NfcWalletSuppressionPlatform.instance = FakeNfcWalletSuppression();
 
   await tester.pumpWidget(MyApp());
   

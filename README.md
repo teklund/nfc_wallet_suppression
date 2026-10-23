@@ -276,7 +276,7 @@ foreground Activity.
 This plugin includes comprehensive testing utilities. See the [TESTING.md](TESTING.md) guide for:
 
 - Using `FakeNfcWalletSuppression` for unit tests
-- Pre-configured test scenarios
+- Configuring it for common scenarios
 - Widget testing examples
 - Integration testing guidance
 
@@ -285,8 +285,9 @@ Quick example:
 ```dart
 import 'package:nfc_wallet_suppression/testing.dart';
 
-final fake = NfcWalletSuppressionTestScenarios.supportedDevice();
-NfcWalletSuppressionPlatform.instance = fake;
+NfcWalletSuppressionPlatform.instance = FakeNfcWalletSuppression(
+  requestResult: const SuppressionResult(status: SuppressionStatus.denied),
+);
 
 // Now your tests use the fake implementation
 ```
