@@ -111,8 +111,8 @@ enum SuppressionStatusCode {
   /// Device is already presenting passes
   alreadyPresenting,
 
-  /// The request was cancelled before it completed
-  cancelled,
+  /// The request was canceled before it completed
+  canceled,
 
   /// User or system denied the suppression request
   denied,

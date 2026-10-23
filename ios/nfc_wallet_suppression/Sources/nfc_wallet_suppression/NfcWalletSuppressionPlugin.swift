@@ -225,7 +225,7 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
     static let alreadySuppressed = "Automatic pass presentation is already suppressed."
     static let notSupported = "Device does not support automatic pass presentation suppression."
     static let alreadyPresenting = "Wallet is already presenting a pass."
-    static let cancelled = "Suppression request was cancelled."
+    static let canceled = "Suppression request was canceled."
     static let denied = "Suppression request was denied by the user or system."
     static let unknown = "Unknown error occurred during suppression request."
     static let couldNotSubmit = "Suppression request could not be submitted."
@@ -256,7 +256,7 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
     case .alreadyPresenting:
       return SuppressionResult(status: .alreadyPresenting, message: Message.alreadyPresenting)
     case .cancelled:
-      return SuppressionResult(status: .cancelled, message: Message.cancelled)
+      return SuppressionResult(status: .canceled, message: Message.canceled)
     case .denied:
       return SuppressionResult(status: .denied, message: Message.denied)
     @unknown default:

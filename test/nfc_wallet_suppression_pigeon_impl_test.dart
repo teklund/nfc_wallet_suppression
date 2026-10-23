@@ -120,8 +120,8 @@ void main() {
 
       test('returns canceled status', () async {
         mockApi.mockRequestResult = SuppressionResult(
-          status: SuppressionStatusCode.cancelled,
-          message: 'Cancelled',
+          status: SuppressionStatusCode.canceled,
+          message: 'Canceled',
         );
 
         final result = await platform.requestSuppression();
@@ -292,7 +292,7 @@ void main() {
           SuppressionStatusCode.notSupported: SuppressionStatus.notSupported,
           SuppressionStatusCode.alreadyPresenting:
               SuppressionStatus.alreadyPresenting,
-          SuppressionStatusCode.cancelled: SuppressionStatus.canceled,
+          SuppressionStatusCode.canceled: SuppressionStatus.canceled,
           SuppressionStatusCode.denied: SuppressionStatus.denied,
           SuppressionStatusCode.unavailable: SuppressionStatus.unavailable,
           SuppressionStatusCode.unknown: SuppressionStatus.unknown,

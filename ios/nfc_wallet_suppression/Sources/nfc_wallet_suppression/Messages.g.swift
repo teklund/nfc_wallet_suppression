@@ -194,8 +194,8 @@ enum SuppressionStatusCode: Int, CaseIterable {
   case notSupported = 2
   /// Device is already presenting passes
   case alreadyPresenting = 3
-  /// The request was cancelled before it completed
-  case cancelled = 4
+  /// The request was canceled before it completed
+  case canceled = 4
   /// User or system denied the suppression request
   case denied = 5
   /// Suppression could not be attempted right now, but may succeed later.

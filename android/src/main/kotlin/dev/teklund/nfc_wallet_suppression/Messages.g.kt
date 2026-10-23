@@ -202,8 +202,8 @@ enum class SuppressionStatusCode(val raw: Int) {
   NOT_SUPPORTED(2),
   /** Device is already presenting passes */
   ALREADY_PRESENTING(3),
-  /** The request was cancelled before it completed */
-  CANCELLED(4),
+  /** The request was canceled before it completed */
+  CANCELED(4),
   /** User or system denied the suppression request */
   DENIED(5),
   /**

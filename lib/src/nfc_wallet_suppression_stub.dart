@@ -8,8 +8,8 @@ import 'nfc_wallet_suppression_status.dart';
 /// suppression (web, macOS, Linux, Windows). All methods return appropriate
 /// "not supported" responses without throwing exceptions.
 ///
-/// This ensures that apps using this plugin on unsupported platforms
-/// gracefully degrade instead of crashing with `MissingPluginException`.
+/// Without it, calls would go to the Pigeon channel, which has no native side
+/// on these platforms, and report [SuppressionStatus.unknown].
 class StubNfcWalletSuppression extends NfcWalletSuppressionPlatform {
   /// Creates a stub implementation for unsupported platforms.
   StubNfcWalletSuppression();

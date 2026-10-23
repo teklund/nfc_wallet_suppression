@@ -158,7 +158,7 @@ class RunnerTests: XCTestCase {
     XCTAssertEqual(NfcWalletSuppressionPlugin.suppressionResult(for: .success).status, .suppressed)
     XCTAssertEqual(NfcWalletSuppressionPlugin.suppressionResult(for: .notSupported).status, .notSupported)
     XCTAssertEqual(NfcWalletSuppressionPlugin.suppressionResult(for: .alreadyPresenting).status, .alreadyPresenting)
-    XCTAssertEqual(NfcWalletSuppressionPlugin.suppressionResult(for: .cancelled).status, .cancelled)
+    XCTAssertEqual(NfcWalletSuppressionPlugin.suppressionResult(for: .cancelled).status, .canceled)
     XCTAssertEqual(NfcWalletSuppressionPlugin.suppressionResult(for: .denied).status, .denied)
   }
 
