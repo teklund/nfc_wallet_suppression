@@ -1,5 +1,10 @@
-/// Stops Apple Wallet and other wallet apps from appearing at NFC readers
-/// while your app is in the foreground.
+/// A Flutter plugin that keeps Apple Wallet (Apple Pay) and other wallet apps
+/// from popping up at NFC readers while your app is in the foreground.
+///
+/// Near a contactless payment terminal or NFC reader, the phone offers its
+/// wallet. Suppression holds it back while your app is the one the user should
+/// be looking at, for example while it shows a ticket barcode at a gate that
+/// also has an NFC reader. It does not read or write NFC tags.
 ///
 /// Call [NfcWalletSuppression.requestSuppression] before the phone is held to
 /// an NFC reader, and [NfcWalletSuppression.releaseSuppression] when you are

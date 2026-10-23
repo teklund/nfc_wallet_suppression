@@ -1,5 +1,5 @@
 name: nfc_wallet_suppression
-description: 'Keeps Apple Wallet and other wallet apps from popping up at NFC readers.'
+description: 'Keeps Apple Wallet (Apple Pay) and other wallet apps from popping up at NFC readers.'
 version: 1.0.0-dev.1
 homepage: https://github.com/teklund/nfc_wallet_suppression
 repository: https://github.com/teklund/nfc_wallet_suppression

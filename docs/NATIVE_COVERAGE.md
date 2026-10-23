@@ -121,6 +121,9 @@ The `iOS Native Tests` job in `ci.yml`:
 
 ```bash
 flutter test --coverage   # generates coverage/lcov.info
+
+# Optional HTML report; genhtml comes with lcov (brew install lcov)
+genhtml coverage/lcov.info -o coverage/html && open coverage/html/index.html
 ```
 
 `Run Tests & Coverage (stable)` in `ci.yml` uploads `coverage/lcov.info` to Codecov with `flags: dart`. The 3.44.x matrix entry generates coverage but doesn't upload, to avoid duplicate uploads.

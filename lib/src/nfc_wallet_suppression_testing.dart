@@ -1,31 +1,3 @@
-/// Testing utilities for the nfc_wallet_suppression plugin.
-///
-/// Install a [FakeNfcWalletSuppression] as the platform implementation to
-/// control what the plugin returns in tests:
-///
-/// ```dart
-/// import 'package:nfc_wallet_suppression/nfc_wallet_suppression.dart';
-/// import 'package:nfc_wallet_suppression/testing.dart';
-///
-/// void main() {
-///   late FakeNfcWalletSuppression fake;
-///
-///   setUp(() {
-///     fake = FakeNfcWalletSuppression();
-///     NfcWalletSuppressionPlatform.instance = fake;
-///   });
-///
-///   test('handles a denied request', () async {
-///     fake.requestResult =
-///         const SuppressionResult(status: SuppressionStatus.denied);
-///
-///     final result = await NfcWalletSuppression.requestSuppression();
-///     expect(result.status, SuppressionStatus.denied);
-///   });
-/// }
-/// ```
-library;
-
 import 'nfc_wallet_suppression_platform_interface.dart';
 import 'nfc_wallet_suppression_result.dart';
 import 'nfc_wallet_suppression_status.dart';

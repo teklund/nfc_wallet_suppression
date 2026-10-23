@@ -13,7 +13,7 @@ import 'nfc_wallet_suppression_result.dart';
 /// that mixes in `MockPlatformInterfaceMixin` from
 /// `package:plugin_platform_interface`.
 abstract class NfcWalletSuppressionPlatform extends PlatformInterface {
-  /// Constructs a NfcWalletSuppressionPlatform.
+  /// Constructs an [NfcWalletSuppressionPlatform].
   NfcWalletSuppressionPlatform() : super(token: _token);
 
   static final Object _token = Object();
@@ -34,34 +34,25 @@ abstract class NfcWalletSuppressionPlatform extends PlatformInterface {
     _instance = instance;
   }
 
-  /// Request suppression of the NFC wallet.
-  ///
-  /// Returns a [SuppressionResult] describing the outcome of the operation.
+  /// Requests suppression, as [NfcWalletSuppression.requestSuppression]
+  /// describes.
   Future<SuppressionResult> requestSuppression() {
     throw UnimplementedError('requestSuppression() has not been implemented.');
   }
 
-  /// Release suppression of the NFC wallet.
-  ///
-  /// Returns a [SuppressionResult] describing the outcome of the operation.
+  /// Ends suppression, as [NfcWalletSuppression.releaseSuppression] describes.
   Future<SuppressionResult> releaseSuppression() {
     throw UnimplementedError('releaseSuppression() has not been implemented.');
   }
 
-  /// Check if the NFC wallet is currently suppressed.
-  ///
-  /// Returns `true` if the wallet is currently suppressed, `false` otherwise.
+  /// Whether suppression is in effect, as [NfcWalletSuppression.isSuppressed]
+  /// describes.
   Future<bool> isSuppressed() {
     throw UnimplementedError('isSuppressed() has not been implemented.');
   }
 
-  /// Check if the device supports NFC wallet suppression.
-  ///
-  /// Returns `true` if the device has the necessary hardware and OS support
-  /// for wallet suppression, `false` otherwise.
-  ///
-  /// This is useful to check before attempting to request suppression,
-  /// allowing you to provide appropriate UI or fallback behavior.
+  /// Whether this device has what suppression needs, as
+  /// [NfcWalletSuppression.isSupported] describes.
   Future<bool> isSupported() {
     throw UnimplementedError('isSupported() has not been implemented.');
   }

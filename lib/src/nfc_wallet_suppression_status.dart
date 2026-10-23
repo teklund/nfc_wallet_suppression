@@ -23,7 +23,7 @@ enum SuppressionStatus {
 
   /// Suppression could not be attempted right now, but may succeed later.
   ///
-  /// Transient and retryable — for example, no foreground Activity on Android.
+  /// Transient and retryable — for example, no Activity attached on Android.
   /// This does *not* mean NFC is switched off; that is [nfcDisabled].
   unavailable,
 
