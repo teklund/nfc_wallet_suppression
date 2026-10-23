@@ -210,7 +210,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               SizedBox(height: 4),
               Text(
                 'This device does not support NFC wallet suppression.\n'
-                'iOS requires 13.0+ and iPhone 7+.\n'
+                'iOS requires 13.0+ on iPhone.\n'
                 'Android requires NFC hardware.',
                 style: TextStyle(color: Colors.white),
               ),
@@ -413,7 +413,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                     'This plugin temporarily disables Apple Pay and Google Pay '
                     'during NFC tag reading to prevent wallet apps from interfering '
                     'with your app\'s NFC operations.\n\n'
-                    'iOS: Uses PKPassLibrary (requires iOS 13.0+, iPhone 7+)\n'
+                    'iOS: Uses PKPassLibrary (requires iOS 13.0+)\n'
                     'Android: Uses NFC Reader Mode (requires API 21+, NFC hardware)',
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),

@@ -11,9 +11,11 @@ import 'nfc_wallet_suppression_status.dart';
 ///
 /// ## Platform Support
 ///
-/// - **iOS**: Requires iOS 13.0+ on iPhone 7 or later with NFC hardware.
-///   Requires the `com.apple.developer.passkit.pass-presentation-suppression`
-///   entitlement from Apple.
+/// - **iOS**: Requires iOS 13.0+ on iPhone. Every iPhone that runs iOS 13 has
+///   the NFC hardware for contactless Apple Pay; iPad and iPod touch don't, so
+///   there is nothing to suppress on them. Requires the
+///   `com.apple.developer.passkit.pass-presentation-suppression` entitlement
+///   from Apple.
 ///
 /// - **Android**: Requires Android 5.0+ (API 21) with NFC hardware enabled.
 ///   The NFC permission is automatically added to your app's manifest.
@@ -271,15 +273,11 @@ abstract final class NfcWalletSuppression {
   /// ## Platform Requirements
   ///
   /// **iOS:**
-  /// - Requires iOS 13.0 or later
-  /// - Requires iPhone 7 or later (NFC hardware)
-  /// - Requires the PassKit entitlement
-  ///
-  /// Note: on iOS this reflects Wallet pass-library availability — a *necessary*
-  /// condition, not a guarantee that suppression will succeed (PassKit exposes no
-  /// API to query suppression capability or the entitlement up front). A `true`
-  /// result can still be followed by [SuppressionStatus.notSupported] or
-  /// [SuppressionStatus.denied] from [requestSuppression].
+  /// - Reports whether the Wallet pass library is available
+  ///   (`PKPassLibrary.isPassLibraryAvailable`)
+  /// - A *necessary* condition, not a guarantee: PassKit cannot report the
+  ///   entitlement up front, so [requestSuppression] can still return
+  ///   [SuppressionStatus.notSupported] or [SuppressionStatus.denied]
   ///
   /// **Android:**
   /// - Requires Android 5.0+ (API 21)

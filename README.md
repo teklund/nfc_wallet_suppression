@@ -7,7 +7,7 @@
 
 A lightweight Flutter plugin that **suppresses NFC wallet presentation** — preventing Apple Wallet, Google Wallet, and other payment apps from automatically popping up when your NFC-enabled device detects contactless payment terminals or NFC tags.
 
-**🎯 Problem This Solves:** When users with NFC-enabled phones (iPhone 7+, most modern Android devices) approach an NFC reader while your app is open, the system automatically shows wallet/payment apps. This plugin gives your app exclusive control over NFC interactions instead.
+**🎯 Problem This Solves:** When users with NFC-enabled phones (every iPhone on iOS 13+, most modern Android devices) approach an NFC reader while your app is open, the system automatically shows wallet/payment apps. This plugin gives your app exclusive control over NFC interactions instead.
 
 **⚠️ Important Notes:**
 
@@ -76,7 +76,7 @@ flutter pub add nfc_wallet_suppression
 
 Your app's actual minimum is whichever is higher — this plugin's floor or the one your Flutter version requires. Flutter 3.47, for example, requires iOS 15.0.
 
-**Note:** Only suppresses wallet on devices with NFC hardware (iPhone 7+). Older iPhones without NFC don't need suppression.
+**Note:** Every iPhone that runs iOS 13 or later has the NFC hardware this needs. iPad and iPod touch have none, so there is nothing to suppress on them.
 
 **Setup Required:**
 
@@ -198,7 +198,7 @@ channel itself does.
 
 **Important Notes:**
 
-- ✅ Only affects NFC-enabled devices (iPhone 7+, most modern Android phones)
+- ✅ Only affects NFC-enabled devices (every iPhone on iOS 13+, most modern Android phones)
 - ✅ Pauses while the app is in the background and resumes by itself when it returns
 - ✅ On Android, held suppression also pauses while NFC is switched off and resumes when it is switched back on
 - ❌ Does NOT read/write NFC tags
@@ -260,7 +260,7 @@ foreground Activity.
 | Entitlement not found | iOS | Ensure Apple approved the entitlement and it's in your provisioning profile |
 | NFC not available | Android | Enable NFC in device settings |
 | Wallet appears while the app is in the background | Both | Expected: suppression only applies in the foreground, and resumes by itself when the app returns |
-| Doesn't work on device | iOS | Test on physical iPhone 7+, verify entitlement in Xcode |
+| Doesn't work on device | iOS | Test on a physical iPhone, verify entitlement in Xcode |
 | Payment apps still appear | Android | Some manufacturers override behavior, test on multiple devices |
 
 **FAQ:**

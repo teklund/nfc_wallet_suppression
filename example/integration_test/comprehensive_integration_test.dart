@@ -2,7 +2,7 @@
 //
 // These tests validate real platform behavior on physical devices.
 // Note: Some tests may behave differently depending on:
-// - iOS: Requires PassKit entitlement and iPhone 7+
+// - iOS: Requires the PassKit entitlement and an iPhone
 // - Android: Requires NFC hardware
 //
 // For more information about Flutter integration tests, please see
