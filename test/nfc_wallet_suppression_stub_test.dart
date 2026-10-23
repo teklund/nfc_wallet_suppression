@@ -53,14 +53,6 @@ void main() {
           isA<StubNfcWalletSuppression>(),
         );
       });
-
-      test('registerWith sets instance to StubNfcWalletSuppression', () {
-        StubNfcWalletSuppression.registerWith();
-        expect(
-          NfcWalletSuppressionPlatform.instance,
-          isA<StubNfcWalletSuppression>(),
-        );
-      });
     });
   });
 }
