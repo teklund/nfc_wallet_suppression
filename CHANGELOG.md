@@ -9,6 +9,15 @@ All notable changes to this project will be documented in this file.
 - **Minimum SDK**: Flutter 3.44.0+ and Dart 3.12.0+, the oldest Flutter that Pigeon 29,
   the package's code generator, can be installed with, and so the oldest we can test.
   No change to the Dart API.
+- **Breaking**: `NfcWalletSuppression` is an `abstract final class`; it only
+  holds static methods, so it can no longer be created or extended.
+- **Breaking**: The main library exports only `NfcWalletSuppression`,
+  `SuppressionResult` and `SuppressionStatus`. Import `testing.dart` for
+  `NfcWalletSuppressionPlatform`.
+- **Breaking**: `FakeNfcWalletSuppression` is configured through its constructor
+  and the `supported`, `requestResult`, `releaseResult` and `suppressed`
+  properties. `NfcWalletSuppressionTestScenarios`, the `set…` methods and
+  `reset()` are removed.
 
 ## 1.0.0-dev.1
 
