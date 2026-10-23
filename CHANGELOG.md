@@ -4,60 +4,67 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
-### Changed
-
-- **Minimum SDK**: Flutter 3.44.0+ and Dart 3.12.0+, the oldest Flutter that Pigeon 29,
-  the package's code generator, can be installed with, and so the oldest we can test.
-  No change to the Dart API.
-
-## 1.0.0-dev.1
-
-Pre-release of 1.0.0, published to exercise the release pipeline end to end.
-Functionally identical to the forthcoming 1.0.0 — prefer that release once it
-is available.
-
-Major release with Pigeon migration for type-safe platform channels.
+The first stable release. Compared with 0.1.1, requests and releases return a
+`SuppressionResult`, and some statuses changed meaning; see "Migrating from
+0.1.x" in the README.
 
 ### Added
 
-- ✨ **Pigeon Integration**: Migrated from manual method channels to Pigeon-generated type-safe platform communication
-- 🛡️ **Compile-time Safety**: Eliminated string-based error code matching - all status codes are now type-checked enums
-- 🌐 **Multi-platform support**: Added stub implementations for web, macOS, Linux, and Windows — `requestSuppression` returns `SuppressionStatus.notSupported`, `releaseSuppression` returns `SuppressionStatus.notSuppressed`
-- 📚 **PUBLISHING.md**: Complete publishing checklist and procedures
-- 🔒 **SECURITY.md**: Security policy and vulnerability reporting guidelines
+- `SuppressionResult`, returned by requests and releases: the status, the
+  platform's diagnostic `description`, and `isSuppressed`, `isReleased` and
+  `isRetryable`.
+- `NfcWalletSuppression.isSupported()`.
+- `SuppressionStatus.nfcDisabled`: Android with NFC switched off, the one
+  failure the user can fix.
+- `package:nfc_wallet_suppression/testing.dart` with `FakeNfcWalletSuppression`
+  for unit and widget tests.
+- Web, macOS, Linux and Windows: calls do nothing and a request returns
+  `notSupported`, instead of throwing `MissingPluginException`.
+- Swift Package Manager support on iOS.
+- Android: support for Android Gradle Plugin 9 with built-in Kotlin.
 
 ### Changed
 
-- **Baseline Bump**: Minimum SDK requirements raised to Flutter 3.35.0+ and Dart 3.9.0+
-- **BREAKING (Internal)**: Platform interface now uses `PigeonNfcWalletSuppression` instead of `MethodChannelNfcWalletSuppression`
-- **Improved Error Handling**: Platform errors are now returned as structured `SuppressionResult` objects instead of thrown exceptions
-- **Enhanced Logging**: Better structured error messages with full context from platform code
-- **Code Quality**: Reduced manual string matching and type coercion throughout codebase
-- 🤖 **Android Built-in Kotlin migration (Flutter 3.44+)**: The Android build no
-  longer unconditionally applies the Kotlin Gradle Plugin. From AGP 9 onward Kotlin
-  is provided by AGP itself; KGP is now applied conditionally (only for AGP < 9) so
-  the plugin keeps building on both new and older toolchains. The deprecated
-  `kotlinOptions` block was replaced with the modern `kotlin.compilerOptions` DSL.
-- ⬆️ **Example toolchain bump**: Example app updated to Gradle 9.1.0, Android Gradle
-  Plugin 8.13.2, and Kotlin 2.4.10 to track currently-supported build tooling. Staying
-  on AGP 8.x is deliberate: AGP 9 is only reachable once the declared Flutter floor
-  moves to 3.44+.
-- 🧪 **JaCoCo coverage config**: Dropped the deprecated `testCoverageEnabled` build
-  flag (incompatible with AGP 8.11+ Gradle task validation); unit-test coverage now
-  relies solely on the Gradle JaCoCo extension already configured in `testOptions`.
+- **Breaking**: Requires Flutter 3.44, Dart 3.12 and iOS 13.0 (was iOS 12.0).
+- **Breaking**: `requestSuppression()` and `releaseSuppression()` return a
+  `SuppressionResult` instead of a `SuppressionStatus`.
+- **Breaking**: `unavailable` now means only "transient, retry may work": on
+  Android, no Activity attached. NFC switched off returns `nfcDisabled`, and a
+  device without NFC returns `notSupported`.
+- **Breaking**: Release is idempotent: with nothing held it returns
+  `notSuppressed` instead of `unavailable`.
+- **Breaking**: `SuppressionStatus.cancelled` is renamed `canceled`.
+- **Breaking**: `NfcWalletSuppression` is an `abstract final class`.
+- **Breaking**: The main library exports only `NfcWalletSuppression`,
+  `SuppressionResult` and `SuppressionStatus`. `NfcWalletSuppressionPlatform`
+  moved to `testing.dart`.
+- A request while suppression is held reports on that hold instead of starting
+  another, and overlapping calls run in the order they were made.
+- Android: no longer plays the system sound when a tag is held to the phone.
+- No longer logs in release builds.
+- Requires `plugin_platform_interface` 2.1.7 or later.
+
+### Removed
+
+- **Breaking**: `MethodChannelNfcWalletSuppression`. Use
+  `FakeNfcWalletSuppression` or a mock of `NfcWalletSuppressionPlatform`.
 
 ### Fixed
 
-- 🐛 **Type Safety**: Eliminated possibility of typos in error code strings between platforms
-- 🐛 **Error Context**: Platform errors now include detailed messages in structured format
-- 🐛 **Package size**: `.pubignore` shadows the root `.gitignore`, so local build output was being bundled into the published archive. Restated the artifact rules in `.pubignore` — the archive drops from 28 MB to 326 KB
+- Android: suppression is restored after the Activity is recreated and when NFC
+  is switched back on. Before, it stayed off while `isSuppressed()` reported
+  `true`.
+- iOS: a second request no longer strands the first. It used to overwrite the
+  token, so release could not end the first one.
+- iOS: results reach Flutter on the main thread.
+- iOS: a request PassKit never answers completes with `unknown` after 5 seconds
+  instead of hanging.
+- iOS: the privacy manifest is now bundled. 0.1.1 shipped it unused.
 
-### Technical Details
+## 1.0.0-dev.1
 
-- Uses Pigeon v22.7+ for code generation
-- Generated platform channel code for iOS (Swift) and Android (Kotlin)
-- **Breaking API Changes**: `SuppressionStatus` replaces bool returns, and Dart SDK minimum is now 3.9.0.
-- Comprehensive test coverage: Dart unit tests, Android JVM tests, and iOS XCTest suite
+Pre-release of 1.0.0, published to test the release pipeline. Its changes are
+listed under Unreleased.
 
 ## 0.1.1
 

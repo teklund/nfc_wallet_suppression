@@ -10,17 +10,14 @@ import 'nfc_wallet_suppression_platform_interface.dart';
 import 'nfc_wallet_suppression_result.dart';
 import 'nfc_wallet_suppression_status.dart';
 
-/// Pigeon-based implementation of [NfcWalletSuppressionPlatform]
-///
-/// This implementation uses Pigeon-generated type-safe platform channels
-/// to communicate with native iOS and Android code, eliminating string-based
-/// error code matching and providing compile-time safety.
+/// The default implementation, used on Android and iOS, over Pigeon-generated
+/// platform channels.
 class PigeonNfcWalletSuppression extends NfcWalletSuppressionPlatform {
-  /// The Pigeon-generated API instance
+  /// The generated host API; tests pass their own.
   @visibleForTesting
   final pigeon.NfcWalletSuppressionApi api;
 
-  /// Creates a [PigeonNfcWalletSuppression] with an optional generated API injection
+  /// Creates the implementation; tests can pass their own [api].
   PigeonNfcWalletSuppression({pigeon.NfcWalletSuppressionApi? api})
     : api = api ?? pigeon.NfcWalletSuppressionApi();
 
@@ -108,10 +105,7 @@ class PigeonNfcWalletSuppression extends NfcWalletSuppressionPlatform {
     );
   }
 
-  /// Converts Pigeon-generated status to plugin status enum
-  ///
-  /// This provides a mapping between the Pigeon enum and the public API enum,
-  /// maintaining backward compatibility with existing code.
+  /// Maps the wire status to the public one.
   SuppressionStatus _convertStatus(pigeon.SuppressionStatusCode status) {
     switch (status) {
       case pigeon.SuppressionStatusCode.suppressed:
@@ -122,8 +116,8 @@ class PigeonNfcWalletSuppression extends NfcWalletSuppressionPlatform {
         return SuppressionStatus.notSupported;
       case pigeon.SuppressionStatusCode.alreadyPresenting:
         return SuppressionStatus.alreadyPresenting;
-      case pigeon.SuppressionStatusCode.cancelled:
-        return SuppressionStatus.cancelled;
+      case pigeon.SuppressionStatusCode.canceled:
+        return SuppressionStatus.canceled;
       case pigeon.SuppressionStatusCode.denied:
         return SuppressionStatus.denied;
       case pigeon.SuppressionStatusCode.unavailable:

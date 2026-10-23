@@ -202,16 +202,11 @@ enum class SuppressionStatusCode(val raw: Int) {
   NOT_SUPPORTED(2),
   /** Device is already presenting passes */
   ALREADY_PRESENTING(3),
-  /** The request was cancelled before it completed */
-  CANCELLED(4),
-  /** User or system denied the suppression request */
+  /** The request was canceled before it completed */
+  CANCELED(4),
+  /** The request was refused. */
   DENIED(5),
-  /**
-   * Suppression could not be attempted right now, but may succeed later.
-   *
-   * Transient and retryable — e.g. no foreground Activity on Android. This
-   * deliberately does *not* cover disabled NFC, which is [nfcDisabled].
-   */
+  /** Not attempted right now, but may succeed later. */
   UNAVAILABLE(6),
   /** Unknown status or error */
   UNKNOWN(7),
@@ -309,36 +304,15 @@ private open class MessagesPigeonCodec : StandardMessageCodec() {
 }
 
 
-/**
- * Host API for NFC wallet suppression
- *
- * This API allows Flutter apps to suppress the automatic presentation
- * of NFC wallet apps (Apple Wallet, Google Pay, etc.) during NFC operations.
- *
- * Generated interface from Pigeon that represents a handler of messages from Flutter.
- */
+/** Generated interface from Pigeon that represents a handler of messages from Flutter. */
 interface NfcWalletSuppressionApi {
-  /**
-   * Request suppression of the NFC wallet
-   *
-   * Returns a [SuppressionResult] indicating the outcome of the request.
-   * On iOS, this uses PassKit's automatic pass presentation suppression.
-   * On Android, this uses NFC reader mode to prevent wallet apps.
-   */
+  /** Requests suppression, returning the outcome. */
   fun requestSuppression(callback: (Result<SuppressionResult>) -> Unit)
-  /**
-   * Release suppression of the NFC wallet
-   *
-   * Returns a [SuppressionResult] indicating the outcome of the release.
-   * Should be called when NFC operations are complete to restore normal behavior.
-   */
+  /** Ends suppression, returning the outcome. */
   fun releaseSuppression(callback: (Result<SuppressionResult>) -> Unit)
-  /** Whether suppression is in effect; see `NfcWalletSuppression.isSuppressed`. */
+  /** Whether suppression is in effect. */
   fun isSuppressed(): Boolean
-  /**
-   * Whether this device can suppress wallet presentation; see
-   * `NfcWalletSuppression.isSupported`.
-   */
+  /** Whether suppression can be attempted on this device. */
   fun isSupported(): Boolean
 
   companion object {

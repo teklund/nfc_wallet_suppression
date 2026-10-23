@@ -225,8 +225,8 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
     static let alreadySuppressed = "Automatic pass presentation is already suppressed."
     static let notSupported = "Device does not support automatic pass presentation suppression."
     static let alreadyPresenting = "Wallet is already presenting a pass."
-    static let cancelled = "Suppression request was cancelled."
-    static let denied = "Suppression request was denied by the user or system."
+    static let canceled = "Suppression request was canceled."
+    static let denied = "Suppression was denied: missing entitlement, user refusal or internal error."
     static let unknown = "Unknown error occurred during suppression request."
     static let couldNotSubmit = "Suppression request could not be submitted."
     static let released = "Suppression released"
@@ -256,7 +256,7 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
     case .alreadyPresenting:
       return SuppressionResult(status: .alreadyPresenting, message: Message.alreadyPresenting)
     case .cancelled:
-      return SuppressionResult(status: .cancelled, message: Message.cancelled)
+      return SuppressionResult(status: .canceled, message: Message.canceled)
     case .denied:
       return SuppressionResult(status: .denied, message: Message.denied)
     @unknown default:
@@ -291,7 +291,7 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
   }
 
   /// Reports whether the Wallet pass library is available, which is a *necessary*
-  /// condition for suppression (e.g. it is false on iPad). It is not a guarantee
+  /// condition for suppression. It is not a guarantee
   /// that a suppression request will succeed — PassKit exposes no API to query
   /// suppression capability or the required entitlement up front. The definitive
   /// answer comes from `requestSuppression`'s result (`.notSupported` / `.denied`).

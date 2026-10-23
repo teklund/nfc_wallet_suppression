@@ -111,15 +111,10 @@ flutter test --coverage
 # Run integration tests
 cd example
 flutter test integration_test/
-
-# Run Android native unit tests
-cd example/android
-./gradlew testDebugUnitTest
-
-# Run iOS native unit tests (requires Xcode)
-cd example/ios
-xcodebuild test -workspace Runner.xcworkspace -scheme Runner -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' -only-testing:RunnerTests
 ```
+
+For the Android (JUnit) and iOS (XCTest) tests, use the commands CI runs: see
+"Run locally" under each platform in [docs/NATIVE_COVERAGE.md](docs/NATIVE_COVERAGE.md).
 
 ### Writing Tests
 

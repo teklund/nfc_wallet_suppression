@@ -1,5 +1,5 @@
 name: nfc_wallet_suppression
-description: 'Lightweight plugin to handle NFC wallet suppression in Flutter'
+description: 'Keeps Apple Wallet (Apple Pay) and other wallet apps from popping up at NFC readers.'
 version: 1.0.0-dev.1
 homepage: https://github.com/teklund/nfc_wallet_suppression
 repository: https://github.com/teklund/nfc_wallet_suppression
@@ -7,9 +7,9 @@ issue_tracker: https://github.com/teklund/nfc_wallet_suppression/issues
 topics:
   - nfc
   - wallet
-  - suppression
-  - ios
-  - android
+  - passkit
+  - apple-wallet
+  - google-wallet
 
 environment:
   sdk: ^3.12.0
@@ -22,7 +22,7 @@ dependencies:
   # `flutter_web_plugins` to obtain the `Registrar` passed to registerWith.
   flutter_web_plugins:
     sdk: flutter
-  plugin_platform_interface: ^2.0.2
+  plugin_platform_interface: ^2.1.7
   # Imported by the generated pigeon code; only `pub publish` flags it missing.
   meta: ^1.10.0
 
@@ -60,7 +60,10 @@ flutter:
         fileName: src/nfc_wallet_suppression_stub.dart
       macos:
         dartPluginClass: StubNfcWalletSuppression
+        dartFileName: src/nfc_wallet_suppression_stub.dart
       linux:
         dartPluginClass: StubNfcWalletSuppression
+        dartFileName: src/nfc_wallet_suppression_stub.dart
       windows:
         dartPluginClass: StubNfcWalletSuppression
+        dartFileName: src/nfc_wallet_suppression_stub.dart
