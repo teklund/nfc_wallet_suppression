@@ -70,6 +70,6 @@ abstract class NfcWalletSuppressionApi {
   /// Whether suppression is in effect.
   bool isSuppressed();
 
-  /// Whether this device can suppress wallet presentation.
+  /// Whether suppression can be attempted on this device.
   bool isSupported();
 }

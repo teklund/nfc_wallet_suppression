@@ -312,7 +312,7 @@ interface NfcWalletSuppressionApi {
   fun releaseSuppression(callback: (Result<SuppressionResult>) -> Unit)
   /** Whether suppression is in effect. */
   fun isSuppressed(): Boolean
-  /** Whether this device can suppress wallet presentation. */
+  /** Whether suppression can be attempted on this device. */
   fun isSupported(): Boolean
 
   companion object {

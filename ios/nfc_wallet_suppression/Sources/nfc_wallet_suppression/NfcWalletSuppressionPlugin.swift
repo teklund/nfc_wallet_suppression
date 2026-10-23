@@ -291,7 +291,7 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
   }
 
   /// Reports whether the Wallet pass library is available, which is a *necessary*
-  /// condition for suppression (e.g. it is false on iPad). It is not a guarantee
+  /// condition for suppression. It is not a guarantee
   /// that a suppression request will succeed — PassKit exposes no API to query
   /// suppression capability or the required entitlement up front. The definitive
   /// answer comes from `requestSuppression`'s result (`.notSupported` / `.denied`).

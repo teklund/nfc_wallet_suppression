@@ -38,7 +38,8 @@ abstract final class NfcWalletSuppression {
   ///
   /// Requesting while suppression is held reports on that hold instead of
   /// adding another. Calls don't have to be awaited before the next one: they
-  /// run in the order issued, so the last call wins.
+  /// run in the order issued, each returns its own outcome, and the last call
+  /// wins.
   ///
   /// The result's [SuppressionResult.status] is one of:
   ///
@@ -134,13 +135,13 @@ abstract final class NfcWalletSuppression {
     return NfcWalletSuppressionPlatform.instance.isSuppressed();
   }
 
-  /// Whether this device has what suppression needs.
+  /// Whether suppression can be attempted on this device.
   ///
   /// On Android that is NFC hardware, whether or not NFC is switched on. On iOS
   /// it is the Wallet pass library (`PKPassLibrary.isPassLibraryAvailable`),
-  /// which is not a guarantee: PassKit can't report the entitlement up front,
-  /// and the Simulator reports `true` but can't suppress. Always `false` on web
-  /// and desktop.
+  /// which is not a guarantee: it is also `true` in the Simulator, on iPhone and
+  /// iPad alike, where nothing can be suppressed, and PassKit can't report the
+  /// entitlement up front. Always `false` on web and desktop.
   ///
   /// Use it to decide whether to offer the feature at all; the result of
   /// [requestSuppression] is the definitive answer.

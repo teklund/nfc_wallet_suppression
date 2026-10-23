@@ -308,7 +308,7 @@ protocol NfcWalletSuppressionApi {
   func releaseSuppression(completion: @escaping (Result<SuppressionResult, Error>) -> Void)
   /// Whether suppression is in effect.
   func isSuppressed() throws -> Bool
-  /// Whether this device can suppress wallet presentation.
+  /// Whether suppression can be attempted on this device.
   func isSupported() throws -> Bool
 }
 
@@ -364,7 +364,7 @@ class NfcWalletSuppressionApiSetup {
     } else {
       isSuppressedChannel.setMessageHandler(nil)
     }
-    /// Whether this device can suppress wallet presentation.
+    /// Whether suppression can be attempted on this device.
     let isSupportedChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.isSupported\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
       isSupportedChannel.setMessageHandler { _, reply in

@@ -148,7 +148,7 @@ switch (result.status) {
 | `requestSuppression()` | `Future<SuppressionResult>` | Request wallet suppression |
 | `releaseSuppression()` | `Future<SuppressionResult>` | Release suppression |
 | `isSuppressed()` | `Future<bool>` | Check if currently suppressed |
-| `isSupported()` | `Future<bool>` | Whether the device has NFC hardware (Android) or Wallet (iOS). A request can still fail, for example without the iOS entitlement. |
+| `isSupported()` | `Future<bool>` | Whether suppression can be attempted: NFC hardware (Android) or the Wallet pass library (iOS). A request can still fail, for example in the Simulator or without the iOS entitlement. |
 
 ### SuppressionResult
 

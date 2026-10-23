@@ -289,7 +289,7 @@ class NfcWalletSuppressionApi {
     return pigeonVar_replyValue! as bool;
   }
 
-  /// Whether this device can suppress wallet presentation.
+  /// Whether suppression can be attempted on this device.
   Future<bool> isSupported() async {
     final pigeonVar_channelName =
         'dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.isSupported$pigeonVar_messageChannelSuffix';
