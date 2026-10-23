@@ -45,7 +45,7 @@ void main() {
       });
     });
 
-    group('platform registration', () {
+    group('platform instance', () {
       test('can be set as platform instance', () {
         NfcWalletSuppressionPlatform.instance = stub;
         expect(
