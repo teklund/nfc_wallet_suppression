@@ -27,10 +27,12 @@ enum SuppressionStatus {
   /// This does *not* mean NFC is switched off; that is [nfcDisabled].
   unavailable,
 
-  /// The user or the system refused the request.
+  /// The request was refused.
   ///
-  /// On iOS this includes a missing
-  /// `com.apple.developer.passkit.pass-presentation-suppression` entitlement.
+  /// On iOS this usually means the app lacks the
+  /// `com.apple.developer.passkit.pass-presentation-suppression` entitlement;
+  /// Apple also allows for a refusal by the user or an internal error. On
+  /// Android, the NFC call threw a `SecurityException`.
   denied,
 
   /// The request was cancelled before it completed.

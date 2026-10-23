@@ -44,7 +44,7 @@ import 'nfc_wallet_suppression_status.dart';
 ///   // Now you can read NFC tags without wallet interference
 ///   // ... your NFC reading code ...
 /// } else if (result.status == SuppressionStatus.denied) {
-///   // User denied the permission
+///   // Refused, on iOS usually a missing entitlement
 /// } else if (result.status == SuppressionStatus.notSupported) {
 ///   // Device doesn't support wallet suppression
 /// }
@@ -67,8 +67,9 @@ abstract final class NfcWalletSuppression {
   /// This allows your app to read NFC tags without competition from the
   /// system wallet.
   ///
-  /// **Important:** On iOS, this may prompt the user for permission. Rapid or
-  /// overlapping calls are safe: a call made while suppression is held reports
+  /// **Important:** On iOS, Apple documents that the first request after the app
+  /// is installed shows a one-time system alert that Apple Pay is unavailable,
+  /// which apps can't customize. Rapid or overlapping calls are safe: a call made while suppression is held reports
   /// on that hold instead of adding another (see "Suppression lifecycle" on
   /// [NfcWalletSuppression]). It returns [SuppressionStatus.suppressed] while
   /// the hold is in effect. On Android with NFC switched off it returns
@@ -93,7 +94,7 @@ abstract final class NfcWalletSuppression {
   /// | [SuppressionStatus.notSupported] — no suppression capability at all; iOS: PassKit reports it unsupported, Android: no NFC hardware | ✔ | ✔ |
   /// | [SuppressionStatus.nfcDisabled] — NFC hardware present but switched off; deep-link the user to settings | | ✔ |
   /// | [SuppressionStatus.unavailable] — transient; no foreground Activity | | ✔ |
-  /// | [SuppressionStatus.denied] — iOS: refused by the user or system (includes a missing entitlement); Android: a `SecurityException` | ✔ | ✔ |
+  /// | [SuppressionStatus.denied] — iOS: usually a missing entitlement; Android: a `SecurityException` | ✔ | ✔ |
   /// | [SuppressionStatus.alreadyPresenting] — the wallet is already showing a pass | ✔ | |
   /// | [SuppressionStatus.cancelled] — the request was cancelled before it completed | ✔ | |
   /// | [SuppressionStatus.unknown] — unexpected failure, or no answer in time; call [isSuppressed] if you need the current state | ✔ | ✔ |
@@ -106,7 +107,8 @@ abstract final class NfcWalletSuppression {
   ///
   /// **iOS:**
   /// - Uses PassKit's `requestAutomaticPassPresentationSuppression`
-  /// - May show a system permission dialog on first use
+  /// - The first request after the app is installed shows a one-time alert that
+  ///   Apple Pay is unavailable
   /// - Paused by iOS while the app is in the background, and restored when it
   ///   returns
   /// - Survives configuration changes (screen rotation)
@@ -133,7 +135,7 @@ abstract final class NfcWalletSuppression {
   ///     // The one failure the user can fix — offer to open NFC settings.
   ///     promptToEnableNfc();
   ///   case SuppressionStatus.denied:
-  ///     print('User denied permission');
+  ///     print('Suppression was refused');
   ///   case SuppressionStatus.notSupported:
   ///     print('Device does not support wallet suppression');
   ///   default:
