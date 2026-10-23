@@ -207,6 +207,8 @@ channel itself does.
 
 ## Migrating from 0.1.x
 
+1.0.0 requires Flutter 3.44 or later (Dart 3.12).
+
 `requestSuppression()` and `releaseSuppression()` return a `SuppressionResult`
 instead of a bare `SuppressionStatus`:
 

@@ -86,11 +86,17 @@ iOS coverage is enabled by `xcodebuild test -enableCodeCoverage YES` and extract
 ### Run locally
 
 ```bash
-cd example/ios
+# Builds the plugin pods first; without it the Runner target can't build.
+cd example
+flutter build ios --debug --simulator --no-codesign
+
+# Use the id of any iPhone from `xcrun simctl list devices available`. A name
+# alone matches only simulators on the newest installed iOS runtime.
+cd ios
 xcodebuild test \
   -workspace Runner.xcworkspace \
   -scheme Runner \
-  -destination 'platform=iOS Simulator,name=<simulator>,OS=latest' \
+  -destination 'platform=iOS Simulator,id=<simulator id>' \
   -enableCodeCoverage YES \
   -resultBundlePath TestResults.xcresult
 
