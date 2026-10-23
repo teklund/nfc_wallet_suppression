@@ -181,6 +181,8 @@ This plugin uses [Pigeon](https://pub.dev/packages/pigeon) for type-safe communi
     dart format .
     ```
 
+A pigeon bump fails the Pigeon Codegen Drift check until the code is regenerated on that branch with the commands above.
+
 ### Code Organization
 
 - Keep functions small and focused
