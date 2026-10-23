@@ -6,9 +6,9 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- **Minimum SDK**: Flutter 3.44.0+ and Dart 3.12.0+, the oldest that Pigeon 29, the
-  package's code generator, runs on, and so the oldest we can test. No change to the
-  Dart API.
+- **Minimum SDK**: Flutter 3.44.0+ and Dart 3.12.0+, the oldest Flutter that Pigeon 29,
+  the package's code generator, can be installed with, and so the oldest we can test.
+  No change to the Dart API.
 
 ## 1.0.0-dev.1
 
