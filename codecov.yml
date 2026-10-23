@@ -14,8 +14,8 @@ coverage:
         informational: true
 
 ignore:
-  - "lib/src/nfc_wallet_suppression_pigeon.dart"
-  - "**/*.g.dart"
+  # Generated code, such as pigeon's messages.g.dart, Messages.g.kt and Messages.g.swift.
+  - "**/*.g.*"
   - "**/*.freezed.dart"
   - "example/**"
   - "test/**"

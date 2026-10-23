@@ -300,24 +300,8 @@ flutter test test/nfc_wallet_suppression_test.dart
 
 ### Native Tests
 
-**iOS Tests (XCTest):**
-
-```bash
-cd example/ios
-xcodebuild test -workspace Runner.xcworkspace -scheme Runner \
-  -destination 'platform=iOS Simulator,name=iPhone 15'
-```
-
-Or open `example/ios/Runner.xcworkspace` in Xcode and press `Cmd+U`.
-
-**Android Tests (JUnit):**
-
-```bash
-cd example/android
-./gradlew testDebugUnitTest
-```
-
-Or run tests from Android Studio's test runner.
+For the Android (JUnit) and iOS (XCTest) tests, use the commands CI runs: see
+"Run locally" under each platform in [docs/NATIVE_COVERAGE.md](docs/NATIVE_COVERAGE.md).
 
 ### Integration Tests
 
@@ -337,13 +321,8 @@ flutter test integration_test/comprehensive_integration_test.dart
 
 ## Test Coverage
 
-The plugin maintains **100% code coverage** for all Dart source files:
-
-- `nfc_wallet_suppression_platform_interface.dart`: 100%
-- `nfc_wallet_suppression_pigeon_impl.dart`: 100%
-- `nfc_wallet_suppression.dart`: 100%
-- `nfc_wallet_suppression_testing.dart`: 100%
-- `nfc_wallet_suppression_stub.dart`: 100%
+All hand-written Dart files in `lib/` have **100% line coverage**. Generated files
+(`*.g.*`, such as pigeon's `messages.g.dart`) are excluded from coverage (see `codecov.yml`).
 
 To view detailed coverage:
 

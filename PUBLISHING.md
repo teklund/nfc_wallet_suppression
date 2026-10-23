@@ -30,7 +30,7 @@ This document provides a comprehensive checklist for publishing new versions of 
 ### 🔍 Code Quality
 
 - [ ] Run analyzer: `flutter analyze` (zero issues)
-- [ ] Check formatting: `dart format --set-exit-if-checked .`
+- [ ] Check formatting: `dart format --set-exit-if-changed .`
 - [ ] Review code for TODOs or FIXMEs
 - [ ] Check for unused imports: `dart analyze --fatal-infos`
 - [ ] Review all public API documentation

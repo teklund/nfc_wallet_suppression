@@ -286,8 +286,8 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
     drain()
   }
 
-  func isSuppressed(completion: @escaping (Result<Bool, Error>) -> Void) {
-    completion(.success(library.isSuppressingAutomaticPassPresentation))
+  func isSuppressed() -> Bool {
+    library.isSuppressingAutomaticPassPresentation
   }
 
   /// Reports whether the Wallet pass library is available, which is a *necessary*
@@ -295,8 +295,8 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
   /// that a suppression request will succeed — PassKit exposes no API to query
   /// suppression capability or the required entitlement up front. The definitive
   /// answer comes from `requestSuppression`'s result (`.notSupported` / `.denied`).
-  func isSupported(completion: @escaping (Result<Bool, Error>) -> Void) {
-    completion(.success(library.isPassLibraryAvailable))
+  func isSupported() -> Bool {
+    library.isPassLibraryAvailable
   }
 
   // MARK: - Scheduling

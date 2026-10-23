@@ -100,6 +100,39 @@ final class FakeScheduler: DeadlineScheduling {
   }
 }
 
+/// Captures the handlers pigeon registers, so a test can send messages to the
+/// plugin through the generated code in a chosen order.
+final class FakeMessenger: NSObject, FlutterBinaryMessenger {
+  private var handlers: [String: FlutterBinaryMessageHandler] = [:]
+
+  /// Calls a host API method and decodes the `SuppressionResult` it replies with.
+  func call(_ method: String, reply: @escaping (SuppressionResult?) -> Void) throws {
+    let channel = "dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.\(method)"
+    let handler = try XCTUnwrap(handlers[channel], "No handler registered for \(method)")
+    handler(nil) { data in
+      // pigeon replies [result] on success and [code, message, details] on error.
+      let wrapped = MessagesPigeonCodec.shared.decode(data) as? [Any?] ?? []
+      if wrapped.count != 1 {
+        XCTFail("\(method) did not reply with a result: \(wrapped.map { "\($0 ?? "nil")" })")
+      }
+      reply(wrapped.first as? SuppressionResult)
+    }
+  }
+
+  func send(onChannel channel: String, message: Data?) {}
+
+  func send(onChannel channel: String, message: Data?, binaryReply callback: FlutterBinaryReply?) {}
+
+  func setMessageHandlerOnChannel(
+    _ channel: String, binaryMessageHandler handler: FlutterBinaryMessageHandler?
+  ) -> FlutterBinaryMessengerConnection {
+    handlers[channel] = handler
+    return 0
+  }
+
+  func cleanUpConnection(_ connection: FlutterBinaryMessengerConnection) {}
+}
+
 class RunnerTests: XCTestCase {
 
   /// Builds a plugin wired to controllable doubles.
@@ -1031,17 +1064,32 @@ class RunnerTests: XCTestCase {
     let (plugin, fake, _) = makeSUT()
     fake.isSuppressingAutomaticPassPresentation = true
 
-    var suppressed: Bool?
-    plugin.isSuppressed { suppressed = try? $0.get() }
-    XCTAssertEqual(suppressed, true)
+    XCTAssertTrue(plugin.isSuppressed())
   }
 
   func testIsSupported_reflectsPassLibraryAvailability() {
     let (plugin, fake, _) = makeSUT()
     fake.isPassLibraryAvailable = true
 
-    var supported: Bool?
-    plugin.isSupported { supported = try? $0.get() }
-    XCTAssertEqual(supported, true)
+    XCTAssertTrue(plugin.isSupported())
+  }
+
+  // MARK: - Pigeon entry points
+
+  func testPigeonCalls_runInArrivalOrder() throws {
+    // A release sent right after a request must wait for it. Overtaking it, the
+    // release would find nothing to end, and the request would then hold
+    // suppression until the app closes.
+    let (plugin, fake, _) = makeSUT(token: 42)
+    let messenger = FakeMessenger()
+    NfcWalletSuppressionApiSetup.setUp(binaryMessenger: messenger, api: plugin)
+
+    var statuses: [SuppressionStatusCode?] = []
+    try messenger.call("requestSuppression") { statuses.append($0?.status) }
+    try messenger.call("releaseSuppression") { statuses.append($0?.status) }
+    fake.deliver(.success)
+
+    XCTAssertEqual(statuses, [.suppressed, .notSuppressed])
+    XCTAssertEqual(fake.endedTokens, [42], "The release must end the token the request obtained")
   }
 }

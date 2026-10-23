@@ -293,16 +293,15 @@ class NfcWalletSuppressionPlugin internal constructor(
       SuppressionStatusCode.NOT_SUPPRESSED, "Suppression released")))
   }
 
-  override fun isSuppressed(callback: (Result<Boolean>) -> Unit) {
+  override fun isSuppressed(): Boolean {
     val activity = activity
     // Reconcile intent with reality: reader mode is only held while an activity is
     // attached and NFC is still enabled.
-    val active = suppressionActive && activity != null && suppressor.isNfcEnabled(activity)
-    callback(Result.success(active))
+    return suppressionActive && activity != null && suppressor.isNfcEnabled(activity)
   }
 
-  override fun isSupported(callback: (Result<Boolean>) -> Unit) {
+  override fun isSupported(): Boolean {
     val context = context
-    callback(Result.success(context != null && suppressor.hasNfcHardware(context)))
+    return context != null && suppressor.hasNfcHardware(context)
   }
 }

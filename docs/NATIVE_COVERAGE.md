@@ -86,11 +86,17 @@ iOS coverage is enabled by `xcodebuild test -enableCodeCoverage YES` and extract
 ### Run locally
 
 ```bash
-cd example/ios
+# Builds the plugin pods first; without it the Runner target can't build.
+cd example
+flutter build ios --debug --simulator --no-codesign
+
+# Use the id of any iPhone from `xcrun simctl list devices available`. A name
+# alone matches only simulators on the newest installed iOS runtime.
+cd ios
 xcodebuild test \
   -workspace Runner.xcworkspace \
   -scheme Runner \
-  -destination 'platform=iOS Simulator,name=<simulator>,OS=latest' \
+  -destination 'platform=iOS Simulator,id=<simulator id>' \
   -enableCodeCoverage YES \
   -resultBundlePath TestResults.xcresult
 
@@ -117,7 +123,7 @@ The `iOS Native Tests` job in `ci.yml`:
 flutter test --coverage   # generates coverage/lcov.info
 ```
 
-`Run Tests & Coverage (stable)` in `ci.yml` uploads `coverage/lcov.info` to Codecov with `flags: dart`. The 3.35.x matrix entry generates coverage but doesn't upload, to avoid duplicate uploads.
+`Run Tests & Coverage (stable)` in `ci.yml` uploads `coverage/lcov.info` to Codecov with `flags: dart`. The 3.44.x matrix entry generates coverage but doesn't upload, to avoid duplicate uploads.
 
 ## Codecov Integration
 
@@ -138,45 +144,27 @@ flutter test --coverage   # generates coverage/lcov.info
 - Dashboard: https://codecov.io/gh/teklund/nfc_wallet_suppression
 - Badge in `README.md`
 
-## Current Coverage (1.0.0 baseline)
+## Current Coverage
 
-| Layer   | Coverage | Notes                                                                |
-| ------- | -------- | -------------------------------------------------------------------- |
-| Dart    | high     | Pigeon-generated bridge + small public API; `*pigeon.dart` ignored   |
-| Android | low      | Only the no-NFC-hardware path is exercised in JVM unit tests         |
-| iOS     | low      | PassKit suppression APIs require a real device for end-to-end paths  |
+| Layer   | Coverage | Notes                                                                                                                        |
+| ------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Dart    | high     | Every hand-written file in `lib/`                                                                                            |
+| Android | high     | The plugin runs against a fake suppressor; `SystemWalletSuppressor` runs against static mocks of `NfcAdapter` and `ContextCompat` |
+| iOS     | high     | The plugin runs against a fake PassKit library and scheduler                                                                 |
 
-Project coverage at the 1.0.0 cut: ~45%. The dominant gap is `NfcWalletSuppressionPlugin.kt`'s success/failure paths, which are tracked separately for follow-up — see the GitHub issue on improving native test coverage.
+Pigeon-generated files are ignored on every platform (see `codecov.yml`); pigeon tests its own output. Local JaCoCo and xccov reports still include them.
 
-## Why native coverage is lower
+## What Unit Tests Can't Cover
 
-- **Real hardware required** for many NFC and PassKit code paths
-- **Activity / Context** dependence on Android — true unit tests would need Robolectric or static-mocking of `NfcAdapter.getDefaultAdapter()`
-- **Simulator limitations** for iOS PassKit suppression
-- Native tests today focus on testable wrappers and the no-hardware path
+- Real NFC hardware, and Android's reader-mode behavior across devices and versions
+- Real PassKit suppression, which needs a physical iPhone and the entitlement
 
-Native code is also validated through:
+These are checked on real devices. `integration_tests.yml` runs only on demand until #24 re-enables it.
 
-- Integration tests in the example app (`integration_tests.yml`)
-- Manual testing on real devices
+## Improving Native Coverage
 
-## Improving native coverage
-
-### Android
-
-- Static-mock `NfcAdapter.getDefaultAdapter()` (Mockito 5.x supports this) to exercise success/failure paths beyond the null-adapter branch
-- Add Robolectric-based tests for Activity-dependent flows
-- Consider instrumented tests for hardware-tied logic
-
-### iOS
-
-- Add real-device CI runs for PassKit-dependent paths
-- Extend the existing PassKit protocol mocks for non-success branches
-- More integration tests in the example app
-
-### Both
-
-- Once native coverage stabilizes, flip `codecov.yml` from `informational: true` to enforcing
+- Re-enable `integration_tests.yml` on pull requests (#24)
+- Once coverage is stable, switch `codecov.yml` from `informational: true` to enforcing
 
 ## Troubleshooting
 

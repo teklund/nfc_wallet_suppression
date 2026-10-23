@@ -8,24 +8,18 @@ CI is consolidated into a single workflow, `ci.yml`, supplemented by an integrat
 
 | Workflow                  | Purpose                              | Tests / Builds                                  | Frequency        |
 | ------------------------- | ------------------------------------ | ----------------------------------------------- | ---------------- |
-| **ci.yml**                | PR validation + main branch CI       | Format, analyze, Dart tests, native tests, Android/iOS builds, Pub Score, publish dry-run | Every PR / push  |
-| **integration_tests.yml** | E2E testing on real-ish devices      | Flutter integration tests                        | Every PR / push  |
+| **ci.yml**                | PR validation + main branch CI       | Format, analyze, pigeon codegen drift, Dart tests, native tests, platform builds, Pub Score, publish dry-run | Every PR / push  |
+| **integration_tests.yml** | E2E testing on real-ish devices      | Flutter integration tests                        | Manual only; re-enabling tracked in #24 |
 
-`ci.yml` runs change-aware: only the relevant jobs fire when a path doesn't affect them (see `Check Changes` job).
+## How ci.yml Runs
 
-## ci.yml Job Map
+`.github/workflows/ci.yml` is the source of truth for its jobs, and each run's summary page on GitHub shows the exact job graph. The rules that shape it:
 
-```text
-Check Changes ─┬─ Check Formatting ──┬─ Analyze Code (3.35.x | stable)
-               │                     ├─ Run Tests & Coverage (3.35.x | stable)
-               │                     ├─ Pub Score Check
-               │                     └─ Publish Dry Run
-               │
-               ├─ Android Native Tests   (only if android files changed)
-               ├─ Build Android          (only if android files changed)
-               ├─ Build iOS              (only if ios files changed)
-               └─ iOS Native Tests       (only if ios files changed)
-```
+- **Analyze Code** and **Pigeon Codegen Drift** wait for **Check Formatting**.
+- **Check Changes** and **Dependency Review** (pull requests only) run on their own. Everything else waits for **Analyze Code**: Dart tests, Pub Score Check, Publish Dry Run and the platform jobs.
+- Platform jobs (native tests and builds) run only when **Check Changes** finds changes for that platform.
+- Jobs with a `flutter-version` matrix run on both the minimum supported Flutter version and `stable`.
+- **CI Success** is the one required check: it fails if any job failed or was cancelled, and treats skipped jobs as passing.
 
 Codecov uploads happen from three jobs and are tagged with these flags (see `codecov.yml`):
 
@@ -33,16 +27,14 @@ Codecov uploads happen from three jobs and are tagged with these flags (see `cod
 - `android` — uploaded by **Android Native Tests**
 - `ios` — uploaded by **iOS Native Tests**
 
-## Test Counts
+## Where Tests Run
 
-| Test Type           | Count | Where                          |
-| ------------------- | ----- | ------------------------------ |
-| Dart unit tests     | 84    | `Run Tests & Coverage`         |
-| Android native      | 6     | `Android Native Tests`         |
-| iOS native          | varies | `iOS Native Tests`            |
-| Integration tests   | varies | `integration_tests.yml`       |
-
-Counts move with the codebase; treat the table as a snapshot, not a contract.
+| Test Type           | Where                          |
+| ------------------- | ------------------------------ |
+| Dart unit tests     | `Run Tests & Coverage`         |
+| Android native      | `Android Native Tests`         |
+| iOS native          | `iOS Native Tests`             |
+| Integration tests   | `integration_tests.yml`        |
 
 ## When to Run Which Tests
 
@@ -67,7 +59,7 @@ cd example/android && ./gradlew :nfc_wallet_suppression:testDebugUnitTest
 | Job                         | Dart Coverage           | Android Coverage    | iOS Coverage         |
 | --------------------------- | ----------------------- | ------------------- | -------------------- |
 | Run Tests & Coverage (stable) | Uploaded as `dart` flag | —                   | —                    |
-| Run Tests & Coverage (3.35.x) | Generated, not uploaded | —                   | —                    |
+| Run Tests & Coverage (3.44.x) | Generated, not uploaded | —                   | —                    |
 | Android Native Tests        | —                       | Uploaded as `android` flag | —             |
 | iOS Native Tests            | —                       | —                   | Uploaded as `ios` flag |
 

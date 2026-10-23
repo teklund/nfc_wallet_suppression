@@ -21,8 +21,9 @@ By participating in this project, you agree to maintain a respectful and inclusi
 
 ### Prerequisites
 
-- [Flutter SDK](https://flutter.dev/docs/get-started/install) 3.35.0 or higher
-- [Dart SDK](https://dart.dev/get-dart) ^3.9.0 or higher
+- [Flutter SDK](https://flutter.dev/docs/get-started/install), latest stable. CI formats
+  and analyzes with it; 3.44.0 is the oldest version the package supports.
+- [Dart SDK](https://dart.dev/get-dart) ^3.12.0 or higher
 - Git
 - Xcode (for iOS development on macOS)
 - Android Studio or Android SDK (for Android development)
@@ -174,11 +175,14 @@ This plugin uses [Pigeon](https://pub.dev/packages/pigeon) for type-safe communi
 
 1. **Do not** edit the generated files directly.
 2. Edit the interface definition in `pigeons/nfc_wallet_suppression_api.dart`.
-3. Run the generation command:
+3. Regenerate, then format (pigeon writes Dart in an older style than this package uses):
 
     ```bash
     dart run pigeon --input pigeons/nfc_wallet_suppression_api.dart
+    dart format .
     ```
+
+A pigeon bump fails the Pigeon Codegen Drift check until the code is regenerated on that branch with the commands above.
 
 ### Code Organization
 
