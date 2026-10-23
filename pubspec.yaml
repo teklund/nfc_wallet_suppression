@@ -22,7 +22,7 @@ dependencies:
   # `flutter_web_plugins` to obtain the `Registrar` passed to registerWith.
   flutter_web_plugins:
     sdk: flutter
-  plugin_platform_interface: ^2.0.2
+  plugin_platform_interface: ^2.1.7
   # Imported by the generated pigeon code; only `pub publish` flags it missing.
   meta: ^1.10.0
 
