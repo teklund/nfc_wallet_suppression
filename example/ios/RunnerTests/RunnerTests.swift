@@ -106,9 +106,10 @@ final class FakeMessenger: NSObject, FlutterBinaryMessenger {
   private var handlers: [String: FlutterBinaryMessageHandler] = [:]
 
   /// Calls a host API method and decodes the `SuppressionResult` it replies with.
-  func call(_ method: String, reply: @escaping (SuppressionResult?) -> Void) {
+  func call(_ method: String, reply: @escaping (SuppressionResult?) -> Void) throws {
     let channel = "dev.flutter.pigeon.nfc_wallet_suppression.NfcWalletSuppressionApi.\(method)"
-    handlers[channel]!(nil) { data in
+    let handler = try XCTUnwrap(handlers[channel], "No handler registered for \(method)")
+    handler(nil) { data in
       let wrapped = NfcWalletSuppressionPigeonPigeonCodec.shared.decode(data) as? [Any?]
       reply(wrapped?.first as? SuppressionResult)
     }
@@ -1071,7 +1072,7 @@ class RunnerTests: XCTestCase {
 
   // MARK: - Pigeon entry points
 
-  func testPigeonCalls_runInArrivalOrder() {
+  func testPigeonCalls_runInArrivalOrder() throws {
     // A release sent right after a request must wait for it. Overtaking it, the
     // release would find nothing to end, and the request would then hold
     // suppression until the app closes.
@@ -1080,8 +1081,8 @@ class RunnerTests: XCTestCase {
     NfcWalletSuppressionApiSetup.setUp(binaryMessenger: messenger, api: plugin)
 
     var statuses: [SuppressionStatusCode?] = []
-    messenger.call("requestSuppression") { statuses.append($0?.status) }
-    messenger.call("releaseSuppression") { statuses.append($0?.status) }
+    try messenger.call("requestSuppression") { statuses.append($0?.status) }
+    try messenger.call("releaseSuppression") { statuses.append($0?.status) }
     fake.deliver(.success)
 
     XCTAssertEqual(statuses, [.suppressed, .notSuppressed])
