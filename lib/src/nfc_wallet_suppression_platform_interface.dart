@@ -1,3 +1,7 @@
+/// @docImport 'nfc_wallet_suppression.dart';
+/// @docImport 'nfc_wallet_suppression_testing.dart';
+library;
+
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'nfc_wallet_suppression_pigeon_impl.dart';
