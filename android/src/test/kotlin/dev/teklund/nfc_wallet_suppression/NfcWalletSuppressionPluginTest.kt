@@ -275,7 +275,9 @@ internal class NfcWalletSuppressionPluginTest {
   }
 
   @Test
-  fun reattach_whenNfcDisabled_defersReArmUntilNfcIsSwitchedOn() {
+  fun reattach_whenNfcDisabled_armsTheNewActivity() {
+    // Android keeps reader mode for the new activity and re-sends it on resume,
+    // a second path besides the NFC-on observer.
     val fake = FakeWalletSuppressor()
     val activity = Mockito.mock(Activity::class.java)
     val plugin = pluginWithActivity(fake, activity)
@@ -285,11 +287,11 @@ internal class NfcWalletSuppressionPluginTest {
     plugin.onDetachedFromActivityForConfigChanges()
     plugin.onReattachedToActivityForConfigChanges(activityBinding(activity))
 
-    assertEquals(1, fake.startCount, "Must not re-arm when NFC is disabled")
+    assertEquals(2, fake.startCount, "The new activity must be armed while NFC is off")
     assertFalse(plugin.isSuppressed())
 
     fake.switchNfcOn()
-    assertEquals(2, fake.startCount)
+    assertEquals(3, fake.startCount)
     assertTrue(plugin.isSuppressed())
   }
 
@@ -419,6 +421,21 @@ internal class NfcWalletSuppressionPluginTest {
 
     fake.switchNfcOn()
     assertEquals(1, fake.startCount)
+    assertFalse(plugin.isSuppressed())
+  }
+
+  @Test
+  fun release_afterRequestWhileNfcOff_endsTheHold() {
+    val fake = FakeWalletSuppressor().apply { nfcEnabled = false }
+    val plugin = pluginWithActivity(fake)
+    assertEquals(SuppressionStatusCode.NFC_DISABLED, requestStatus(plugin))
+
+    assertEquals(SuppressionStatusCode.NOT_SUPPRESSED, releaseStatus(plugin))
+    assertEquals(1, fake.stopCount)
+    assertNull(fake.onNfcEnabled, "Release must stop observing NFC state")
+
+    fake.switchNfcOn()
+    assertEquals(1, fake.startCount, "Nothing may arm once released")
     assertFalse(plugin.isSuppressed())
   }
 
