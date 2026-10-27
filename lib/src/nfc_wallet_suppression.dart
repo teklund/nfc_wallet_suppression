@@ -20,7 +20,8 @@ import 'nfc_wallet_suppression_status.dart';
 ///
 /// ## Suppression lifecycle
 ///
-/// - A successful [requestSuppression] holds suppression until you call
+/// - A [requestSuppression] that returns [SuppressionStatus.suppressed] or
+///   [SuppressionStatus.nfcDisabled] holds suppression until you call
 ///   [releaseSuppression] or the app is closed. Requesting again while it is
 ///   held reports on that hold rather than adding another, so one release
 ///   ends it.
@@ -47,7 +48,7 @@ abstract final class NfcWalletSuppression {
   /// |---|---|---|
   /// | [SuppressionStatus.suppressed] — suppression is active | ✔ | ✔ |
   /// | [SuppressionStatus.notSupported] — no suppression capability at all; iOS: PassKit reports it unsupported, Android: no NFC hardware | ✔ | ✔ |
-  /// | [SuppressionStatus.nfcDisabled] — NFC hardware present but switched off; deep-link the user to settings | | ✔ |
+  /// | [SuppressionStatus.nfcDisabled] — NFC is switched off; the request is held and starts once NFC is on | | ✔ |
   /// | [SuppressionStatus.unavailable] — transient; no Activity attached | | ✔ |
   /// | [SuppressionStatus.denied] — iOS: usually a missing entitlement; Android: a `SecurityException` | ✔ | ✔ |
   /// | [SuppressionStatus.alreadyPresenting] — the wallet is already showing a pass | ✔ | |
@@ -70,8 +71,8 @@ abstract final class NfcWalletSuppression {
   ///   case SuppressionStatus.suppressed:
   ///     print('Wallet suppressed successfully');
   ///   case SuppressionStatus.nfcDisabled:
-  ///     // The one failure the user can fix — offer to open NFC settings.
-  ///     promptToEnableNfc();
+  ///     // Held; prompt to switch NFC on only if your app needs NFC itself.
+  ///     print('Suppression starts when NFC is switched on');
   ///   case SuppressionStatus.denied:
   ///     print('Suppression was refused');
   ///   case SuppressionStatus.notSupported:

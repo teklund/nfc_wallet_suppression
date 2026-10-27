@@ -82,7 +82,7 @@ void main() {
 
       final result = await NfcWalletSuppression.requestSuppression();
       expect(result.description, 'NFC is disabled');
-      expect(result.isRetryable, true);
+      expect(result.isRetryable, false);
     });
 
     test('reports a suppressed state set directly', () async {

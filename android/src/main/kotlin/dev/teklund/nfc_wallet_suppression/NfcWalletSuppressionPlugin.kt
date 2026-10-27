@@ -31,6 +31,10 @@ internal interface WalletSuppressor {
    * which suppresses wallet / host-card-emulation apps. Throws if it cannot be
    * enabled (e.g., no adapter, or a security restriction), and then leaves
    * reader mode disabled for [activity].
+   *
+   * Returns normally while NFC is off: Android keeps reader mode for [activity]
+   * and re-sends it on resume, but NfcService drops it until NFC is on, so it
+   * must be armed again then.
    */
   fun startReaderMode(activity: Activity, callback: NfcAdapter.ReaderCallback)
 
@@ -180,14 +184,17 @@ class NfcWalletSuppressionPlugin internal constructor(
   /** Re-arms reader mode against the current activity. Precondition: suppressionActive. */
   private fun reestablish() {
     val activity = activity ?: return
-    if (!suppressor.isNfcEnabled(activity)) {
-      // Keep the request: reader mode is re-armed when NFC is switched back on.
-      if (isDebug) Log.d(TAG, "Deferring suppression until NFC is enabled")
-      return
-    }
     try {
+      // Armed even while NFC is off, as in hold(): Android keeps it for the
+      // activity and re-sends it on resume, and the observer re-arms on NFC-on.
       suppressor.startReaderMode(activity, this)
-      if (isDebug) Log.d(TAG, "Re-established NFC suppression")
+      if (isDebug) {
+        Log.d(TAG, if (suppressor.isNfcEnabled(activity)) {
+          "Re-established NFC suppression"
+        } else {
+          "Re-armed NFC suppression; it starts when NFC is enabled"
+        })
+      }
     } catch (e: Exception) {
       // Drop the request, so isSuppressed stops reporting it and the next
       // request arms reader mode again instead of reporting the failed hold.
@@ -196,13 +203,15 @@ class NfcWalletSuppressionPlugin internal constructor(
     }
   }
 
-  /** Arms reader mode and holds the request, or leaves neither in place. */
+  /** Holds the request and arms reader mode, or leaves neither in place. */
   private fun hold(activity: Activity) {
-    suppressor.startReaderMode(activity, this)
+    // Hold first, so NFC state is observed before arming: NfcService drops the
+    // arming if NFC is still off, and the observer then re-arms once it is on.
+    suppressionActive = true
     try {
-      suppressionActive = true
+      suppressor.startReaderMode(activity, this)
     } catch (e: Exception) {
-      runCatching { suppressor.stopReaderMode(activity) }.onFailure(e::addSuppressed)
+      runCatching { suppressionActive = false }.onFailure(e::addSuppressed)
       throw e
     }
   }
@@ -219,37 +228,34 @@ class NfcWalletSuppressionPlugin internal constructor(
         SuppressionStatusCode.NOT_SUPPORTED, "Device does not have NFC hardware")))
       return
     }
-    if (!suppressor.isNfcEnabled(activity)) {
-      // Distinct from UNAVAILABLE: this is the one failure the user can fix, so
-      // an app can act on it by deep-linking to android.settings.NFC_SETTINGS.
-      // An earlier request is kept and resumes when NFC is switched back on.
-      val message = if (suppressionActive) {
-        "NFC is disabled. Suppression resumes when NFC is enabled"
-      } else {
-        "NFC is disabled. Please enable NFC in device settings"
-      }
-      callback(Result.success(SuppressionResult(SuppressionStatusCode.NFC_DISABLED, message)))
-      return
-    }
     // Already held: reader mode is re-armed on every resume, attach and NFC-on,
-    // and Android has no API to query it, so report the hold. Arming again would
+    // and Android has no API to query it, so keep the hold. Arming again would
     // risk a failure that clears the reader mode already in effect.
-    if (suppressionActive) {
+    val alreadyHeld = suppressionActive
+    if (!alreadyHeld) {
+      try {
+        hold(activity)
+      } catch (e: SecurityException) {
+        callback(Result.success(SuppressionResult(
+          SuppressionStatusCode.DENIED, "Permission denied for NFC operations: ${e.message}")))
+        return
+      } catch (e: Exception) {
+        callback(Result.success(SuppressionResult(
+          SuppressionStatusCode.UNKNOWN, "Failed to request suppression: ${e.message}")))
+        return
+      }
+    }
+    if (!suppressor.isNfcEnabled(activity)) {
+      // Held, but nothing is suppressed while NFC is off; reader mode is armed
+      // when it is switched on.
+      if (isDebug) Log.d(TAG, "NFC wallet suppression held; it starts when NFC is enabled")
       callback(Result.success(SuppressionResult(
-        SuppressionStatusCode.SUPPRESSED, "Suppression already active")))
+        SuppressionStatusCode.NFC_DISABLED, "NFC is disabled. Suppression starts when NFC is enabled")))
       return
     }
-    try {
-      hold(activity)
-      if (isDebug) Log.d(TAG, "NFC wallet suppression enabled")
-      callback(Result.success(SuppressionResult(SuppressionStatusCode.SUPPRESSED, "Suppressed")))
-    } catch (e: SecurityException) {
-      callback(Result.success(SuppressionResult(
-        SuppressionStatusCode.DENIED, "Permission denied for NFC operations: ${e.message}")))
-    } catch (e: Exception) {
-      callback(Result.success(SuppressionResult(
-        SuppressionStatusCode.UNKNOWN, "Failed to request suppression: ${e.message}")))
-    }
+    if (isDebug && !alreadyHeld) Log.d(TAG, "NFC wallet suppression enabled")
+    val message = if (alreadyHeld) "Suppression already active" else "Suppressed"
+    callback(Result.success(SuppressionResult(SuppressionStatusCode.SUPPRESSED, message)))
   }
 
   override fun releaseSuppression(callback: (Result<SuppressionResult>) -> Unit) {

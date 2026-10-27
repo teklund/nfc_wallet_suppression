@@ -45,13 +45,12 @@ final class SuppressionResult {
 
   /// Whether retrying could plausibly succeed once something changes.
   ///
-  /// [SuppressionStatus.nfcDisabled] needs the user to switch NFC on;
-  /// [SuppressionStatus.unavailable] is transient and may clear on its own.
-  /// Deliberately excludes [SuppressionStatus.unknown], where the operation may
-  /// already have taken effect — check `isSuppressed()` before retrying that.
-  bool get isRetryable =>
-      status == SuppressionStatus.nfcDisabled ||
-      status == SuppressionStatus.unavailable;
+  /// True only for [SuppressionStatus.unavailable], which is transient and may
+  /// clear on its own. [SuppressionStatus.nfcDisabled] needs no retry: the
+  /// request is held and starts once NFC is switched on. Deliberately excludes
+  /// [SuppressionStatus.unknown], where the operation may already have taken
+  /// effect — check `isSuppressed()` before retrying that.
+  bool get isRetryable => status == SuppressionStatus.unavailable;
 
   @override
   bool operator ==(Object other) =>

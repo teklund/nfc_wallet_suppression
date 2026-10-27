@@ -329,13 +329,13 @@ void main() {
       test('carries the platform message through requestSuppression', () async {
         mockApi.mockRequestResult = SuppressionResult(
           status: SuppressionStatusCode.nfcDisabled,
-          message: 'NFC is disabled. Please enable NFC in device settings',
+          message: 'NFC is disabled. Suppression starts when NFC is enabled',
         );
 
         final result = await platform.requestSuppression();
         expect(
           result.description,
-          'NFC is disabled. Please enable NFC in device settings',
+          'NFC is disabled. Suppression starts when NFC is enabled',
         );
       });
 

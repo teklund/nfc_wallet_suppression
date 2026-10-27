@@ -9,7 +9,6 @@ import io.flutter.plugin.common.BinaryMessenger
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -37,10 +36,12 @@ internal class NfcWalletSuppressionPluginTest {
     var startCount = 0
     var stopCount = 0
     var onNfcEnabled: (() -> Unit)? = null
+    var whileArming: (() -> Unit)? = null
 
     override fun hasNfcHardware(context: Context) = hasHardware
     override fun isNfcEnabled(context: Context) = nfcEnabled
     override fun startReaderMode(activity: Activity, callback: NfcAdapter.ReaderCallback) {
+      whileArming?.invoke()
       startError?.let { throw it }
       startCount++
     }
@@ -118,11 +119,35 @@ internal class NfcWalletSuppressionPluginTest {
   }
 
   @Test
-  fun request_returnsNfcDisabledWhenNfcSwitchedOff() {
-    // Distinct from UNAVAILABLE and NOT_SUPPORTED because it is the one failure
-    // the user can fix: an app can deep-link to android.settings.NFC_SETTINGS.
+  fun request_whileNfcOff_returnsNfcDisabledAndArmsWhenNfcIsSwitchedOn() {
     val fake = FakeWalletSuppressor().apply { nfcEnabled = false }
-    assertEquals(SuppressionStatusCode.NFC_DISABLED, requestStatus(pluginWithActivity(fake)))
+    val plugin = pluginWithActivity(fake)
+    assertEquals(SuppressionStatusCode.NFC_DISABLED, requestStatus(plugin))
+    assertFalse(plugin.isSuppressed())
+
+    fake.switchNfcOn()
+    assertEquals(2, fake.startCount, "Reader mode must be re-armed once NFC is on")
+    assertTrue(plugin.isSuppressed())
+    assertEquals(SuppressionStatusCode.SUPPRESSED, requestStatus(plugin))
+  }
+
+  @Test
+  fun request_whenNfcComesOnWhileArming_reArms() {
+    // NfcService drops the arming while NFC is still off. The NFC-on broadcast
+    // goes only to receivers registered when it is sent, and arrives after the
+    // request returns.
+    val fake = FakeWalletSuppressor().apply { nfcEnabled = false }
+    var broadcast: (() -> Unit)? = null
+    fake.whileArming = {
+      fake.whileArming = null
+      fake.nfcEnabled = true
+      broadcast = fake.onNfcEnabled
+    }
+    val plugin = pluginWithActivity(fake)
+
+    assertEquals(SuppressionStatusCode.SUPPRESSED, requestStatus(plugin))
+    broadcast?.invoke()
+    assertEquals(2, fake.startCount, "The NFC-on broadcast must re-arm reader mode")
   }
 
   @Test
@@ -254,7 +279,9 @@ internal class NfcWalletSuppressionPluginTest {
   }
 
   @Test
-  fun reattach_whenNfcDisabled_defersReArmUntilNfcIsSwitchedOn() {
+  fun reattach_whenNfcDisabled_armsTheNewActivity() {
+    // Android keeps reader mode for the new activity and re-sends it on resume,
+    // a second path besides the NFC-on observer.
     val fake = FakeWalletSuppressor()
     val activity = Mockito.mock(Activity::class.java)
     val plugin = pluginWithActivity(fake, activity)
@@ -264,11 +291,11 @@ internal class NfcWalletSuppressionPluginTest {
     plugin.onDetachedFromActivityForConfigChanges()
     plugin.onReattachedToActivityForConfigChanges(activityBinding(activity))
 
-    assertEquals(1, fake.startCount, "Must not re-arm when NFC is disabled")
+    assertEquals(2, fake.startCount, "The new activity must be armed while NFC is off")
     assertFalse(plugin.isSuppressed())
 
     fake.switchNfcOn()
-    assertEquals(2, fake.startCount)
+    assertEquals(3, fake.startCount)
     assertTrue(plugin.isSuppressed())
   }
 
@@ -372,22 +399,14 @@ internal class NfcWalletSuppressionPluginTest {
   }
 
   @Test
-  fun request_whileNfcOff_reportsNfcDisabledAndKeepsTheEarlierRequest() {
-    val fake = FakeWalletSuppressor().apply { nfcEnabled = false }
+  fun request_whileNfcOff_keepsTheEarlierRequest() {
+    val fake = FakeWalletSuppressor()
     val plugin = pluginWithActivity(fake)
-    val withoutRequest = request(plugin)
-
-    fake.switchNfcOn()
     requestStatus(plugin)
-    fake.switchNfcOff()
-    val withRequest = request(plugin)
 
-    assertEquals(SuppressionStatusCode.NFC_DISABLED, withRequest.status)
-    assertNotEquals(
-      withoutRequest.message,
-      withRequest.message,
-      "The message must tell a held request apart from one that was never made",
-    )
+    fake.switchNfcOff()
+    assertEquals(SuppressionStatusCode.NFC_DISABLED, requestStatus(plugin))
+    assertEquals(1, fake.startCount, "Must not re-arm reader mode when already held")
 
     fake.switchNfcOn()
     assertEquals(2, fake.startCount)
@@ -406,6 +425,21 @@ internal class NfcWalletSuppressionPluginTest {
 
     fake.switchNfcOn()
     assertEquals(1, fake.startCount)
+    assertFalse(plugin.isSuppressed())
+  }
+
+  @Test
+  fun release_afterRequestWhileNfcOff_endsTheHold() {
+    val fake = FakeWalletSuppressor().apply { nfcEnabled = false }
+    val plugin = pluginWithActivity(fake)
+    assertEquals(SuppressionStatusCode.NFC_DISABLED, requestStatus(plugin))
+
+    assertEquals(SuppressionStatusCode.NOT_SUPPRESSED, releaseStatus(plugin))
+    assertEquals(1, fake.stopCount)
+    assertNull(fake.onNfcEnabled, "Release must stop observing NFC state")
+
+    fake.switchNfcOn()
+    assertEquals(1, fake.startCount, "Nothing may arm once released")
     assertFalse(plugin.isSuppressed())
   }
 
@@ -457,12 +491,12 @@ internal class NfcWalletSuppressionPluginTest {
     val plugin = pluginWithActivity(fake)
 
     assertEquals(SuppressionStatusCode.UNKNOWN, requestStatus(plugin))
-    assertEquals(1, fake.stopCount, "Reader mode must be turned back off")
+    assertEquals(0, fake.startCount, "Reader mode must not be armed")
     assertFalse(plugin.isSuppressed())
 
     fake.observeError = null
     assertEquals(SuppressionStatusCode.SUPPRESSED, requestStatus(plugin))
-    assertEquals(2, fake.startCount, "A retry must arm again, not report the failed request as held")
+    assertEquals(1, fake.startCount, "A retry must arm, not report the failed request as held")
     assertNotNull(fake.onNfcEnabled)
   }
 
