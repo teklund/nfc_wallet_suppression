@@ -133,16 +133,20 @@ internal class NfcWalletSuppressionPluginTest {
 
   @Test
   fun request_whenNfcComesOnWhileArming_reArms() {
-    // NfcService drops the arming while NFC is still off, so the NFC-on
-    // broadcast that follows must already be observed.
+    // NfcService drops the arming while NFC is still off. The NFC-on broadcast
+    // goes only to receivers registered when it is sent, and arrives after the
+    // request returns.
     val fake = FakeWalletSuppressor().apply { nfcEnabled = false }
+    var broadcast: (() -> Unit)? = null
     fake.whileArming = {
       fake.whileArming = null
-      fake.switchNfcOn()
+      fake.nfcEnabled = true
+      broadcast = fake.onNfcEnabled
     }
     val plugin = pluginWithActivity(fake)
 
     assertEquals(SuppressionStatusCode.SUPPRESSED, requestStatus(plugin))
+    broadcast?.invoke()
     assertEquals(2, fake.startCount, "The NFC-on broadcast must re-arm reader mode")
   }
 
