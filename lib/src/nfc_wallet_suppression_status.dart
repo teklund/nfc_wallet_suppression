@@ -56,11 +56,10 @@ enum SuppressionStatus {
 
   /// NFC hardware is present but switched off in system settings.
   ///
-  /// The one failure the user can fix directly, which is why it is separate from
-  /// [unavailable] and [notSupported]: an app can deep-link to NFC settings
-  /// (`android.settings.NFC_SETTINGS`) and prompt them to enable it. A
-  /// suppression that is already held is kept, and resumes once NFC is switched
-  /// back on.
+  /// The request is held, and suppression starts by itself once NFC is switched
+  /// on. While NFC is off, wallet apps can't respond to readers either, so
+  /// prompt the user to switch it on (`android.settings.NFC_SETTINGS`) only if
+  /// your app needs NFC itself.
   ///
   /// Android only. iOS exposes no equivalent state.
   nfcDisabled,

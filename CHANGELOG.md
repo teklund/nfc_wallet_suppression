@@ -14,8 +14,8 @@ The first stable release. Compared with 0.1.1, requests and releases return a
   platform's diagnostic `description`, and `isSuppressed`, `isReleased` and
   `isRetryable`.
 - `NfcWalletSuppression.isSupported()`.
-- `SuppressionStatus.nfcDisabled`: Android with NFC switched off, the one
-  failure the user can fix.
+- `SuppressionStatus.nfcDisabled`: Android with NFC switched off. The request
+  is held and starts once NFC is switched on.
 - `package:nfc_wallet_suppression/testing.dart` with `FakeNfcWalletSuppression`
   for unit and widget tests.
 - Web, macOS, Linux and Windows: calls do nothing and a request returns
@@ -29,8 +29,9 @@ The first stable release. Compared with 0.1.1, requests and releases return a
 - **Breaking**: `requestSuppression()` and `releaseSuppression()` return a
   `SuppressionResult` instead of a `SuppressionStatus`.
 - **Breaking**: `unavailable` now means only "transient, retry may work": on
-  Android, no Activity attached. NFC switched off returns `nfcDisabled`, and a
-  device without NFC returns `notSupported`.
+  Android, no Activity attached. NFC switched off returns `nfcDisabled` and
+  holds the request, so release it like a successful one. A device without NFC
+  returns `notSupported`.
 - **Breaking**: Release is idempotent: with nothing held it returns
   `notSuppressed` instead of `unavailable`.
 - **Breaking**: `SuppressionStatus.cancelled` is renamed `canceled`.

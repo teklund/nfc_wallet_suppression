@@ -125,9 +125,7 @@ enum SuppressionStatusCode {
 
   /// NFC hardware is present but switched off in system settings.
   ///
-  /// Distinct from [unavailable] and [notSupported] because it is the one
-  /// condition the user can fix: an app can deep-link to NFC settings and
-  /// prompt them to enable it.
+  /// The request is held, and suppression starts once NFC is switched on.
   nfcDisabled,
 }
 

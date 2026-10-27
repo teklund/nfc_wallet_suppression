@@ -122,9 +122,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         _isLoading = false;
       });
       if (result.status == SuppressionStatus.nfcDisabled) {
-        // The one failure the user can fix. A real app would deep-link to
-        // `android.settings.NFC_SETTINGS` here.
-        _showSnack('Turn NFC on in system settings, then try again.');
+        // Held: it starts by itself once NFC is switched on.
+        _showSnack('Suppression starts when NFC is switched on.');
       }
     } catch (error) {
       if (!mounted) return;

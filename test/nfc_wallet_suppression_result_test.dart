@@ -69,10 +69,7 @@ void main() {
     });
 
     test('isRetryable covers exactly the recoverable statuses', () {
-      const retryable = {
-        SuppressionStatus.nfcDisabled,
-        SuppressionStatus.unavailable,
-      };
+      const retryable = {SuppressionStatus.unavailable};
 
       for (final status in SuppressionStatus.values) {
         expect(
@@ -87,6 +84,11 @@ void main() {
       // `unknown` means the operation may already have taken effect, so a blind
       // retry could double-apply. Callers should check `isSuppressed()` instead.
       expect(of(SuppressionStatus.unknown).isRetryable, false);
+    });
+
+    test('isRetryable excludes nfcDisabled', () {
+      // The request is already held and starts once NFC is on.
+      expect(of(SuppressionStatus.nfcDisabled).isRetryable, false);
     });
 
     test('isRetryable excludes notSupported', () {
