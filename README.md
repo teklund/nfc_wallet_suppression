@@ -186,9 +186,9 @@ channel itself does.
 
 Suppression lasts until you release it or the app is closed. It is not restored
 on the next launch, so request it again then. A request that returns
-`nfcDisabled` is held too. While it is held, it pauses when
-the app goes to the background, and on Android also while NFC is switched off,
-and resumes by itself afterwards.
+`nfcDisabled` is held too. While it is held, it pauses when the app goes to the
+background, and on Android also while NFC is switched off, and resumes by itself
+afterwards.
 
 ## Migrating from 0.1.x
 
