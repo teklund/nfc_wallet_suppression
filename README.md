@@ -47,9 +47,8 @@ flutter pub add nfc_wallet_suppression
 
 ### Android
 
-**Minimum:** Android 5.0+ (API 21, this plugin's floor). Your app's actual
-minimum is whichever is higher — this plugin's floor or the one your Flutter
-version requires. Flutter 3.44, for example, requires Android 7.0 (API 24).
+**Minimum:** Android 7.0+ (API 24), the same as Flutter 3.44 requires. Newer
+Flutter versions may require more.
 
 **Setup:** none. The plugin adds the `NFC` permission and declares NFC hardware
 optional, so your app still installs on devices without NFC.

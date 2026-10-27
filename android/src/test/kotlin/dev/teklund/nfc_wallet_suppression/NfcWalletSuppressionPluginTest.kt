@@ -365,8 +365,8 @@ internal class NfcWalletSuppressionPluginTest {
 
   @Test
   fun nfcSwitchedBackOn_reArmsReaderMode() {
-    // Android discards reader mode when NFC is switched off and does not restore
-    // it when NFC returns, so the plugin must re-arm it.
+    // From Android 13, switching NFC off clears reader mode, and switching it back
+    // on does not restore it until the next resume, so the plugin must re-arm it.
     val fake = FakeWalletSuppressor()
     val plugin = pluginWithActivity(fake)
     requestStatus(plugin)
