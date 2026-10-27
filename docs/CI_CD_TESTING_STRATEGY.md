@@ -19,6 +19,7 @@ CI is consolidated into a single workflow, `ci.yml`, supplemented by an integrat
 - **Check Changes** and **Dependency Review** (pull requests only) run on their own. Everything else waits for **Analyze Code**: Dart tests, Pub Score Check, Publish Dry Run and the platform jobs.
 - Platform jobs (native tests and builds) run only when **Check Changes** finds changes for that platform.
 - Jobs with a `flutter-version` matrix run on both the minimum supported Flutter version and `stable`.
+- **Android Native Tests** also runs once on `stable` with AGP 9's built-in Kotlin on, the other branch of the plugin's `build.gradle`.
 - **CI Success** is the one required check: it fails if any job failed or was cancelled, and treats skipped jobs as passing.
 
 Codecov uploads happen from three jobs and are tagged with these flags (see `codecov.yml`):
