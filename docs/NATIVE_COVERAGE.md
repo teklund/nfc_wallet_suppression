@@ -8,7 +8,7 @@ The plugin collects coverage for all three layers and uploads each as a separate
 
 - **Dart** — Flutter's built-in coverage (lcov), uploaded as flag `dart`
 - **Android** — JaCoCo (XML), uploaded as flag `android`
-- **iOS** — Xcode `xccov` (JSON), uploaded as flag `ios`
+- **iOS** — Xcode's coverage, exported with `llvm-cov` (lcov), uploaded as flag `ios`
 
 All three flags are also defined in `codecov.yml` with path scoping and carryforward, so a missing upload from one job (e.g. Android skipped on a Dart-only PR) doesn't drop coverage for that platform to zero.
 
@@ -79,9 +79,9 @@ The `Android Native Tests` job in `ci.yml`:
 1. Runs `:nfc_wallet_suppression:testDebugUnitTest :nfc_wallet_suppression:jacocoTestReport`
 2. Uploads the XML report to Codecov with `flags: android`
 
-## iOS Coverage (xccov)
+## iOS Coverage (llvm-cov)
 
-iOS coverage is enabled by `xcodebuild test -enableCodeCoverage YES` and extracted from the resulting `.xcresult` bundle.
+iOS coverage is enabled by `xcodebuild test -enableCodeCoverage YES`. Where the plugin's code ends up depends on how the example integrates it: its own `nfc_wallet_suppression.framework` under CocoaPods, or linked into `Runner.app/Runner.debug.dylib` under Swift Package Manager. Xcode's own report (`xccov`) shows the plugin only under CocoaPods, so CI exports coverage with `llvm-cov` from every binary in the app instead.
 
 ### Run locally
 
@@ -98,22 +98,26 @@ xcodebuild test \
   -scheme Runner \
   -destination 'platform=iOS Simulator,id=<simulator id>' \
   -enableCodeCoverage YES \
+  -derivedDataPath build/DerivedData \
   -resultBundlePath TestResults.xcresult
 
-# Human-readable summary
-xcrun xccov view --report TestResults.xcresult
-
-# JSON for upload
-xcrun xccov view --report --json TestResults.xcresult > coverage.json
+# Summary for the plugin: its own framework under CocoaPods, otherwise
+# Runner.debug.dylib
+APP=build/DerivedData/Build/Products/Debug-iphonesimulator/Runner.app
+PLUGIN="$APP/Frameworks/nfc_wallet_suppression.framework/nfc_wallet_suppression"
+[ -f "$PLUGIN" ] || PLUGIN="$APP/Runner.debug.dylib"
+xcrun llvm-cov report -arch "$(uname -m)" \
+  -instr-profile build/DerivedData/Build/ProfileData/*/Coverage.profdata "$PLUGIN" \
+  | grep -E 'Filename|NfcWalletSuppressionPlugin\.swift'
 ```
 
 ### CI
 
 The `iOS Native Tests` job in `ci.yml`:
 
-1. Runs `xcodebuild test … -enableCodeCoverage YES`
-2. Extracts JSON via `xcrun xccov view --report --json`
-3. Uploads the JSON to Codecov with `flags: ios`
+1. Runs `xcodebuild test … -enableCodeCoverage YES` with a fixed DerivedData path
+2. Exports lcov with `llvm-cov export` from every binary in `Runner.app`, keeping only the plugin's sources, and fails if `NfcWalletSuppressionPlugin.swift` has no covered lines
+3. Uploads only that file to Codecov with `flags: ios`, and only when the tests passed
 
 `codecov.yml` scopes the iOS flag to `ios/nfc_wallet_suppression/Sources/`, matching the SPM-based source layout introduced in 1.0.0.
 
@@ -155,7 +159,7 @@ genhtml coverage/lcov.info -o coverage/html && open coverage/html/index.html
 | Android | high     | The plugin runs against a fake suppressor; `SystemWalletSuppressor` runs against static mocks of `NfcAdapter` and `ContextCompat` |
 | iOS     | high     | The plugin runs against a fake PassKit library and scheduler                                                                 |
 
-Pigeon-generated files are ignored on every platform (see `codecov.yml`); pigeon tests its own output. Local JaCoCo and xccov reports still include them.
+Pigeon-generated files are ignored on every platform (see `codecov.yml`); pigeon tests its own output. Local JaCoCo and llvm-cov reports still include them.
 
 ## What Unit Tests Can't Cover
 
@@ -180,8 +184,8 @@ These are checked on real devices. `integration_tests.yml` runs only on demand u
 ### iOS coverage missing
 
 - `-enableCodeCoverage YES` set on the `xcodebuild test` call?
-- `TestResults.xcresult` bundle produced?
-- `xcrun xccov view --report TestResults.xcresult` shows data?
+- `Coverage.profdata` present under `build/DerivedData/Build/ProfileData/`?
+- The summary under "Run locally" lists `NfcWalletSuppressionPlugin.swift`?
 
 ### Codecov upload fails
 
