@@ -475,24 +475,48 @@ jobs:
             -only-testing:RunnerTests \
             -enableCodeCoverage YES \
             -parallel-testing-enabled NO \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
             -resultBundlePath TestResults.xcresult \
             | xcpretty --color --simple
       
       - name: Convert iOS coverage to lcov
-        if: always()
+        id: coverage
+        # The plugin's code is in its own framework under CocoaPods, but linked
+        # into Runner.debug.dylib under Swift Package Manager, where the result
+        # bundle names a framework that is never built. So llvm-cov reads every
+        # binary in the app, and the report keeps only the plugin's sources,
+        # with paths cut back to the prefix the `ios` flag in codecov.yml uses.
         working-directory: example/ios
         run: |
-          # Install xcov for coverage conversion
-          gem install slather
-          
-          # Extract coverage from xcresult
-          xcrun xccov view --report --json TestResults.xcresult > coverage.json || true
-          
-          # Convert to lcov format using xcresult
-          if command -v xcresultparser &> /dev/null; then
-            xcresultparser --output-format cobertura TestResults.xcresult > coverage.xml || true
+          set -euo pipefail
+          SOURCES=ios/nfc_wallet_suppression/Sources/
+          DERIVED_DATA="$RUNNER_TEMP/DerivedData"
+          PROFILE=$(ls "$DERIVED_DATA"/Build/ProfileData/*/Coverage.profdata 2>/dev/null || true)
+          if [ -z "$PROFILE" ]; then
+            echo "::error::No Coverage.profdata under $DERIVED_DATA."
+            exit 1
           fi
-        continue-on-error: true
+          BINARIES=()
+          while IFS= read -r f; do
+            case "$(file -b "$f")" in *Mach-O*) BINARIES+=(-object "$f") ;; esac
+          done < <(find "$DERIVED_DATA/Build/Products/Debug-iphonesimulator/Runner.app" \
+            -type f \( -perm -u+x -o -name '*.dylib' \) ! -path '*/_CodeSignature/*')
+          if [ ${#BINARIES[@]} -eq 0 ]; then
+            echo "::error::No binaries found in Runner.app under $DERIVED_DATA."
+            exit 1
+          fi
+          # llvm-cov takes the first binary bare and the rest with -object.
+          xcrun llvm-cov export -format=lcov -arch arm64 -instr-profile "$PROFILE" "${BINARIES[@]:1}" \
+            | sed -E "s|^SF:.*/($SOURCES)|SF:\1|" \
+            | awk -v prefix="SF:$SOURCES" '/^SF:/ { keep = index($0, prefix) == 1 } keep' \
+            > coverage.lcov
+          PLUGIN="${SOURCES}nfc_wallet_suppression/NfcWalletSuppressionPlugin.swift"
+          HIT=$(awk -F: -v plugin="$PLUGIN" '$1 == "SF" { f = $2 } $1 == "LH" && f == plugin && $2 > hit { hit = $2 } END { print hit + 0 }' coverage.lcov)
+          if [ "$HIT" -eq 0 ]; then
+            echo "::error::No coverage recorded for $PLUGIN."
+            exit 1
+          fi
+          echo "$PLUGIN: $HIT lines covered"
       
       - name: Parse test results
         if: always()
@@ -510,20 +534,24 @@ jobs:
           else
             echo "⚠️ Test results not found" >> $GITHUB_STEP_SUMMARY
           fi
-          if [ -f "coverage.json" ]; then
+          if [ "${{ steps.coverage.outcome }}" = "success" ]; then
             echo "✅ Coverage data extracted" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Coverage not extracted" >> $GITHUB_STEP_SUMMARY
           fi
       
       - name: Upload iOS coverage to Codecov
-        if: always()
         uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: example/ios/coverage.json
+          files: example/ios/coverage.lcov
+          # Only that file, without the uploader's own Xcode processing, which
+          # never looks at Runner.debug.dylib.
+          disable_search: true
+          plugins: noop
           flags: ios
           name: ios-coverage
           fail_ci_if_error: false
-        continue-on-error: true
       
       - name: Upload iOS test results
         if: always()
