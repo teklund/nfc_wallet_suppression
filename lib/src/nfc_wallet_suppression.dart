@@ -46,7 +46,7 @@ abstract final class NfcWalletSuppression {
   ///
   /// | Status | iOS | Android |
   /// |---|---|---|
-  /// | [SuppressionStatus.suppressed] — suppression is active | ✔ | ✔ |
+  /// | [SuppressionStatus.suppressed] — suppression is held, and in effect while the app is in the foreground | ✔ | ✔ |
   /// | [SuppressionStatus.notSupported] — no suppression capability at all; iOS: PassKit reports it unsupported, Android: no NFC hardware | ✔ | ✔ |
   /// | [SuppressionStatus.nfcDisabled] — NFC is switched off; the request is held and starts once NFC is on | | ✔ |
   /// | [SuppressionStatus.unavailable] — transient; no Activity attached | | ✔ |
@@ -128,10 +128,12 @@ abstract final class NfcWalletSuppression {
   /// - **iOS** asks PassKit (`isSuppressingAutomaticPassPresentation`), which
   ///   can still report `true` just after [releaseSuppression] and while the app
   ///   moves to the background.
-  /// - **Android** reports the plugin's hold, so it is `false` while NFC is off,
-  ///   the app is in the background or no Activity is attached, but can still
-  ///   be `true` briefly after NFC is switched on, and after another plugin has
-  ///   stopped reader mode.
+  /// - **Android** is `true` while the plugin holds suppression and Android
+  ///   applies it: `false` while NFC is off, while the Activity is paused (in the
+  ///   background, or behind another activity such as the share sheet or a
+  ///   permission dialog) and with no Activity attached. It can still be `true`
+  ///   briefly after NFC is switched on, and after another plugin has stopped
+  ///   reader mode.
   static Future<bool> isSuppressed() {
     return NfcWalletSuppressionPlatform.instance.isSuppressed();
   }

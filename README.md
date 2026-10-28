@@ -167,7 +167,7 @@ without a major version bump, so **always include a `default` when switching.**
 
 | Status | `request` | `release` | Description |
 | :--- | :---: | :---: | :--- |
-| `suppressed` | ✔ | | Suppression is active |
+| `suppressed` | ✔ | | Suppression is held, and in effect while the app is in the foreground |
 | `notSuppressed` | | ✔ | Suppression is off — whether this call ended it or there was nothing to end |
 | `nfcDisabled` | ✔ (Android) | | NFC is switched off in settings. The request is held and starts by itself once NFC is on. Wallet apps can't respond to readers while NFC is off either, so prompt the user (`android.settings.NFC_SETTINGS`) only if your app needs NFC itself. |
 | `unavailable` | ✔ (Android) | | Transient and retryable — no Activity is attached to the Flutter engine, for example during a configuration change |

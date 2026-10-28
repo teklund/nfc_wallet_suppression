@@ -172,6 +172,18 @@ internal class NfcWalletSuppressionPluginTest {
   }
 
   @Test
+  fun request_whilePaused_holdsUntilResumed() {
+    // Android records reader mode for a paused activity and arms it on resume.
+    var state = Lifecycle.State.STARTED
+    val plugin = pluginWithActivity(FakeWalletSuppressor(), activityIn { state })
+    assertEquals(SuppressionStatusCode.SUPPRESSED, requestStatus(plugin))
+    assertFalse(plugin.isSuppressed())
+
+    state = Lifecycle.State.RESUMED
+    assertTrue(plugin.isSuppressed())
+  }
+
+  @Test
   fun request_whenAlreadyActive_returnsSuppressedWithoutReArming() {
     val fake = FakeWalletSuppressor()
     val plugin = pluginWithActivity(fake)
@@ -309,6 +321,24 @@ internal class NfcWalletSuppressionPluginTest {
     plugin.onReattachedToActivityForConfigChanges(activityBinding(activity))
 
     assertEquals(2, fake.startCount, "Reader mode must be re-armed against the new activity")
+    assertTrue(plugin.isSuppressed())
+  }
+
+  @Test
+  fun reattach_beforeResume_isSuppressedOnceResumed() {
+    // Flutter attaches the new activity in onCreate; Android arms the reader
+    // mode set then when the activity resumes.
+    val fake = FakeWalletSuppressor()
+    val plugin = pluginWithActivity(fake)
+    requestStatus(plugin)
+
+    var state = Lifecycle.State.INITIALIZED
+    plugin.onDetachedFromActivityForConfigChanges()
+    plugin.onReattachedToActivityForConfigChanges(activityBinding(activityIn { state }))
+    assertEquals(2, fake.startCount)
+    assertFalse(plugin.isSuppressed())
+
+    state = Lifecycle.State.RESUMED
     assertTrue(plugin.isSuppressed())
   }
 

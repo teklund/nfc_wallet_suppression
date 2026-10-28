@@ -72,9 +72,6 @@ android {
         // resolve it to the newer copy Flutter's embedding already brings, so it
         // never forces an upgrade on them.
         implementation("androidx.core:core:1.9.0")
-        // The first AndroidX release of Lifecycle; Flutter's embedding brings a
-        // newer one.
-        implementation("androidx.lifecycle:lifecycle-common:2.0.0")
 
         testImplementation("org.jetbrains.kotlin:kotlin-test-junit5:$kotlin_version")
         testImplementation("org.mockito:mockito-core:5.14.2")
