@@ -3,6 +3,8 @@ package dev.teklund.nfc_wallet_suppression
 import android.app.Activity
 import android.content.Context
 import android.nfc.NfcAdapter
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugin.common.BinaryMessenger
@@ -76,6 +78,16 @@ internal class NfcWalletSuppressionPluginTest {
     val binding = Mockito.mock(ActivityPluginBinding::class.java)
     Mockito.`when`(binding.activity).thenReturn(activity)
     return binding
+  }
+
+  /** An activity whose lifecycle reports [state] each time it is read. */
+  private fun activityIn(state: () -> Lifecycle.State): Activity {
+    val lifecycle = Mockito.mock(Lifecycle::class.java)
+    Mockito.`when`(lifecycle.currentState).thenAnswer { state() }
+    val activity = Mockito.mock(
+      Activity::class.java, Mockito.withSettings().extraInterfaces(LifecycleOwner::class.java))
+    Mockito.`when`((activity as LifecycleOwner).lifecycle).thenReturn(lifecycle)
+    return activity
   }
 
   private fun pluginWithActivity(
@@ -239,6 +251,28 @@ internal class NfcWalletSuppressionPluginTest {
     requestStatus(plugin)
     fake.nfcEnabled = false  // user turned NFC off after suppressing
     assertFalse(plugin.isSuppressed())
+  }
+
+  @Test
+  fun isSuppressed_falseWhileActivityIsPaused() {
+    // Android disarms reader mode when the activity pauses, as in the background.
+    var state = Lifecycle.State.RESUMED
+    val plugin = pluginWithActivity(FakeWalletSuppressor(), activityIn { state })
+    requestStatus(plugin)
+    assertTrue(plugin.isSuppressed())
+
+    state = Lifecycle.State.STARTED
+    assertFalse(plugin.isSuppressed())
+
+    state = Lifecycle.State.RESUMED
+    assertTrue(plugin.isSuppressed())
+  }
+
+  @Test
+  fun isSuppressed_activityWithoutLifecycle_isTakenAsResumed() {
+    val plugin = pluginWithActivity(FakeWalletSuppressor())
+    requestStatus(plugin)
+    assertTrue(plugin.isSuppressed())
   }
 
   @Test

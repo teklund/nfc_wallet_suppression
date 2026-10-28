@@ -128,10 +128,10 @@ abstract final class NfcWalletSuppression {
   /// - **iOS** asks PassKit (`isSuppressingAutomaticPassPresentation`), which
   ///   can still report `true` just after [releaseSuppression] and while the app
   ///   moves to the background.
-  /// - **Android** reports the plugin's hold, so it is `false` while NFC is off
-  ///   or no Activity is attached, but can still be `true` in the background,
-  ///   briefly after NFC is switched on, and after another plugin has stopped
-  ///   reader mode.
+  /// - **Android** reports the plugin's hold, so it is `false` while NFC is off,
+  ///   the app is in the background or no Activity is attached, but can still
+  ///   be `true` briefly after NFC is switched on, and after another plugin has
+  ///   stopped reader mode.
   static Future<bool> isSuppressed() {
     return NfcWalletSuppressionPlatform.instance.isSuppressed();
   }

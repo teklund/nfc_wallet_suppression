@@ -10,6 +10,8 @@ import android.nfc.NfcAdapter
 import android.nfc.Tag
 import android.util.Log
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -302,10 +304,13 @@ class NfcWalletSuppressionPlugin internal constructor(
   }
 
   override fun isSuppressed(): Boolean {
-    val activity = activity
-    // Reconcile intent with reality: reader mode is only held while an activity is
-    // attached and NFC is still enabled.
-    return suppressionActive && activity != null && suppressor.isNfcEnabled(activity)
+    val activity = activity ?: return false
+    // Reconcile intent with reality: Android arms reader mode only while the
+    // activity is resumed and NFC is on. An activity without a lifecycle (a rare
+    // add-to-app host) is taken as resumed.
+    val resumed = (activity as? LifecycleOwner)?.lifecycle?.currentState
+      ?.isAtLeast(Lifecycle.State.RESUMED) ?: true
+    return suppressionActive && resumed && suppressor.isNfcEnabled(activity)
   }
 
   override fun isSupported(): Boolean {
