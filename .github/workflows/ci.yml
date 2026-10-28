@@ -480,6 +480,7 @@ jobs:
             | xcpretty --color --simple
       
       - name: Convert iOS coverage to lcov
+        id: coverage
         # The plugin's code is in its own framework under CocoaPods, but linked
         # into Runner.debug.dylib under Swift Package Manager, where the result
         # bundle names a framework that is never built. So llvm-cov reads every
@@ -490,23 +491,32 @@ jobs:
           set -euo pipefail
           SOURCES=ios/nfc_wallet_suppression/Sources/
           DERIVED_DATA="$RUNNER_TEMP/DerivedData"
-          PROFILE=$(ls "$DERIVED_DATA"/Build/ProfileData/*/Coverage.profdata)
+          PROFILE=$(ls "$DERIVED_DATA"/Build/ProfileData/*/Coverage.profdata 2>/dev/null || true)
+          if [ -z "$PROFILE" ]; then
+            echo "::error::No Coverage.profdata under $DERIVED_DATA."
+            exit 1
+          fi
           BINARIES=()
           while IFS= read -r f; do
             case "$(file -b "$f")" in *Mach-O*) BINARIES+=(-object "$f") ;; esac
           done < <(find "$DERIVED_DATA/Build/Products/Debug-iphonesimulator/Runner.app" \
             -type f \( -perm -u+x -o -name '*.dylib' \) ! -path '*/_CodeSignature/*')
+          if [ ${#BINARIES[@]} -eq 0 ]; then
+            echo "::error::No binaries found in Runner.app under $DERIVED_DATA."
+            exit 1
+          fi
           # llvm-cov takes the first binary bare and the rest with -object.
           xcrun llvm-cov export -format=lcov -arch arm64 -instr-profile "$PROFILE" "${BINARIES[@]:1}" \
             | sed -E "s|^SF:.*/($SOURCES)|SF:\1|" \
             | awk -v prefix="SF:$SOURCES" '/^SF:/ { keep = index($0, prefix) == 1 } keep' \
             > coverage.lcov
-          HIT=$(awk -F: '$1 == "SF" { f = $2 } $1 == "LH" && f ~ /NfcWalletSuppressionPlugin\.swift$/ { print $2 }' coverage.lcov)
-          if [ -z "$HIT" ] || [ "$HIT" -eq 0 ]; then
-            echo "::error::No coverage recorded for NfcWalletSuppressionPlugin.swift."
+          PLUGIN="${SOURCES}nfc_wallet_suppression/NfcWalletSuppressionPlugin.swift"
+          HIT=$(awk -F: -v plugin="$PLUGIN" '$1 == "SF" { f = $2 } $1 == "LH" && f == plugin && $2 > hit { hit = $2 } END { print hit + 0 }' coverage.lcov)
+          if [ "$HIT" -eq 0 ]; then
+            echo "::error::No coverage recorded for $PLUGIN."
             exit 1
           fi
-          echo "NfcWalletSuppressionPlugin.swift: $HIT lines covered"
+          echo "$PLUGIN: $HIT lines covered"
       
       - name: Parse test results
         if: always()
@@ -524,8 +534,10 @@ jobs:
           else
             echo "⚠️ Test results not found" >> $GITHUB_STEP_SUMMARY
           fi
-          if [ -f "coverage.lcov" ]; then
+          if [ "${{ steps.coverage.outcome }}" = "success" ]; then
             echo "✅ Coverage data extracted" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Coverage not extracted" >> $GITHUB_STEP_SUMMARY
           fi
       
       - name: Upload iOS coverage to Codecov

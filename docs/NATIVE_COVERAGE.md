@@ -107,7 +107,7 @@ APP=build/DerivedData/Build/Products/Debug-iphonesimulator/Runner.app
 PLUGIN="$APP/Frameworks/nfc_wallet_suppression.framework/nfc_wallet_suppression"
 [ -f "$PLUGIN" ] || PLUGIN="$APP/Runner.debug.dylib"
 xcrun llvm-cov report -arch "$(uname -m)" \
-  -instr-profile build/DerivedData/Build/ProfileData/*/Coverage.profdata "$PLUGIN" \
+  -instr-profile "build/DerivedData/Build/ProfileData/<simulator id>/Coverage.profdata" "$PLUGIN" \
   | grep -E 'Filename|NfcWalletSuppressionPlugin\.swift'
 ```
 
