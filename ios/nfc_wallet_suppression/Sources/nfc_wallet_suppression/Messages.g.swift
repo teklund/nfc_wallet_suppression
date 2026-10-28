@@ -186,9 +186,9 @@ private func nilOrValue<T>(_ value: Any?) -> T? {
 
 /// Wire form of the public `SuppressionStatus`, whose docs define each value.
 enum SuppressionStatusCode: Int, CaseIterable {
-  /// Suppression is active
+  /// Suppression is held
   case suppressed = 0
-  /// Suppression is not active
+  /// Suppression is not held
   case notSuppressed = 1
   /// Device or OS does not support suppression
   case notSupported = 2

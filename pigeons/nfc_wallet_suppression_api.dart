@@ -12,10 +12,10 @@ import 'package:pigeon/pigeon.dart';
 )
 /// Wire form of the public `SuppressionStatus`, whose docs define each value.
 enum SuppressionStatusCode {
-  /// Suppression is active
+  /// Suppression is held
   suppressed,
 
-  /// Suppression is not active
+  /// Suppression is not held
   notSuppressed,
 
   /// Device or OS does not support suppression

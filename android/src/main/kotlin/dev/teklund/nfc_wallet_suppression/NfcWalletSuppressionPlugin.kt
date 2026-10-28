@@ -259,7 +259,7 @@ class NfcWalletSuppressionPlugin internal constructor(
       return
     }
     if (isDebug && !alreadyHeld) Log.d(TAG, "NFC wallet suppression enabled")
-    val message = if (alreadyHeld) "Suppression already active" else "Suppressed"
+    val message = if (alreadyHeld) "Suppression already held" else "Suppressed"
     callback(Result.success(SuppressionResult(SuppressionStatusCode.SUPPRESSED, message)))
   }
 

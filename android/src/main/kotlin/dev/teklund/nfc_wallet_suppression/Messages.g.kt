@@ -194,9 +194,9 @@ class FlutterError (
 
 /** Wire form of the public `SuppressionStatus`, whose docs define each value. */
 enum class SuppressionStatusCode(val raw: Int) {
-  /** Suppression is active */
+  /** Suppression is held */
   SUPPRESSED(0),
-  /** Suppression is not active */
+  /** Suppression is not held */
   NOT_SUPPRESSED(1),
   /** Device or OS does not support suppression */
   NOT_SUPPORTED(2),

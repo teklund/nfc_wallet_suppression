@@ -184,14 +184,14 @@ internal class NfcWalletSuppressionPluginTest {
   }
 
   @Test
-  fun request_whenAlreadyActive_returnsSuppressedWithoutReArming() {
+  fun request_whenAlreadyHeld_returnsSuppressedWithoutReArming() {
     val fake = FakeWalletSuppressor()
     val plugin = pluginWithActivity(fake)
     requestStatus(plugin)
     assertEquals(1, fake.startCount)
 
     assertEquals(SuppressionStatusCode.SUPPRESSED, requestStatus(plugin))
-    assertEquals(1, fake.startCount, "Must not re-arm reader mode when already active")
+    assertEquals(1, fake.startCount, "Must not re-arm reader mode when already held")
   }
 
   @Test
