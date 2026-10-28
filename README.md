@@ -198,10 +198,10 @@ takes it over from this plugin. While the tag reader runs, its own reader mode
 keeps the wallet away; when it stops, this plugin's suppression is gone too.
 Hand over in order:
 
-1. Release suppression before starting the tag reader. A request made while
-   suppression is still held reports `suppressed` without restoring it.
-2. Request suppression again once the tag reader is done, however it ended,
-   and after its stop call (such as `stopSession()` or `finish()`) has
+1. Release suppression just before starting the tag reader. A request made
+   while suppression is still held reports `suppressed` without restoring it.
+2. Request suppression again as soon as the tag reader is done, however it
+   ended, and after its stop call (such as `stopSession()` or `finish()`) has
    completed. A stop call made after the request clears reader mode again.
 
 Don't request suppression while the tag reader runs: the request replaces its
@@ -272,7 +272,7 @@ The compiler flags the remaining changes:
 | `requestSuppression()` returns `nfcDisabled` | Android | NFC is switched off. Nothing to fix: the request is held and starts once NFC is on. Ask the user to switch NFC on only if your app needs it. |
 | Wallet appears while the app is in the background | Both | Expected: suppression only applies in the foreground, and resumes by itself when the app returns. |
 | Wallet appears while the share sheet, a permission dialog, the camera app, a photo picker or a browser tab is over the app | Android | Expected: anything that opens over the app as its own Android activity pauses the app's Activity, which pauses suppression until the user returns. Screens and dialogs Flutter draws itself (routes, `showDialog`, bottom sheets) don't pause it. |
-| Wallet appears again after another NFC feature ran | Android | Android keeps one reader mode per activity, so a tag reader that stops also ends this plugin's suppression, while `isSuppressed()` still returns `true` and a new request reports `suppressed` without restoring it. Release, then request again. To avoid it, hand over in order; see [With NFC tag readers](#with-nfc-tag-readers-android). |
+| Wallet appears again after another NFC feature ran | Android | Android keeps one reader mode per activity, so when a tag reader or other code stops reader mode, this plugin's suppression is gone too, while `isSuppressed()` still returns `true` and a new request reports `suppressed` without restoring it. Release, then request again. To avoid it, hand over in order; see [With NFC tag readers](#with-nfc-tag-readers-android). |
 
 ## Testing
 

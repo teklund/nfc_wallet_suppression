@@ -34,6 +34,10 @@ import 'nfc_wallet_suppression_status.dart';
 ///   notification shade, where suppression stays in effect, and in split
 ///   screen while the user is in the other app, where it stays in effect on
 ///   Android 10 and later. On Android, [isSuppressed] tells them apart.
+/// - On Android, suppression uses the Activity's one reader mode, so a tag
+///   reader or other code that uses reader mode takes it over, and stopping
+///   that code ends suppression too. Release just before starting such code,
+///   and request again once its stop call has completed.
 abstract final class NfcWalletSuppression {
   /// Requests that the wallet stop popping up at NFC readers.
   ///
@@ -136,8 +140,8 @@ abstract final class NfcWalletSuppression {
   ///   applies it: `false` while NFC is off, while the Activity is paused (in the
   ///   background, or behind another activity such as the share sheet or a
   ///   permission dialog) and with no Activity attached. It can still be `true`
-  ///   briefly after NFC is switched on, and after another plugin has stopped
-  ///   reader mode.
+  ///   briefly after NFC is switched on, and stays `true` after other code
+  ///   stops reader mode, such as a tag reader; release, then request again.
   static Future<bool> isSuppressed() {
     return NfcWalletSuppressionPlatform.instance.isSuppressed();
   }
