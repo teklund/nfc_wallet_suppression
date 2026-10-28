@@ -184,14 +184,31 @@ internal class NfcWalletSuppressionPluginTest {
   }
 
   @Test
-  fun request_whenAlreadyHeld_returnsSuppressedWithoutReArming() {
+  fun request_whenAlreadyHeld_reArmsAndReportsSuppressed() {
     val fake = FakeWalletSuppressor()
     val plugin = pluginWithActivity(fake)
     requestStatus(plugin)
     assertEquals(1, fake.startCount)
 
     assertEquals(SuppressionStatusCode.SUPPRESSED, requestStatus(plugin))
-    assertEquals(1, fake.startCount, "Must not re-arm reader mode when already held")
+    assertEquals(2, fake.startCount, "Must re-arm reader mode when already held")
+    assertEquals(SuppressionStatusCode.NOT_SUPPRESSED, releaseStatus(plugin))
+    assertFalse(plugin.isSuppressed(), "One release must end the hold")
+  }
+
+  @Test
+  fun request_whenAlreadyHeld_andReArmThrows_dropsSuppression() {
+    val fake = FakeWalletSuppressor()
+    val plugin = pluginWithActivity(fake)
+    requestStatus(plugin)
+
+    fake.startError = SecurityException("denied")
+    assertEquals(SuppressionStatusCode.DENIED, requestStatus(plugin))
+
+    assertFalse(plugin.isSuppressed(), "A failed re-arm must drop suppression")
+    assertNull(fake.onNfcEnabled, "A dropped request must stop observing NFC state")
+    assertEquals(SuppressionStatusCode.NOT_SUPPRESSED, releaseStatus(plugin))
+    assertEquals(0, fake.stopCount, "Nothing was held to release")
   }
 
   @Test
@@ -471,10 +488,10 @@ internal class NfcWalletSuppressionPluginTest {
 
     fake.switchNfcOff()
     assertEquals(SuppressionStatusCode.NFC_DISABLED, requestStatus(plugin))
-    assertEquals(1, fake.startCount, "Must not re-arm reader mode when already held")
+    assertEquals(2, fake.startCount, "Must re-arm reader mode when already held")
 
     fake.switchNfcOn()
-    assertEquals(2, fake.startCount)
+    assertEquals(3, fake.startCount)
     assertEquals(SuppressionStatusCode.SUPPRESSED, requestStatus(plugin))
   }
 

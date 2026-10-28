@@ -233,22 +233,19 @@ class NfcWalletSuppressionPlugin internal constructor(
         SuppressionStatusCode.NOT_SUPPORTED, "Device does not have NFC hardware")))
       return
     }
-    // Already held: reader mode is re-armed on every resume, attach and NFC-on,
-    // and Android has no API to query it, so keep the hold. Arming again would
-    // risk a failure that clears the reader mode already in effect.
+    // Arm even when already held: other code on the activity may have cleared
+    // reader mode, and Android has no API to query it.
     val alreadyHeld = suppressionActive
-    if (!alreadyHeld) {
-      try {
-        hold(activity)
-      } catch (e: SecurityException) {
-        callback(Result.success(SuppressionResult(
-          SuppressionStatusCode.DENIED, "Permission denied for NFC operations: ${e.message}")))
-        return
-      } catch (e: Exception) {
-        callback(Result.success(SuppressionResult(
-          SuppressionStatusCode.UNKNOWN, "Failed to request suppression: ${e.message}")))
-        return
-      }
+    try {
+      hold(activity)
+    } catch (e: SecurityException) {
+      callback(Result.success(SuppressionResult(
+        SuppressionStatusCode.DENIED, "Permission denied for NFC operations: ${e.message}")))
+      return
+    } catch (e: Exception) {
+      callback(Result.success(SuppressionResult(
+        SuppressionStatusCode.UNKNOWN, "Failed to request suppression: ${e.message}")))
+      return
     }
     if (!suppressor.isNfcEnabled(activity)) {
       // Held, but nothing is suppressed while NFC is off; reader mode is armed
