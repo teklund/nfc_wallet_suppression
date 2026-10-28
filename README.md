@@ -201,7 +201,7 @@ its own reader mode keeps the wallet away; when it stops, this plugin's
 suppression is still held but not in effect. Hand over in order:
 
 1. Release suppression just before starting the tag reader. A request made
-   while suppression is still held reports `suppressed` without restoring it.
+   while suppression is still held reports on that hold without restoring it.
 2. Request suppression again as soon as the tag reader is done, however it
    ended, and after its stop call (such as `stopSession()` or `finish()`) has
    completed. A stop call made after the request clears reader mode again.
