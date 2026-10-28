@@ -188,7 +188,26 @@ on the next launch, so request it again then. A request that returns
 `nfcDisabled` is held too. While it is held, it pauses in the background, and on
 Android also while the Activity is paused, as behind the share sheet or a
 permission dialog, and while NFC is switched off. It resumes by itself
-afterwards.
+afterwards. On Android, a tag reader or other code that uses reader mode on the
+app's Activity can also leave it held but not in effect; see
+[With NFC tag readers](#with-nfc-tag-readers-android).
+
+### With NFC tag readers (Android)
+
+Android keeps one reader mode per activity, so a tag reader such as
+`nfc_manager` or `flutter_nfc_kit`, or any other code that uses reader mode on
+the app's Activity, takes it over from this plugin. While the tag reader runs,
+its own reader mode keeps the wallet away; when it stops, this plugin's
+suppression is still held but not in effect. Hand over in order:
+
+1. Release suppression just before starting the tag reader. A request made
+   while suppression is still held reports on that hold without restoring it.
+2. Request suppression again as soon as the tag reader is done, however it
+   ended, and after its stop call (such as `stopSession()` or `finish()`) has
+   completed. A stop call made after the request clears reader mode again.
+
+Don't request suppression while the tag reader runs: the request replaces its
+reader mode, and reading stops.
 
 ## Migrating from 0.1.x
 
@@ -255,7 +274,7 @@ The compiler flags the remaining changes:
 | `requestSuppression()` returns `nfcDisabled` | Android | NFC is switched off. Nothing to fix: the request is held and starts once NFC is on. Ask the user to switch NFC on only if your app needs it. |
 | Wallet appears while the app is in the background | Both | Expected: suppression only applies in the foreground, and resumes by itself when the app returns. |
 | Wallet appears while the share sheet, a permission dialog, the camera app, a photo picker or a browser tab is over the app | Android | Expected: anything that opens over the app as its own Android activity pauses the app's Activity, which pauses suppression until the user returns. Screens and dialogs Flutter draws itself (routes, `showDialog`, bottom sheets) don't pause it. |
-| Wallet appears again after another NFC feature ran | Android | Android keeps one reader mode per activity, so another plugin that stops reader mode (a tag reader, for example) also ends this plugin's suppression, while `isSuppressed()` still returns `true`. Release, then request again. |
+| Wallet appears again after another NFC feature ran | Android | Android keeps one reader mode per activity, so when a tag reader or other code stops reader mode on the app's Activity, this plugin's suppression is still held but not in effect: `isSuppressed()` still returns `true`, and a new request reports `suppressed` without restoring it. Release, then request again. To avoid it, hand over in order; see [With NFC tag readers](#with-nfc-tag-readers-android). |
 
 ## Testing
 
