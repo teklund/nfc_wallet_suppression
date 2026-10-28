@@ -113,8 +113,10 @@ class NfcWalletSuppressionPlugin internal constructor(
    * Whether the app holds a suppression request. Reader mode is armed whenever
    * this is set, an activity is attached and NFC is on.
    *
-   * NFC state is observed only while this is set, because switching NFC back on
-   * (as from quick settings) does not restore reader mode until the next resume.
+   * NFC state is observed only while this is set, to re-arm reader mode when NFC
+   * is switched on (as from quick settings): Android drops reader mode set while
+   * NFC is off, and from Android 13 switching NFC off clears it, in both cases
+   * until the next resume.
    */
   private var suppressionActive: Boolean = false
     set(active) {

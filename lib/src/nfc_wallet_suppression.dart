@@ -14,7 +14,7 @@ import 'nfc_wallet_suppression_status.dart';
 ///   `com.apple.developer.passkit.pass-presentation-suppression` entitlement
 ///   from Apple. iPad and iPod touch have no NFC, so there is nothing to
 ///   suppress on them.
-/// - **Android** 5.0+ (API 21) with NFC hardware. NFC must be switched on for
+/// - **Android** 7.0+ (API 24) with NFC hardware. NFC must be switched on for
 ///   suppression to take effect.
 /// - **Web and desktop**: requests return [SuppressionStatus.notSupported].
 ///

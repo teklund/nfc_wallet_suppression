@@ -25,7 +25,8 @@ The first stable release. Compared with 0.1.1, requests and releases return a
 
 ### Changed
 
-- **Breaking**: Requires Flutter 3.44, Dart 3.12 and iOS 13.0 (was iOS 12.0).
+- **Breaking**: Requires Flutter 3.44, Dart 3.12, iOS 13.0 (was iOS 12.0) and
+  Android 7.0 (API 24, was API 21).
 - **Breaking**: `requestSuppression()` and `releaseSuppression()` return a
   `SuppressionResult` instead of a `SuppressionStatus`.
 - **Breaking**: `unavailable` now means only "transient, retry may work": on
@@ -52,9 +53,9 @@ The first stable release. Compared with 0.1.1, requests and releases return a
 
 ### Fixed
 
-- Android: suppression is restored after the Activity is recreated and when NFC
-  is switched back on. Before, it stayed off while `isSuppressed()` reported
-  `true`.
+- Android: suppression is restored after the Activity is recreated and, from
+  Android 13, when NFC is switched back on. Before, it stayed off while
+  `isSuppressed()` reported `true`.
 - iOS: a second request no longer strands the first. It used to overwrite the
   token, so release could not end the first one.
 - iOS: results reach Flutter on the main thread.

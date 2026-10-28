@@ -83,7 +83,7 @@ This document provides a comprehensive checklist for publishing new versions of 
 - [ ] Verify Gradle builds successfully: `cd android && ./gradlew build`
 - [ ] Check minimum SDK version in build.gradle
 - [ ] Test on latest Android version
-- [ ] Test on minimum supported Android version (API 21)
+- [ ] Test on minimum supported Android version (API 24)
 - [ ] Verify ProGuard rules if applicable
 - [ ] Check Kotlin version compatibility
 
