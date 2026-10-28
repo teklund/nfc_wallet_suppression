@@ -30,7 +30,11 @@ class FakeNfcWalletSuppression extends NfcWalletSuppressionPlatform {
   /// What [releaseSuppression] returns.
   SuppressionResult releaseResult;
 
-  /// Whether suppression is held, as [isSuppressed] reports it.
+  /// What [isSuppressed] reports: whether suppression is in effect.
+  ///
+  /// A request sets it from its result, so `nfcDisabled` leaves it `false`,
+  /// and a successful release clears it. Set it directly to model anything
+  /// else, such as the app being paused.
   bool suppressed;
 
   /// The platform methods called so far, in order.

@@ -15,10 +15,11 @@ enum SuppressionStatus {
   /// is the same either way.
   notSuppressed,
 
-  /// Automatic wallet presentation is suppressed.
+  /// Suppression is held.
   ///
   /// Returned by a successful `requestSuppression`, including when suppression
-  /// was already active.
+  /// was already held. "Suppression lifecycle" on `NfcWalletSuppression` says
+  /// when it is in effect.
   suppressed,
 
   /// Suppression could not be attempted right now, but may succeed later.

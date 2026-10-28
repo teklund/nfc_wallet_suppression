@@ -10,6 +10,8 @@ import android.nfc.NfcAdapter
 import android.nfc.Tag
 import android.util.Log
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -110,8 +112,9 @@ class NfcWalletSuppressionPlugin internal constructor(
   private var isDebug: Boolean = false
 
   /**
-   * Whether the app holds a suppression request. Reader mode is armed whenever
-   * this is set, an activity is attached and NFC is on.
+   * Whether the app holds a suppression request. Android arms reader mode while
+   * this is set, an activity is attached and resumed, and NFC is on, unless
+   * another app or plugin takes reader mode over.
    *
    * NFC state is observed only while this is set, to re-arm reader mode when NFC
    * is switched on (as from quick settings): Android drops reader mode set while
@@ -256,7 +259,7 @@ class NfcWalletSuppressionPlugin internal constructor(
       return
     }
     if (isDebug && !alreadyHeld) Log.d(TAG, "NFC wallet suppression enabled")
-    val message = if (alreadyHeld) "Suppression already active" else "Suppressed"
+    val message = if (alreadyHeld) "Suppression already held" else "Suppressed"
     callback(Result.success(SuppressionResult(SuppressionStatusCode.SUPPRESSED, message)))
   }
 
@@ -302,10 +305,14 @@ class NfcWalletSuppressionPlugin internal constructor(
   }
 
   override fun isSuppressed(): Boolean {
-    val activity = activity
-    // Reconcile intent with reality: reader mode is only held while an activity is
-    // attached and NFC is still enabled.
-    return suppressionActive && activity != null && suppressor.isNfcEnabled(activity)
+    if (!suppressionActive) return false
+    val activity = activity ?: return false
+    // Reconcile intent with reality: Android arms reader mode only while the
+    // activity is resumed and NFC is on. An activity without a lifecycle (a rare
+    // add-to-app host) is taken as resumed.
+    val resumed = (activity as? LifecycleOwner)?.lifecycle?.currentState
+      ?.isAtLeast(Lifecycle.State.RESUMED) ?: true
+    return resumed && suppressor.isNfcEnabled(activity)
   }
 
   override fun isSupported(): Boolean {
