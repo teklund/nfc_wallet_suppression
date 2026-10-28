@@ -48,9 +48,9 @@ abstract final class NfcWalletSuppression {
   /// one-time alert that Apple Pay is unavailable.
   ///
   /// Requesting while suppression is held reports on that hold instead of
-  /// adding another. Calls don't have to be awaited before the next one: they
-  /// run in the order issued, each returns its own outcome, and the last call
-  /// wins.
+  /// adding another, and on Android restores suppression if other code stopped
+  /// reader mode. Calls don't have to be awaited before the next one: they run
+  /// in the order issued, each returns its own outcome, and the last call wins.
   ///
   /// The result's [SuppressionResult.status] is one of:
   ///
@@ -142,8 +142,8 @@ abstract final class NfcWalletSuppression {
   ///   background, or behind another activity such as the share sheet or a
   ///   permission dialog) and with no Activity attached. It can still be `true`
   ///   briefly after NFC is switched on, and stays `true` after a tag reader or
-  ///   other code stops reader mode on the Activity; release, then request
-  ///   again.
+  ///   other code stops reader mode on the Activity; request again to restore
+  ///   suppression.
   static Future<bool> isSuppressed() {
     return NfcWalletSuppressionPlatform.instance.isSuppressed();
   }
