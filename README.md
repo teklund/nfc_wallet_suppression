@@ -190,6 +190,20 @@ Android also while the Activity is paused, as behind the share sheet or a
 permission dialog, and while NFC is switched off. It resumes by itself
 afterwards.
 
+### With NFC tag readers (Android)
+
+Android keeps one reader mode per activity, so a tag reader such as
+`nfc_manager` or `flutter_nfc_kit` takes it over from this plugin. While the
+tag reader runs, its own reader mode keeps the wallet away; when it stops,
+this plugin's suppression is gone too. Hand over in order:
+
+1. Release suppression before starting the tag reader.
+2. Request suppression again once the tag reader has stopped
+   (`stopSession()`, or `finish()` with `flutter_nfc_kit`).
+
+Don't request or release while the tag reader runs: either one replaces its
+reader mode, and reading stops.
+
 ## Migrating from 0.1.x
 
 1.0.0 requires Flutter 3.44 or later (Dart 3.12).
@@ -255,7 +269,7 @@ The compiler flags the remaining changes:
 | `requestSuppression()` returns `nfcDisabled` | Android | NFC is switched off. Nothing to fix: the request is held and starts once NFC is on. Ask the user to switch NFC on only if your app needs it. |
 | Wallet appears while the app is in the background | Both | Expected: suppression only applies in the foreground, and resumes by itself when the app returns. |
 | Wallet appears while the share sheet, a permission dialog, the camera app, a photo picker or a browser tab is over the app | Android | Expected: anything that opens over the app as its own Android activity pauses the app's Activity, which pauses suppression until the user returns. Screens and dialogs Flutter draws itself (routes, `showDialog`, bottom sheets) don't pause it. |
-| Wallet appears again after another NFC feature ran | Android | Android keeps one reader mode per activity, so another plugin that stops reader mode (a tag reader, for example) also ends this plugin's suppression, while `isSuppressed()` still returns `true`. Release, then request again. |
+| Wallet appears again after another NFC feature ran | Android | Android keeps one reader mode per activity, so a tag reader that stops also ends this plugin's suppression, while `isSuppressed()` still returns `true`. Hand over in order; see [With NFC tag readers](#with-nfc-tag-readers-android). |
 
 ## Testing
 
