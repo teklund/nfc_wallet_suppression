@@ -31,10 +31,11 @@ final class SuppressionResult {
   /// `null` when the platform gave no detail.
   final String? description;
 
-  /// Whether suppression is now held.
+  /// Whether the request returned [SuppressionStatus.suppressed], so
+  /// suppression is held, including the already-held case.
   ///
-  /// True for a successful `requestSuppression`, including the already-held
-  /// case.
+  /// A [SuppressionStatus.nfcDisabled] request is held too, but this is
+  /// `false` for it: nothing is suppressed until NFC is switched on.
   bool get isSuppressed => status == SuppressionStatus.suppressed;
 
   /// Whether suppression is now released.
