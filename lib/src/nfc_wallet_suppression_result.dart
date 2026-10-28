@@ -33,7 +33,7 @@ final class SuppressionResult {
 
   /// Whether automatic wallet presentation is now suppressed.
   ///
-  /// True for a successful `requestSuppression`, including the already-active
+  /// True for a successful `requestSuppression`, including the already-held
   /// case.
   bool get isSuppressed => status == SuppressionStatus.suppressed;
 

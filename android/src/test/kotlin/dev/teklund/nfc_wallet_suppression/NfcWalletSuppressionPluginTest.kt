@@ -282,7 +282,8 @@ internal class NfcWalletSuppressionPluginTest {
 
   @Test
   fun isSuppressed_activityWithoutLifecycle_isTakenAsResumed() {
-    val plugin = pluginWithActivity(FakeWalletSuppressor())
+    // A plain Activity, not a LifecycleOwner.
+    val plugin = pluginWithActivity(FakeWalletSuppressor(), Mockito.mock(Activity::class.java))
     requestStatus(plugin)
     assertTrue(plugin.isSuppressed())
   }

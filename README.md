@@ -167,7 +167,7 @@ without a major version bump, so **always include a `default` when switching.**
 
 | Status | `request` | `release` | Description |
 | :--- | :---: | :---: | :--- |
-| `suppressed` | ✔ | | Suppression is held, and in effect while the app is in the foreground |
+| `suppressed` | ✔ | | Suppression is held; [Lifetime](#lifetime) says when it is in effect |
 | `notSuppressed` | | ✔ | Suppression is off — whether this call ended it or there was nothing to end |
 | `nfcDisabled` | ✔ (Android) | | NFC is switched off in settings. The request is held and starts by itself once NFC is on. Wallet apps can't respond to readers while NFC is off either, so prompt the user (`android.settings.NFC_SETTINGS`) only if your app needs NFC itself. |
 | `unavailable` | ✔ (Android) | | Transient and retryable — no Activity is attached to the Flutter engine, for example during a configuration change |
@@ -185,9 +185,9 @@ channel itself does.
 
 Suppression lasts until you release it or the app is closed. It is not restored
 on the next launch, so request it again then. A request that returns
-`nfcDisabled` is held too. While it is held, it pauses when the app goes to the
-background, and on Android also while NFC is switched off, and resumes by itself
-afterwards.
+`nfcDisabled` is held too. While it is held, it pauses in the background, and on
+Android also while the Activity is paused, as behind the share sheet or a
+permission dialog, or NFC is switched off. It resumes by itself afterwards.
 
 ## Migrating from 0.1.x
 
@@ -253,6 +253,7 @@ The compiler flags the remaining changes:
 | `requestSuppression()` returns `notSupported` in the iOS Simulator or an Android emulator | Both | Expected: the Simulator can't suppress Wallet (although `isSupported()` returns `true`), and emulators have no NFC hardware. Test on a device. |
 | `requestSuppression()` returns `nfcDisabled` | Android | NFC is switched off. Nothing to fix: the request is held and starts once NFC is on. Ask the user to switch NFC on only if your app needs it. |
 | Wallet appears while the app is in the background | Both | Expected: suppression only applies in the foreground, and resumes by itself when the app returns. |
+| Wallet appears while the share sheet or a permission dialog is over the app | Android | Expected: Android pauses the app's Activity, which pauses suppression, and resumes it when the dialog closes. A dialog your app shows itself (`showDialog`) doesn't pause it. |
 | Wallet appears again after another NFC feature ran | Android | Android keeps one reader mode per activity, so another plugin that stops reader mode (a tag reader, for example) also ends this plugin's suppression, while `isSuppressed()` still returns `true`. Release, then request again. |
 
 ## Testing

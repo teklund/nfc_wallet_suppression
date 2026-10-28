@@ -27,8 +27,9 @@ import 'nfc_wallet_suppression_status.dart';
 ///   ends it.
 /// - Suppression only takes effect while your app is in the foreground. In
 ///   the background the wallet works normally, and suppression resumes by
-///   itself when the app returns. On Android the same applies while NFC is
-///   switched off.
+///   itself when the app returns. On Android the same applies while the
+///   Activity is paused, as behind the share sheet or a permission dialog,
+///   and while NFC is switched off.
 abstract final class NfcWalletSuppression {
   /// Requests that the wallet stop popping up at NFC readers.
   ///
@@ -46,7 +47,7 @@ abstract final class NfcWalletSuppression {
   ///
   /// | Status | iOS | Android |
   /// |---|---|---|
-  /// | [SuppressionStatus.suppressed] — suppression is held, and in effect while the app is in the foreground | ✔ | ✔ |
+  /// | [SuppressionStatus.suppressed] — suppression is held; "Suppression lifecycle" on [NfcWalletSuppression] says when it is in effect | ✔ | ✔ |
   /// | [SuppressionStatus.notSupported] — no suppression capability at all; iOS: PassKit reports it unsupported, Android: no NFC hardware | ✔ | ✔ |
   /// | [SuppressionStatus.nfcDisabled] — NFC is switched off; the request is held and starts once NFC is on | | ✔ |
   /// | [SuppressionStatus.unavailable] — transient; no Activity attached | | ✔ |
@@ -60,9 +61,8 @@ abstract final class NfcWalletSuppression {
   ///
   /// On iOS this uses PassKit's `requestAutomaticPassPresentationSuppression`.
   /// On Android it puts NFC into reader mode, which turns off card emulation,
-  /// so wallet apps can't respond to readers. How a hold behaves in the
-  /// background and while NFC is off is under "Suppression lifecycle" on
-  /// [NfcWalletSuppression].
+  /// so wallet apps can't respond to readers. When a hold is in effect is
+  /// under "Suppression lifecycle" on [NfcWalletSuppression].
   ///
   /// ```dart
   /// final result = await NfcWalletSuppression.requestSuppression();

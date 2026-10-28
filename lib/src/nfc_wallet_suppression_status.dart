@@ -18,7 +18,7 @@ enum SuppressionStatus {
   /// Automatic wallet presentation is suppressed.
   ///
   /// Returned by a successful `requestSuppression`, including when suppression
-  /// was already active.
+  /// was already held.
   suppressed,
 
   /// Suppression could not be attempted right now, but may succeed later.
