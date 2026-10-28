@@ -29,7 +29,10 @@ import 'nfc_wallet_suppression_status.dart';
 ///   the background the wallet works normally, and suppression resumes by
 ///   itself when the app returns. On Android the same applies while the
 ///   Activity is paused, as behind the share sheet or a permission dialog,
-///   and while NFC is switched off.
+///   and while NFC is switched off. Flutter reports a paused Activity as
+///   `AppLifecycleState.inactive`, but it also reports `inactive` under the
+///   notification shade and in split screen, where suppression stays in
+///   effect; [isSuppressed] tells them apart.
 abstract final class NfcWalletSuppression {
   /// Requests that the wallet stop popping up at NFC readers.
   ///

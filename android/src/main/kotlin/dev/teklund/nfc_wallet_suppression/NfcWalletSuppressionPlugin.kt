@@ -112,8 +112,9 @@ class NfcWalletSuppressionPlugin internal constructor(
   private var isDebug: Boolean = false
 
   /**
-   * Whether the app holds a suppression request. Reader mode is armed whenever
-   * this is set, an activity is attached and NFC is on.
+   * Whether the app holds a suppression request. Android arms reader mode while
+   * this is set, an activity is attached and resumed, and NFC is on, unless
+   * another app or plugin takes reader mode over.
    *
    * NFC state is observed only while this is set, to re-arm reader mode when NFC
    * is switched on (as from quick settings): Android drops reader mode set while

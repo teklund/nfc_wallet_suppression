@@ -187,7 +187,8 @@ Suppression lasts until you release it or the app is closed. It is not restored
 on the next launch, so request it again then. A request that returns
 `nfcDisabled` is held too. While it is held, it pauses in the background, and on
 Android also while the Activity is paused, as behind the share sheet or a
-permission dialog, or NFC is switched off. It resumes by itself afterwards.
+permission dialog, and while NFC is switched off. It resumes by itself
+afterwards.
 
 ## Migrating from 0.1.x
 

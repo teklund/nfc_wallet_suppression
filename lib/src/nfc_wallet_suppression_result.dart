@@ -31,7 +31,7 @@ final class SuppressionResult {
   /// `null` when the platform gave no detail.
   final String? description;
 
-  /// Whether automatic wallet presentation is now suppressed.
+  /// Whether suppression is now held.
   ///
   /// True for a successful `requestSuppression`, including the already-held
   /// case.
