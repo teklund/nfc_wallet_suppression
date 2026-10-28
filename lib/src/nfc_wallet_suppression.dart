@@ -35,9 +35,10 @@ import 'nfc_wallet_suppression_status.dart';
 ///   screen while the user is in the other app, where it stays in effect on
 ///   Android 10 and later. On Android, [isSuppressed] tells them apart.
 /// - On Android, suppression uses the Activity's one reader mode, so a tag
-///   reader or other code that uses reader mode takes it over, and stopping
-///   that code ends suppression too. Release just before starting such code,
-///   and request again once its stop call has completed.
+///   reader or other code that uses reader mode on the same Activity takes it
+///   over. Once that code stops, suppression is still held but not in effect,
+///   and [isSuppressed] still returns `true`. Release just before starting
+///   such code, and request again once its stop call has completed.
 abstract final class NfcWalletSuppression {
   /// Requests that the wallet stop popping up at NFC readers.
   ///
@@ -131,7 +132,7 @@ abstract final class NfcWalletSuppression {
   ///
   /// A held suppression is not always in effect (see "Suppression lifecycle" on
   /// [NfcWalletSuppression]), and the answer is a snapshot that can change as
-  /// soon as it is returned. Each platform can also lag:
+  /// soon as it is returned. Each platform can also lag or miss a change:
   ///
   /// - **iOS** asks PassKit (`isSuppressingAutomaticPassPresentation`), which
   ///   can still report `true` just after [releaseSuppression] and while the app
@@ -140,8 +141,9 @@ abstract final class NfcWalletSuppression {
   ///   applies it: `false` while NFC is off, while the Activity is paused (in the
   ///   background, or behind another activity such as the share sheet or a
   ///   permission dialog) and with no Activity attached. It can still be `true`
-  ///   briefly after NFC is switched on, and stays `true` after other code
-  ///   stops reader mode, such as a tag reader; release, then request again.
+  ///   briefly after NFC is switched on, and stays `true` after a tag reader or
+  ///   other code stops reader mode on the Activity; release, then request
+  ///   again.
   static Future<bool> isSuppressed() {
     return NfcWalletSuppressionPlatform.instance.isSuppressed();
   }
