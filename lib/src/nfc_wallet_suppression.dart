@@ -38,7 +38,8 @@ import 'nfc_wallet_suppression_status.dart';
 ///   reader or other code that uses reader mode on the same Activity takes it
 ///   over. Once that code stops, suppression is still held but not in effect,
 ///   and [isSuppressed] still returns `true`. Release just before starting
-///   such code, and request again once its stop call has completed.
+///   such code, and request again once its stop call has completed: a request
+///   made while it runs takes reader mode back, and reading stops.
 abstract final class NfcWalletSuppression {
   /// Requests that the wallet stop popping up at NFC readers.
   ///
@@ -48,9 +49,11 @@ abstract final class NfcWalletSuppression {
   /// one-time alert that Apple Pay is unavailable.
   ///
   /// Requesting while suppression is held reports on that hold instead of
-  /// adding another, and on Android restores suppression if other code stopped
-  /// reader mode. Calls don't have to be awaited before the next one: they run
-  /// in the order issued, each returns its own outcome, and the last call wins.
+  /// adding another. If suppression is not in effect, as on Android after
+  /// other code stopped reader mode, the request restores it. If that fails,
+  /// the hold ends, except that [SuppressionStatus.unknown] may leave it in
+  /// place. Calls don't have to be awaited before the next one: they run in
+  /// the order issued, each returns its own outcome, and the last call wins.
   ///
   /// The result's [SuppressionResult.status] is one of:
   ///
