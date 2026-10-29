@@ -51,9 +51,10 @@ abstract final class NfcWalletSuppression {
   /// Requesting while suppression is held reports on that hold instead of
   /// adding another. If suppression is not in effect, as on Android after
   /// other code stopped reader mode, the request restores it. If that fails,
-  /// the hold ends, except that [SuppressionStatus.unknown] may leave it in
-  /// place. Calls don't have to be awaited before the next one: they run in
-  /// the order issued, each returns its own outcome, and the last call wins.
+  /// the hold ends, except that [SuppressionStatus.unavailable] keeps it and
+  /// [SuppressionStatus.unknown] may leave it in place. Calls don't have to be
+  /// awaited before the next one: they run in the order issued, each returns
+  /// its own outcome, and the last call wins.
   ///
   /// The result's [SuppressionResult.status] is one of:
   ///
