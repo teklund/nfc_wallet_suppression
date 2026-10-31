@@ -557,7 +557,8 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
     if endStaleToken(token) {
       log(
         .debug,
-        "Request \(id) answered after a release or a newer request; token \(token) ended")
+        "Request \(id) answered \(Self.statusName(passResult)) "
+          + "after a release or a newer request; token \(token) ended")
     } else {
       log(
         .debug,
