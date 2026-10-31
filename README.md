@@ -279,7 +279,7 @@ The compiler flags the remaining changes:
 ### Logs
 
 The plugin logs what changes suppression in the background, such as a re-arm
-after NFC is switched on, and failures that lose suppression without a result.
+after NFC is switched on, and failures that lose or change suppression.
 The native code doesn't log results; log `result.description` if you need it.
 In debug builds, Dart logs every result and channel failure.
 

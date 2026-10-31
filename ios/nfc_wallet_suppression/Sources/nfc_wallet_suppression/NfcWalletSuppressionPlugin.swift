@@ -361,7 +361,12 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
       }
       // Not suppressing: ended outside the plugin, never granted, or still
       // pending. Indistinguishable here, and all three want a fresh request.
-      log(.debug, "Not suppressing although token \(token) is held; ending it and requesting again")
+      var isHeld = false
+      if case .held = tokenState { isHeld = true }
+      log(
+        .debug,
+        "Not suppressing with \(isHeld ? "held" : "unconfirmed") token \(token); "
+          + "ending it and requesting again")
       library.endSuppression(withRequestToken: token)
       tokenState = .none
     }
@@ -464,11 +469,13 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
         // drop it. Free when PassKit never granted it: ending an invalid token
         // is a documented no-op.
         let oldest = orphanedTokens.removeFirst()
+        let ended = endStaleToken(oldest.token)
         log(
           .error,
           "More than \(Self.maxOrphanedTokens) timed-out tokens; "
-            + "ending token \(oldest.token) of request \(oldest.id)")
-        endStaleToken(oldest.token)
+            + "dropped the record of request \(oldest.id)"
+            + (ended
+              ? " and ended token \(oldest.token)" : "; token \(oldest.token) is in use, kept"))
       }
     }
     deliver(
@@ -547,10 +554,16 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
       return
     }
 
-    log(
-      .debug,
-      "Request \(id) answered after a release or a newer request; token \(token) ended")
-    endStaleToken(token)
+    if endStaleToken(token) {
+      log(
+        .debug,
+        "Request \(id) answered after a release or a newer request; token \(token) ended")
+    } else {
+      log(
+        .debug,
+        "Request \(id) answered \(Self.statusName(passResult)) after the deadline; "
+          + "token \(token) is in use, kept")
+    }
   }
 
   /// The status a PassKit result maps to, for log messages.
@@ -564,9 +577,12 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
   /// Tokens come from a per-process counter today, so this never fires. Apple
   /// documents no uniqueness guarantee though, and PassKit tracks tokens by
   /// value: a reissued value would switch off the request that now owns it.
-  private func endStaleToken(_ token: PKSuppressionRequestToken) {
-    guard tokenState.token != token, inFlight?.token != token else { return }
+  /// Returns whether it ended the token.
+  @discardableResult
+  private func endStaleToken(_ token: PKSuppressionRequestToken) -> Bool {
+    guard tokenState.token != token, inFlight?.token != token else { return false }
     library.endSuppression(withRequestToken: token)
+    return true
   }
 
   private func performRelease(_ completion: @escaping Completion) {
