@@ -53,9 +53,9 @@ The first stable release. Compared with 0.1.1, requests and releases return a
 
 ### Fixed
 
-- Android: suppression is restored after the Activity is recreated and, from
-  Android 13, when NFC is switched back on. Before, it stayed off while
-  `isSuppressed()` reported `true`.
+- Android: suppression is restored after the Activity is recreated, after the
+  NFC service restarts and, from Android 13, when NFC is switched back on.
+  Before, it stayed off while `isSuppressed()` reported `true`.
 - Android: `isSuppressed()` returns `false` while the Activity is paused, as in
   the background or behind the share sheet or a permission dialog, where
   Android pauses suppression.

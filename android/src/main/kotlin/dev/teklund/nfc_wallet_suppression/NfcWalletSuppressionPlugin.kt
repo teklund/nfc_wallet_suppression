@@ -71,6 +71,9 @@ internal class SystemWalletSuppressor : WalletSuppressor {
       NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK or
       NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS
     try {
+      // Up to Android 15, enableReaderMode doesn't retry after the NFC service
+      // restarts; isEnabled reconnects first.
+      adapter.isEnabled
       adapter.enableReaderMode(activity, callback, flags, null)
     } catch (e: Exception) {
       // Android records reader mode before this can fail, and re-applies it on
@@ -202,8 +205,7 @@ class NfcWalletSuppressionPlugin internal constructor(
         })
       }
     } catch (e: Exception) {
-      // Drop the request, so isSuppressed stops reporting it and the next
-      // request arms reader mode again instead of reporting the failed hold.
+      // Drop the request, so isSuppressed stops reporting it.
       if (isDebug) Log.e(TAG, "Failed to re-establish suppression", e)
       suppressionActive = false
     }
