@@ -281,7 +281,8 @@ The compiler flags the remaining changes:
 The plugin logs what changes suppression in the background, such as a re-arm
 after NFC is switched on, and failures that lose or change suppression.
 The native code doesn't log results; log `result.description` if you need it.
-In debug builds, Dart logs every result and channel failure.
+In debug builds, Dart logs every Android and iOS result and channel failure with
+`dart:developer` (name `nfc_wallet_suppression`), shown in DevTools' Logging view.
 
 **Android**: `adb logcat -s NfcWalletSuppression`. Errors are logged in every
 build, background events in debuggable builds. In a release build, switch
