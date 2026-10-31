@@ -172,7 +172,7 @@ class NfcWalletSuppressionPlugin internal constructor(
   override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
     NfcWalletSuppressionApi.setUp(binding.binaryMessenger, null)
     // Without an engine nothing can hold the request; this also stops observing NFC state.
-    if (suppressionActive) logDebug { "Hold ended: engine detached" }
+    if (suppressionActive) logDebug { "Engine detached; hold ended" }
     suppressionActive = false
     context = null
   }
@@ -200,7 +200,7 @@ class NfcWalletSuppressionPlugin internal constructor(
     val activity = activity
     if (suppressionActive && activity != null && !activity.isDestroyed) {
       runCatching { suppressor.stopReaderMode(activity) }
-        .onSuccess { logDebug { "Reader mode stopped: Activity detached from Flutter" } }
+        .onSuccess { logDebug { "Activity detached from Flutter; reader mode stopped" } }
         .onFailure { logError("Stopping reader mode on Activity detach failed", it) }
     }
     this.activity = null
@@ -218,7 +218,7 @@ class NfcWalletSuppressionPlugin internal constructor(
       suppressor.startReaderMode(activity, this)
     } catch (e: Exception) {
       // Drop the request, so isSuppressed stops reporting it.
-      logError("Re-arm failed, hold dropped", e)
+      logError("Re-arm failed; hold ended", e)
       suppressionActive = false
       return
     }

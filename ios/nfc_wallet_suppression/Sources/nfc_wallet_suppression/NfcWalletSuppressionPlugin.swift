@@ -549,7 +549,7 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
       log(
         .debug,
         "Request \(id) answered \(Self.statusName(passResult)) after the deadline; "
-          + "hold withdrawn")
+          + "hold ended")
       tokenState = .none
       return
     }
