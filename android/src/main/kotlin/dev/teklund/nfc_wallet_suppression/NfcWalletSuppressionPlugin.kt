@@ -130,7 +130,9 @@ class NfcWalletSuppressionPlugin internal constructor(
       if (active == field) return
       if (active) {
         // Observe first, so a failure to observe leaves nothing held.
-        nfcEnabledObserver = context?.let { suppressor.observeNfcEnabled(it) { reestablish() } }
+        nfcEnabledObserver = context?.let {
+          suppressor.observeNfcEnabled(it) { reestablish("after NFC was switched on") }
+        }
       } else {
         nfcEnabledObserver?.close()
         nfcEnabledObserver = null
@@ -144,6 +146,18 @@ class NfcWalletSuppressionPlugin internal constructor(
     private const val TAG = "NfcWalletSuppression"
   }
 
+  // Logs background state changes and silent failures, not what a result
+  // already reports. Debuggable apps log everything; otherwise Log.isLoggable
+  // decides: errors by default, debug after
+  // `adb shell setprop log.tag.NfcWalletSuppression DEBUG`.
+  private inline fun logDebug(message: () -> String) {
+    if (isDebug || Log.isLoggable(TAG, Log.DEBUG)) Log.d(TAG, message())
+  }
+
+  private fun logError(message: String, error: Throwable) {
+    if (isDebug || Log.isLoggable(TAG, Log.ERROR)) Log.e(TAG, message, error)
+  }
+
   // Reader mode requires a callback, but we only occupy the NFC stack to
   // suppress wallet apps; we do not process tags.
   override fun onTagDiscovered(tag: Tag?) {}
@@ -151,15 +165,15 @@ class NfcWalletSuppressionPlugin internal constructor(
   override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     NfcWalletSuppressionApi.setUp(flutterPluginBinding.binaryMessenger, this)
     context = flutterPluginBinding.applicationContext
-    // Set automatically by the build system (debug vs. release); mirrors iOS's #if DEBUG.
+    // Set automatically by the build system (debug vs. release).
     isDebug = ((context?.applicationInfo?.flags ?: 0) and ApplicationInfo.FLAG_DEBUGGABLE) != 0
   }
 
   override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
     NfcWalletSuppressionApi.setUp(binding.binaryMessenger, null)
     // Without an engine nothing can hold the request; this also stops observing NFC state.
+    if (suppressionActive) logDebug { "Engine detached; hold ended" }
     suppressionActive = false
-    if (isDebug) Log.d(TAG, "Detached from engine")
     context = null
   }
 
@@ -168,7 +182,7 @@ class NfcWalletSuppressionPlugin internal constructor(
     // Re-establish reader mode if suppression was active before this activity
     // attached (configuration change or activity recreation). Reader mode is
     // bound to an activity, so it must be re-armed against the new one.
-    if (suppressionActive) reestablish()
+    if (suppressionActive) reestablish("on Activity attach")
   }
 
   override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
@@ -186,28 +200,33 @@ class NfcWalletSuppressionPlugin internal constructor(
     val activity = activity
     if (suppressionActive && activity != null && !activity.isDestroyed) {
       runCatching { suppressor.stopReaderMode(activity) }
+        .onSuccess { logDebug { "Activity detached from Flutter; reader mode stopped" } }
+        .onFailure { logError("Stopping reader mode on Activity detach failed", it) }
     }
     this.activity = null
   }
 
-  /** Re-arms reader mode against the current activity. Precondition: suppressionActive. */
-  private fun reestablish() {
+  /**
+   * Re-arms reader mode against the current activity; [why] is for the log.
+   * Precondition: suppressionActive.
+   */
+  private fun reestablish(why: String) {
     val activity = activity ?: return
     try {
       // Armed even while NFC is off, as in hold(): Android keeps it for the
       // activity and re-sends it on resume, and the observer re-arms on NFC-on.
       suppressor.startReaderMode(activity, this)
-      if (isDebug) {
-        Log.d(TAG, if (suppressor.isNfcEnabled(activity)) {
-          "Re-established NFC suppression"
-        } else {
-          "Re-armed NFC suppression; it starts when NFC is enabled"
-        })
-      }
     } catch (e: Exception) {
       // Drop the request, so isSuppressed stops reporting it.
-      if (isDebug) Log.e(TAG, "Failed to re-establish suppression", e)
+      logError("Re-arm failed; hold ended", e)
       suppressionActive = false
+      return
+    }
+    logDebug {
+      // Only for the message, so it must not throw: from Android 16 isEnabled
+      // throws when the NFC service can't be reached.
+      val nfcOn = runCatching { suppressor.isNfcEnabled(activity) }.getOrDefault(true)
+      "Re-armed $why" + if (nfcOn) "" else "; starts when NFC is switched on"
     }
   }
 
@@ -253,12 +272,10 @@ class NfcWalletSuppressionPlugin internal constructor(
     if (!suppressor.isNfcEnabled(activity)) {
       // Held, but nothing is suppressed while NFC is off; reader mode is armed
       // when it is switched on.
-      if (isDebug) Log.d(TAG, "NFC wallet suppression held; it starts when NFC is enabled")
       callback(Result.success(SuppressionResult(
         SuppressionStatusCode.NFC_DISABLED, "NFC is disabled. Suppression starts when NFC is enabled")))
       return
     }
-    if (isDebug && !alreadyHeld) Log.d(TAG, "NFC wallet suppression enabled")
     val message = if (alreadyHeld) "Suppression already held" else "Suppressed"
     callback(Result.success(SuppressionResult(SuppressionStatusCode.SUPPRESSED, message)))
   }
@@ -288,12 +305,10 @@ class NfcWalletSuppressionPlugin internal constructor(
         // Tear-down failed, so suppression is likely still active. Keep the flag
         // truthful (do not clear it) and surface the failure, mirroring how
         // requestSuppression maps exceptions.
-        if (isDebug) Log.e(TAG, "Security exception releasing suppression", e)
         callback(Result.success(SuppressionResult(
           SuppressionStatusCode.DENIED, "Permission denied for NFC operations: ${e.message}")))
         return
       } catch (e: Exception) {
-        if (isDebug) Log.e(TAG, "Unexpected error releasing suppression", e)
         callback(Result.success(SuppressionResult(
           SuppressionStatusCode.UNKNOWN, "Failed to release suppression: ${e.message}")))
         return

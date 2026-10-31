@@ -43,7 +43,11 @@ The first stable release. Compared with 0.1.1, requests and releases return a
 - A request while suppression is held reports on that hold instead of starting
   another, and overlapping calls run in the order they were made.
 - Android: no longer plays the system sound when a tag is held to the phone.
-- No longer logs in release builds.
+- Logging: native code logs failures that lose or change suppression in every
+  build, and background state changes at debug level: on Android in debuggable
+  builds, or in release builds after `setprop`; on iOS while the device log is
+  streamed with debug messages included. See "Logs" under Troubleshooting in
+  the README.
 - Requires `plugin_platform_interface` 2.1.7 or later.
 
 ### Removed
