@@ -70,10 +70,10 @@ internal class SystemWalletSuppressor : WalletSuppressor {
       NfcAdapter.FLAG_READER_NFC_V or
       NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK or
       NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS
-    // Up to Android 15, enableReaderMode doesn't retry after the NFC service
-    // restarts; isEnabled reconnects first.
-    adapter.isEnabled
     try {
+      // Up to Android 15, enableReaderMode doesn't retry after the NFC service
+      // restarts; isEnabled reconnects first.
+      adapter.isEnabled
       adapter.enableReaderMode(activity, callback, flags, null)
     } catch (e: Exception) {
       // Android records reader mode before this can fail, and re-applies it on

@@ -75,6 +75,30 @@ internal class SystemWalletSuppressorTest {
   }
 
   @Test
+  fun startReaderMode_reconnectsBeforeArming() {
+    // Up to Android 15, enableReaderMode doesn't retry after the NFC service
+    // restarts; isEnabled reconnects first.
+    startReaderMode()
+
+    val order = Mockito.inOrder(adapter)
+    order.verify(adapter).isEnabled
+    order.verify(adapter).enableReaderMode(eq(activity), eq(callback), anyInt(), isNull())
+  }
+
+  @Test
+  fun startReaderMode_failedReconnect_disablesReaderModeAndRethrows() {
+    // From Android 16, isEnabled throws when the NFC service can't be reached.
+    val error = RuntimeException("NFC service unreachable")
+    Mockito.`when`(adapter.isEnabled).thenThrow(error)
+
+    val thrown = assertFailsWith<RuntimeException> { startReaderMode() }
+
+    assertSame(error, thrown)
+    Mockito.verify(adapter, Mockito.never()).enableReaderMode(any(), any(), anyInt(), any())
+    Mockito.verify(adapter).disableReaderMode(activity)
+  }
+
+  @Test
   fun startReaderMode_failure_disablesReaderModeAndRethrows() {
     // Android records reader mode for the activity before enableReaderMode can
     // fail, and re-applies it on the next resume unless it is cleared.
