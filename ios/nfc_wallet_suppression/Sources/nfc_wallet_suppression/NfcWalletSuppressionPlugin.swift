@@ -1,6 +1,23 @@
 import Flutter
 import UIKit
 import PassKit
+import os.log
+
+private let osLog = OSLog(
+  subsystem: "dev.teklund.nfc_wallet_suppression", category: "NfcWalletSuppression")
+
+/// Logs background state changes and silent failures, not what a result already
+/// reports. The system keeps debug messages only while the log is streamed, as
+/// in Console.app with debug messages included, and stores errors. Messages
+/// hold only request ids, token numbers and status names, so they are public.
+private func log(_ type: OSLogType, _ message: String) {
+  if #available(iOS 14.0, *) {
+    Logger(osLog).log(level: type, "\(message, privacy: .public)")
+  } else {
+    // Drop with iOS 13 support (#97).
+    os_log("%{public}@", log: osLog, type: type, message)
+  }
+}
 
 /// Abstraction over the PassKit automatic-pass-presentation suppression APIs.
 ///
@@ -344,6 +361,7 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
       }
       // Not suppressing: ended outside the plugin, never granted, or still
       // pending. Indistinguishable here, and all three want a fresh request.
+      log(.debug, "Not suppressing although token \(token) is held; ending it and requesting again")
       library.endSuppression(withRequestToken: token)
       tokenState = .none
     }
@@ -420,6 +438,7 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
       // Anomalous: PassKit refused to submit (`0` token) and then reported
       // success. We hold nothing we could ever end, so we do not claim
       // suppression.
+      log(.error, "Request \(id): PassKit reported success but gave token 0; nothing held")
       result = SuppressionResult(status: .unknown, message: Message.couldNotSubmit)
     case (let passResult, let token):
       if let token = token { library.endSuppression(withRequestToken: token) }
@@ -444,7 +463,12 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
         // The record is the only way to reach this token later, so end it as we
         // drop it. Free when PassKit never granted it: ending an invalid token
         // is a documented no-op.
-        endStaleToken(orphanedTokens.removeFirst().token)
+        let oldest = orphanedTokens.removeFirst()
+        log(
+          .error,
+          "More than \(Self.maxOrphanedTokens) timed-out tokens; "
+            + "ending token \(oldest.token) of request \(oldest.id)")
+        endStaleToken(oldest.token)
       }
     }
     deliver(
@@ -485,10 +509,15 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
     if isStillOurs {
       if passResult == .success {
         // It really did turn on, late. Adopt it so a later release can end it.
+        log(.debug, "Request \(id) granted after the deadline; token \(token) adopted")
         tokenState = .held(token: token, requestID: id)
       } else {
         // PassKit refused after we had already given up. End the token we were
         // holding on spec and go idle.
+        log(
+          .debug,
+          "Request \(id) answered \(Self.statusName(passResult)) after the deadline; "
+            + "token \(token) ended")
         library.endSuppression(withRequestToken: token)
         tokenState = .none
       }
@@ -510,11 +539,23 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
     if passResult != .success, case .held(_, let heldRequestID) = tokenState,
       heldRequestID == id
     {
+      log(
+        .debug,
+        "Request \(id) answered \(Self.statusName(passResult)) after the deadline; "
+          + "hold withdrawn")
       tokenState = .none
       return
     }
 
+    log(
+      .debug,
+      "Request \(id) answered after a release or a newer request; token \(token) ended")
     endStaleToken(token)
+  }
+
+  /// The status a PassKit result maps to, for log messages.
+  private static func statusName(_ result: PKAutomaticPassPresentationSuppressionResult) -> String {
+    String(describing: suppressionResult(for: result).status)
   }
 
   /// Ends a token from an earlier request, unless the held token or the in-flight
