@@ -2,6 +2,7 @@ package dev.teklund.nfc_wallet_suppression
 
 import android.app.Activity
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.nfc.NfcAdapter
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -32,6 +33,7 @@ internal class NfcWalletSuppressionPluginTest {
   private class FakeWalletSuppressor : WalletSuppressor {
     var hasHardware = true
     var nfcEnabled = true
+    var nfcEnabledError: Exception? = null
     var startError: Exception? = null
     var stopError: Exception? = null
     var observeError: Exception? = null
@@ -41,7 +43,10 @@ internal class NfcWalletSuppressionPluginTest {
     var whileArming: (() -> Unit)? = null
 
     override fun hasNfcHardware(context: Context) = hasHardware
-    override fun isNfcEnabled(context: Context) = nfcEnabled
+    override fun isNfcEnabled(context: Context): Boolean {
+      nfcEnabledError?.let { throw it }
+      return nfcEnabled
+    }
     override fun startReaderMode(activity: Activity, callback: NfcAdapter.ReaderCallback) {
       whileArming?.invoke()
       startError?.let { throw it }
@@ -67,10 +72,15 @@ internal class NfcWalletSuppressionPluginTest {
     }
   }
 
-  private fun engineBinding(): FlutterPlugin.FlutterPluginBinding {
+  private fun engineBinding(debuggable: Boolean = false): FlutterPlugin.FlutterPluginBinding {
     val binding = Mockito.mock(FlutterPlugin.FlutterPluginBinding::class.java)
     Mockito.`when`(binding.binaryMessenger).thenReturn(Mockito.mock(BinaryMessenger::class.java))
-    Mockito.`when`(binding.applicationContext).thenReturn(Mockito.mock(Context::class.java))
+    val context = Mockito.mock(Context::class.java)
+    if (debuggable) {
+      Mockito.`when`(context.applicationInfo)
+        .thenReturn(ApplicationInfo().apply { flags = ApplicationInfo.FLAG_DEBUGGABLE })
+    }
+    Mockito.`when`(binding.applicationContext).thenReturn(context)
     return binding
   }
 
@@ -93,10 +103,11 @@ internal class NfcWalletSuppressionPluginTest {
   private fun pluginWithActivity(
     fake: FakeWalletSuppressor,
     activity: Activity = Mockito.mock(Activity::class.java),
+    debuggable: Boolean = false,
   ): NfcWalletSuppressionPlugin {
     val plugin = NfcWalletSuppressionPlugin(fake)
     // Flutter attaches the engine before any activity.
-    plugin.onAttachedToEngine(engineBinding())
+    plugin.onAttachedToEngine(engineBinding(debuggable))
     plugin.onAttachedToActivity(activityBinding(activity))
     return plugin
   }
@@ -457,6 +468,23 @@ internal class NfcWalletSuppressionPluginTest {
     assertFalse(plugin.isSuppressed())
 
     fake.switchNfcOn()
+    assertEquals(2, fake.startCount)
+    assertTrue(plugin.isSuppressed())
+  }
+
+  @Test
+  fun nfcSwitchedBackOn_inADebuggableApp_whenTheNfcCheckForTheLogThrows_keepsTheHold() {
+    // The re-arm log asks whether NFC is on, and from Android 16 that throws
+    // when the NFC service can't be reached. Logging must not drop the hold.
+    val fake = FakeWalletSuppressor()
+    val plugin = pluginWithActivity(fake, debuggable = true)
+    requestStatus(plugin)
+
+    fake.switchNfcOff()
+    fake.nfcEnabledError = RuntimeException("NFC service unreachable")
+    fake.switchNfcOn()
+
+    fake.nfcEnabledError = null
     assertEquals(2, fake.startCount)
     assertTrue(plugin.isSuppressed())
   }

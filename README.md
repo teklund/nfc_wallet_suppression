@@ -276,6 +276,30 @@ The compiler flags the remaining changes:
 | Wallet appears while the share sheet, a permission dialog, the camera app, a photo picker or a browser tab is over the app | Android | Expected: anything that opens over the app as its own Android activity pauses the app's Activity, which pauses suppression until the user returns. Screens and dialogs Flutter draws itself (routes, `showDialog`, bottom sheets) don't pause it. |
 | Wallet appears again after another NFC feature ran | Android | Android keeps one reader mode per activity, so when a tag reader or other code stops reader mode on the app's Activity, this plugin's suppression is still held but not in effect, and `isSuppressed()` still returns `true`. Request again: a request restores it even while it is held. To avoid it, hand over in order; see [With NFC tag readers](#with-nfc-tag-readers-android). |
 
+### Logs
+
+The plugin logs what changes suppression in the background, such as a re-arm
+after NFC is switched on, and failures that lose or change suppression.
+The native code doesn't log results; log `result.description` if you need it.
+In debug builds, Dart logs every Android and iOS result and channel failure with
+`dart:developer` (name `nfc_wallet_suppression`), shown in DevTools' Logging view.
+
+**Android**: `adb logcat -s NfcWalletSuppression`. Errors are logged in every
+build, background events in debuggable builds. In a release build, switch
+background events on with
+
+```bash
+adb shell setprop log.tag.NfcWalletSuppression DEBUG
+```
+
+and off with `adb shell setprop log.tag.NfcWalletSuppression ""`. To check that
+reader mode is on, with the screen on: `adb shell dumpsys nfc | grep mEnableReader`.
+
+**iOS**: in Console.app on a Mac, select the device, search for
+`subsystem:dev.teklund.nfc_wallet_suppression`, turn on Action → Include Debug
+Messages, and click Start. Errors are stored on the device; background events
+show only while streaming.
+
 ## Testing
 
 `package:nfc_wallet_suppression/testing.dart` provides
