@@ -112,6 +112,8 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
     let messenger = registrar.messenger()
     let api = NfcWalletSuppressionPlugin()
     NfcWalletSuppressionApiSetup.setUp(binaryMessenger: messenger, api: api)
+    // Flutter calls detachFromEngine(for:) only on published instances.
+    registrar.publish(api)
   }
 
   typealias Completion = (Result<SuppressionResult, Error>) -> Void
@@ -314,6 +316,30 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
   /// answer comes from `requestSuppression`'s result (`.notSupported` / `.denied`).
   func isSupported() -> Bool {
     library.isPassLibraryAvailable
+  }
+
+  // MARK: - Engine lifecycle
+
+  /// Ends every token, as nothing can release them once the engine is gone.
+  ///
+  /// Pending callers are dropped unanswered: Dart went with the engine. A grant
+  /// that lands later needs nothing: PassKit cancels it once every token has
+  /// ended, and while another engine's tokens are live, they own it.
+  public func detachFromEngine(for registrar: FlutterPluginRegistrar) {
+    assertMainThread()
+    var tokens = orphanedTokens.map(\.token)
+    if let token = tokenState.token { tokens.append(token) }
+    if let flight = inFlight {
+      flight.deadline?.cancel()
+      if let token = flight.token { tokens.append(token) }
+    }
+    if tokenState != .none || inFlight != nil { log(.debug, "Engine detached; hold ended") }
+
+    tokens.forEach(library.endSuppression(withRequestToken:))
+    tokenState = .none
+    inFlight = nil
+    queue.removeAll()
+    orphanedTokens.removeAll()
   }
 
   // MARK: - Scheduling

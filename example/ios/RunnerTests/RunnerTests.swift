@@ -1092,4 +1092,80 @@ class RunnerTests: XCTestCase {
     XCTAssertEqual(statuses, [.suppressed, .notSuppressed])
     XCTAssertEqual(fake.endedTokens, [42], "The release must end the token the request obtained")
   }
+
+  // MARK: - Engine detach
+
+  /// Publishes `plugin` on an engine that never runs and lets the engine go,
+  /// which is when Flutter calls `detachFromEngine(for:)`.
+  private func deallocateEngine(publishing plugin: NfcWalletSuppressionPlugin) {
+    weak var weakEngine: FlutterEngine?
+    autoreleasepool {
+      let engine = FlutterEngine(name: "detach", project: FlutterDartProject())
+      weakEngine = engine
+      engine.registrar(forPlugin: "NfcWalletSuppressionPlugin")!.publish(plugin)
+    }
+    XCTAssertNil(weakEngine, "Flutter detaches plugins only when the engine is freed")
+  }
+
+  func testRegister_publishesThePlugin() throws {
+    // The test host's engine registered the plugin at launch. Flutter detaches
+    // only published plugins.
+    let scene = try XCTUnwrap(
+      UIApplication.shared.connectedScenes.first as? UIWindowScene)
+    let controller = try XCTUnwrap(
+      scene.windows.first?.rootViewController as? FlutterViewController)
+    XCTAssertTrue(
+      controller.engine.valuePublished(byPlugin: "NfcWalletSuppressionPlugin")
+        is NfcWalletSuppressionPlugin)
+  }
+
+  func testEngineDeallocated_whileHeld_endsTheToken() {
+    let (plugin, fake, _) = makeSUT(token: 42)
+    plugin.requestSuppression { _ in }
+    fake.deliver(.success)
+
+    deallocateEngine(publishing: plugin)
+
+    XCTAssertEqual(fake.endedTokens, [42])
+  }
+
+  func testEngineDeallocated_endsTimedOutTokens() {
+    let (plugin, fake, clock) = makeSUT()
+    fake.tokensToReturn = [101, 102]
+    plugin.requestSuppression { _ in }
+    clock.fire()  // orphan (request 1, token 101)
+    plugin.requestSuppression { _ in }  // stale path ends 101, starts request 2
+    clock.fire()  // orphan (request 2, token 102), now unconfirmed
+    XCTAssertEqual(fake.endedTokens, [101])
+
+    deallocateEngine(publishing: plugin)
+
+    // Each recorded token is ended, 102 a second time as the unconfirmed one.
+    XCTAssertEqual(fake.endedTokens, [101, 101, 102, 102])
+  }
+
+  func testEngineDeallocated_duringARequest_endsItsTokenAndAnswersNoOne() {
+    let (plugin, fake, clock) = makeSUT(token: 42)
+    var answers = 0
+    plugin.requestSuppression { _ in answers += 1 }
+    plugin.releaseSuppression { _ in answers += 1 }
+
+    deallocateEngine(publishing: plugin)
+
+    XCTAssertEqual(fake.endedTokens, [42])
+    XCTAssertEqual(clock.pendingCount, 0, "The deadline is cancelled")
+
+    // A late grant changes nothing: PassKit cancels it once every token has ended.
+    fake.deliver(.success)
+    XCTAssertEqual(fake.endedTokens, [42])
+    XCTAssertEqual(answers, 0, "Dart went with the engine")
+  }
+
+  func testEngineDeallocated_whenIdle_endsNothing() {
+    let (plugin, fake, _) = makeSUT()
+
+    deallocateEngine(publishing: plugin)
+
+    XCTAssertTrue(fake.endedTokens.isEmpty)
+  }
 }
