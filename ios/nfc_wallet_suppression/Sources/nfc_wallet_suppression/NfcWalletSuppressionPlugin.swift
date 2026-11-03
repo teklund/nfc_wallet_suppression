@@ -112,6 +112,8 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
     let messenger = registrar.messenger()
     let api = NfcWalletSuppressionPlugin()
     NfcWalletSuppressionApiSetup.setUp(binaryMessenger: messenger, api: api)
+    // Flutter calls detachFromEngine(for:) only on published instances.
+    registrar.publish(api)
   }
 
   typealias Completion = (Result<SuppressionResult, Error>) -> Void
@@ -215,6 +217,10 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
   private var isDraining = false
   private var nextRequestID: UInt64 = 1
 
+  /// Set once the engine is gone. A request Flutter had already queued on main
+  /// still reaches the plugin, and nothing could end its token.
+  private var isDetached = false
+
   /// Tokens from requests that hit the deadline, oldest first.
   ///
   /// Kept so a handler arriving after we gave up can still end the token. PassKit
@@ -285,6 +291,10 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
 
   func requestSuppression(completion: @escaping Completion) {
     assertMainThread()
+    guard !isDetached else {
+      completion(.success(SuppressionResult(status: .unknown, message: Message.couldNotSubmit)))
+      return
+    }
     // Coalesce only onto the TAIL of the pipeline. Joining anything earlier would
     // let a release submitted before this request overtake it, so the caller
     // would be told `.suppressed` by a request that a later-running release then
@@ -314,6 +324,41 @@ public class NfcWalletSuppressionPlugin: NSObject, FlutterPlugin, NfcWalletSuppr
   /// answer comes from `requestSuppression`'s result (`.notSupported` / `.denied`).
   func isSupported() -> Bool {
     library.isPassLibraryAvailable
+  }
+
+  // MARK: - Engine lifecycle
+
+  /// Ends every token, as nothing can release them once the engine is gone.
+  ///
+  /// Pending callers are dropped unanswered: Dart went with the engine. A grant
+  /// that lands later needs nothing: PassKit cancels it once every token has
+  /// ended, and while another engine's tokens are live, they own it.
+  public func detachFromEngine(for registrar: FlutterPluginRegistrar) {
+    // Flutter calls this on whichever thread frees the engine.
+    guard Thread.isMainThread else {
+      DispatchQueue.main.async { self.endEverything() }
+      return
+    }
+    endEverything()
+  }
+
+  private func endEverything() {
+    assertMainThread()
+    // A timed-out token in neither place has already been ended.
+    let tokens = [tokenState.token, inFlight?.token].compactMap { $0 }
+    inFlight?.deadline?.cancel()
+    if tokenState != .none {
+      log(.debug, "Engine detached; hold ended")
+    } else if let token = inFlight?.token {
+      log(.debug, "Engine detached; token \(token) ended")
+    }
+
+    tokens.forEach(library.endSuppression(withRequestToken:))
+    tokenState = .none
+    inFlight = nil
+    queue.removeAll()
+    orphanedTokens.removeAll()
+    isDetached = true
   }
 
   // MARK: - Scheduling

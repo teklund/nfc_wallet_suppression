@@ -133,6 +133,39 @@ final class FakeMessenger: NSObject, FlutterBinaryMessenger {
   func cleanUpConnection(_ connection: FlutterBinaryMessengerConnection) {}
 }
 
+/// Records what `register(with:)` does, as Flutter's own plugins test it.
+final class TestPluginRegistrar: NSObject, FlutterPluginRegistrar {
+  let fakeMessenger = FakeMessenger()
+  private(set) var published: NSObject?
+
+  var viewController: UIViewController? { nil }
+
+  func messenger() -> FlutterBinaryMessenger { fakeMessenger }
+
+  func textures() -> FlutterTextureRegistry { fatalError("not used by this plugin") }
+
+  func register(_ factory: FlutterPlatformViewFactory, withId factoryId: String) {}
+
+  func register(
+    _ factory: FlutterPlatformViewFactory, withId factoryId: String,
+    gestureRecognizersBlockingPolicy: FlutterPlatformViewGestureRecognizersBlockingPolicy
+  ) {}
+
+  func publish(_ value: NSObject) { published = value }
+
+  func addMethodCallDelegate(_ delegate: FlutterPlugin, channel: FlutterMethodChannel) {}
+
+  func addApplicationDelegate(_ delegate: FlutterPlugin) {}
+
+  func addSceneDelegate(_ delegate: FlutterSceneLifeCycleDelegate) {}
+
+  func lookupKey(forAsset asset: String) -> String { asset }
+
+  func lookupKey(forAsset asset: String, fromPackage package: String) -> String { asset }
+
+  func valuePublished(byPlugin pluginKey: String) -> NSObject? { published }
+}
+
 class RunnerTests: XCTestCase {
 
   /// Builds a plugin wired to controllable doubles.
@@ -1091,5 +1124,167 @@ class RunnerTests: XCTestCase {
 
     XCTAssertEqual(statuses, [.suppressed, .notSuppressed])
     XCTAssertEqual(fake.endedTokens, [42], "The release must end the token the request obtained")
+  }
+
+  // MARK: - Engine detach
+
+  /// Publishes `plugin` on an engine that never runs and lets the engine go,
+  /// which is when Flutter calls `detachFromEngine(for:)`.
+  private func deallocateEngine(publishing plugin: NfcWalletSuppressionPlugin) {
+    weak var weakEngine: FlutterEngine?
+    autoreleasepool {
+      let engine = FlutterEngine(name: "detach", project: FlutterDartProject())
+      weakEngine = engine
+      engine.registrar(forPlugin: "NfcWalletSuppressionPlugin")!.publish(plugin)
+    }
+    XCTAssertNil(weakEngine, "Flutter detaches plugins only when the engine is freed")
+  }
+
+  func testRegister_publishesThePluginAndServesDart() throws {
+    let registrar = TestPluginRegistrar()
+
+    NfcWalletSuppressionPlugin.register(with: registrar)
+
+    // Flutter detaches only published plugins.
+    XCTAssertTrue(registrar.published is NfcWalletSuppressionPlugin)
+    // Nothing held, so this never reaches PassKit.
+    var status: SuppressionStatusCode?
+    try registrar.fakeMessenger.call("releaseSuppression") { status = $0?.status }
+    XCTAssertEqual(status, .notSuppressed)
+  }
+
+  func testEngineDeallocated_whileHeld_endsTheToken() {
+    let (plugin, fake, _) = makeSUT(token: 42)
+    plugin.requestSuppression { _ in }
+    fake.deliver(.success)
+
+    deallocateEngine(publishing: plugin)
+
+    XCTAssertEqual(fake.endedTokens, [42])
+  }
+
+  func testEngineDeallocatedOffTheMainThread_endsTheTokenOnMain() {
+    let (plugin, fake, _) = makeSUT(token: 42)
+    plugin.requestSuppression { _ in }
+    fake.deliver(.success)
+    weak var weakEngine: FlutterEngine?
+    var engine: Unmanaged<FlutterEngine>!
+    autoreleasepool {
+      let created = FlutterEngine(name: "detach", project: FlutterDartProject())
+      weakEngine = created
+      created.registrar(forPlugin: "NfcWalletSuppressionPlugin")!.publish(plugin)
+      engine = Unmanaged.passRetained(created)
+    }
+
+    let ended = expectation(description: "main ran after the release")
+    DispatchQueue.global().async {
+      engine.release()
+      // Queued behind the plugin's own hop to main.
+      DispatchQueue.main.async { ended.fulfill() }
+    }
+    wait(for: [ended], timeout: 5)
+
+    XCTAssertNil(weakEngine)
+    XCTAssertEqual(fake.endedTokens, [42])
+  }
+
+  func testEngineDeallocated_endsATimedOutTokenOnce() {
+    let (plugin, fake, clock) = makeSUT()
+    fake.tokensToReturn = [101, 102]
+    plugin.requestSuppression { _ in }
+    clock.fire()  // orphan (request 1, token 101)
+    plugin.requestSuppression { _ in }  // stale path ends 101, starts request 2
+    clock.fire()  // orphan (request 2, token 102), now unconfirmed
+    XCTAssertEqual(fake.endedTokens, [101])
+
+    deallocateEngine(publishing: plugin)
+
+    // 101 was ended by the next request; 102 is still unconfirmed.
+    XCTAssertEqual(fake.endedTokens, [101, 102])
+  }
+
+  func testEngineDeallocated_afterATimedOutRequestWasReleased_endsNothingMore() {
+    let (plugin, fake, clock) = makeSUT(token: 101)
+    plugin.requestSuppression { _ in }
+    clock.fire()
+    plugin.releaseSuppression { _ in }
+    XCTAssertEqual(fake.endedTokens, [101])
+
+    deallocateEngine(publishing: plugin)
+
+    XCTAssertEqual(fake.endedTokens, [101])
+  }
+
+  func testEngineDeallocated_duringARequest_endsItsTokenAndAnswersNoOne() {
+    let (plugin, fake, clock) = makeSUT(token: 42)
+    var answers = 0
+    plugin.requestSuppression { _ in answers += 1 }
+    plugin.releaseSuppression { _ in answers += 1 }
+
+    deallocateEngine(publishing: plugin)
+
+    XCTAssertEqual(fake.endedTokens, [42])
+    XCTAssertEqual(clock.pendingCount, 0, "The deadline is cancelled")
+
+    // A late grant changes nothing: PassKit cancels it once every token has ended.
+    fake.deliver(.success)
+    XCTAssertEqual(fake.endedTokens, [42])
+    XCTAssertEqual(answers, 0, "Dart went with the engine")
+  }
+
+  func testEngineDeallocated_whenIdle_endsNothing() {
+    let (plugin, fake, _) = makeSUT()
+
+    deallocateEngine(publishing: plugin)
+
+    XCTAssertTrue(fake.endedTokens.isEmpty)
+  }
+
+  func testRequestAfterEngineDeallocated_requestsNothing() {
+    let (plugin, fake, _) = makeSUT(token: 42)
+    deallocateEngine(publishing: plugin)
+
+    // As a request Flutter queued on main before the engine was freed.
+    var status: SuppressionStatusCode?
+    plugin.requestSuppression { status = try? $0.get().status }
+
+    XCTAssertEqual(fake.requestCount, 0)
+    XCTAssertEqual(status, .unknown)
+  }
+
+  func testReleaseAfterEngineDeallocated_endsNothingMore() {
+    let (plugin, fake, _) = makeSUT(token: 42)
+    plugin.requestSuppression { _ in }
+    fake.deliver(.success)
+    deallocateEngine(publishing: plugin)
+
+    // As a release Flutter queued on main before the engine was freed.
+    plugin.releaseSuppression { _ in }
+
+    XCTAssertEqual(fake.endedTokens, [42])
+  }
+
+  func testReleaseAfterEngineDeallocated_runsNoQueuedRequest() {
+    let (plugin, fake, _) = makeSUT()
+    plugin.requestSuppression { _ in }
+    plugin.releaseSuppression { _ in }
+    plugin.requestSuppression { _ in }  // queued behind the release
+    deallocateEngine(publishing: plugin)
+
+    plugin.releaseSuppression { _ in }
+
+    XCTAssertEqual(fake.requestCount, 1)
+  }
+
+  func testLateGrantAfterEngineDeallocated_endsNothingMore() {
+    let (plugin, fake, clock) = makeSUT(token: 101)
+    plugin.requestSuppression { _ in }
+    clock.fire()  // timed out; 101 is unconfirmed
+    deallocateEngine(publishing: plugin)
+    XCTAssertEqual(fake.endedTokens, [101])
+
+    fake.deliver(.success, forRequest: 1)
+
+    XCTAssertEqual(fake.endedTokens, [101])
   }
 }

@@ -68,6 +68,8 @@ The first stable release. Compared with 0.1.1, requests and releases return a
 - iOS: results reach Flutter on the main thread.
 - iOS: a request PassKit never answers completes with `unknown` after 5 seconds
   instead of hanging.
+- iOS: suppression ends when the Flutter engine is deallocated, as on Android.
+  Before, nothing ended it.
 - iOS: the privacy manifest is now bundled. 0.1.1 shipped it unused.
 
 ## 1.0.0-dev.1
