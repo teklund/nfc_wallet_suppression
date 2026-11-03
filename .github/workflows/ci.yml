@@ -45,6 +45,8 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'android/**'
               - 'example/android/**'
+              - 'example/lib/**'
+              - 'example/integration_test/**'
               - 'lib/**'
               - 'test/**'
               - 'pigeons/**'
@@ -54,6 +56,8 @@ jobs:
               - '.github/workflows/ci.yml'
               - 'ios/**'
               - 'example/ios/**'
+              - 'example/lib/**'
+              - 'example/integration_test/**'
               - 'lib/**'
               - 'test/**'
               - 'pigeons/**'
@@ -379,7 +383,7 @@ jobs:
     runs-on: macos-latest
     # Above the sum of the per-step limits below, so a hang is always reported
     # by the step it happened in rather than as an anonymous job cancellation.
-    timeout-minutes: 35
+    timeout-minutes: 50
     needs: [analyze, check_changes]
     if: needs.check_changes.outputs.ios == 'true'
     
@@ -552,7 +556,14 @@ jobs:
           flags: ios
           name: ios-coverage
           fail_ci_if_error: false
-      
+
+      # On the simulator booted above, so no second slow first boot. Runs the
+      # example through Flutter, which the unit tests above don't.
+      - name: Run integration tests
+        working-directory: example
+        timeout-minutes: 15
+        run: flutter test integration_test -d "${{ steps.simulator.outputs.udid }}"
+
       - name: Upload iOS test results
         if: always()
         uses: actions/upload-artifact@v7
@@ -752,6 +763,64 @@ jobs:
           path: example/build/ios/iphoneos/Runner.app
           retention-days: 7
 
+  # The example's integration tests on an emulator. It has no NFC, so they cover
+  # registration, the channel and the unsupported paths, not reader mode.
+  integration-tests-android:
+    name: Android Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [analyze, check_changes]
+    if: needs.check_changes.outputs.android == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        working-directory: example
+        run: flutter pub get
+
+      - name: Cache Gradle
+        uses: actions/cache@v6
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-integration-${{ hashFiles('example/android/**/*.gradle*', 'example/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-integration-
+            ${{ runner.os }}-gradle-
+
+      # As the emulator action's README asks, for a hardware-accelerated emulator.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run integration tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          working-directory: example
+          script: flutter test integration_test -d emulator-5554
+
   # The README promises that on the web calls return notSupported instead of
   # throwing. A web build can't check that: code that throws in the browser
   # still compiles. This runs the example's integration test in Chrome.
@@ -813,6 +882,7 @@ jobs:
       - dependency-review
       - build-android
       - build-ios
+      - integration-tests-android
       - web-integration-test
     steps:
       - name: Verify all jobs succeeded
