@@ -383,7 +383,7 @@ jobs:
     runs-on: macos-latest
     # Above the sum of the per-step limits below, so a hang is always reported
     # by the step it happened in rather than as an anonymous job cancellation.
-    timeout-minutes: 50
+    timeout-minutes: 35
     needs: [analyze, check_changes]
     if: needs.check_changes.outputs.ios == 'true'
     
@@ -556,14 +556,7 @@ jobs:
           flags: ios
           name: ios-coverage
           fail_ci_if_error: false
-
-      # On the simulator booted above, so no second slow first boot. Runs the
-      # example through Flutter, which the unit tests above don't.
-      - name: Run integration tests
-        working-directory: example
-        timeout-minutes: 15
-        run: flutter test integration_test -d "${{ steps.simulator.outputs.udid }}"
-
+      
       - name: Upload iOS test results
         if: always()
         uses: actions/upload-artifact@v7
@@ -763,6 +756,67 @@ jobs:
           path: example/build/ios/iphoneos/Runner.app
           retention-days: 7
 
+  # The example's integration tests on a simulator. A job of its own, so it runs
+  # beside iOS Native Tests instead of after it: on a runner of its own the
+  # simulator's slow first boot costs no wall time.
+  integration-tests-ios:
+    name: iOS Integration Tests
+    runs-on: macos-latest
+    # Above the sum of the per-step limits below, as in iOS Native Tests.
+    timeout-minutes: 35
+    needs: [analyze, check_changes]
+    if: needs.check_changes.outputs.ios == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        working-directory: example
+        run: flutter pub get
+
+      - name: Select iOS simulator
+        id: simulator
+        run: |
+          SIMULATOR=$(xcrun simctl list devices available -j | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          devices = []
+          for runtime, device_list in data['devices'].items():
+              if 'iOS' in runtime:
+                  for d in device_list:
+                      if d['isAvailable'] and 'iPhone' in d['name']:
+                          devices.append((runtime, d['udid'], d['name']))
+          devices.sort(reverse=True)
+          if devices:
+              print(devices[0][1])
+          else:
+              print('')
+          ")
+          if [ -z "$SIMULATOR" ]; then
+            echo "::error::No available iPhone simulator found on the runner."
+            exit 1
+          fi
+          echo "udid=$SIMULATOR" >> $GITHUB_OUTPUT
+          echo "Selected simulator: $SIMULATOR"
+
+      # The same slow first boot as in iOS Native Tests, which explains the limit.
+      # Here it happens before the build rather than during it.
+      - name: Boot iOS simulator
+        timeout-minutes: 10
+        run: xcrun simctl bootstatus "${{ steps.simulator.outputs.udid }}" -b
+
+      - name: Run integration tests
+        working-directory: example
+        timeout-minutes: 20
+        run: flutter test integration_test -d "${{ steps.simulator.outputs.udid }}"
+
   # The example's integration tests on an emulator. It has no NFC, so they cover
   # registration, the channel and the unsupported paths, not reader mode.
   integration-tests-android:
@@ -884,6 +938,7 @@ jobs:
       - dependency-review
       - build-android
       - build-ios
+      - integration-tests-ios
       - integration-tests-android
       - web-integration-test
     steps:
