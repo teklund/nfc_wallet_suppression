@@ -166,11 +166,10 @@ Pigeon-generated files are ignored on every platform (see `codecov.yml`); pigeon
 - Real NFC hardware, and Android's reader-mode behavior across devices and versions
 - Real PassKit suppression, which needs a physical iPhone and the entitlement
 
-These are checked on real devices. `integration_tests.yml` runs only on demand until #24 re-enables it.
+These are checked on real devices (#102 for iOS). The integration tests in CI run on an emulator and a simulator, which have neither.
 
 ## Improving Native Coverage
 
-- Re-enable `integration_tests.yml` on pull requests (#24)
 - Once coverage is stable, switch `codecov.yml` from `informational: true` to enforcing
 
 ## Troubleshooting
