@@ -193,6 +193,11 @@ jobs:
       - name: Run tests with coverage and formatting
         run: flutter test --coverage --reporter=github --test-randomize-ordering-seed=random
 
+      # The example is what pub.dev shows, so check it uses the API as documented.
+      - name: Run example tests
+        working-directory: example
+        run: flutter test --reporter=github
+
       - name: Generate test summary
         if: always()
         run: |

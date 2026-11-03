@@ -319,7 +319,7 @@ for a full example.
 
 ## Example App
 
-See the [`example/`](https://github.com/teklund/nfc_wallet_suppression/tree/HEAD/example) directory for a complete working example with lifecycle management and error handling.
+The [`example/`](https://github.com/teklund/nfc_wallet_suppression/tree/HEAD/example) app shows the recommended pattern: a ticket screen requests suppression when it appears and releases it when it closes.
 
 ```bash
 cd example && flutter run

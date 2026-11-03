@@ -33,6 +33,7 @@ Codecov uploads happen from three jobs and are tagged with these flags (see `cod
 | Test Type           | Where                          |
 | ------------------- | ------------------------------ |
 | Dart unit tests     | `Run Tests & Coverage`         |
+| Example widget tests | `Run Tests & Coverage`        |
 | Android native      | `Android Native Tests`         |
 | iOS native          | `iOS Native Tests`             |
 | Integration tests   | `Android Integration Tests`, `iOS Integration Tests`, `Web Integration Test` (plugin test only) |

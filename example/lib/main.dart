@@ -3,426 +3,173 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:nfc_wallet_suppression/nfc_wallet_suppression.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+void main() => runApp(const ExampleApp());
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+class ExampleApp extends StatelessWidget {
+  const ExampleApp({super.key});
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      title: 'NFC Wallet Suppression',
+      home: HomeScreen(),
+    );
+  }
 }
 
-class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
-  /// Snack bars are shown through this rather than `ScaffoldMessenger.of`:
-  /// this State's own context sits *above* the `MaterialApp` built below, so a
-  /// lookup from it finds no messenger and throws.
-  final GlobalKey<ScaffoldMessengerState> _messengerKey =
-      GlobalKey<ScaffoldMessengerState>();
+/// A screen that doesn't need suppression: the wallet works as usual here.
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
-  SuppressionStatus _suppressionStatus = SuppressionStatus.notSuppressed;
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
 
-  /// The platform's own account of the last outcome, for display only.
-  String? _statusDescription;
-  String? _error;
-  bool _isLoading = false;
-  bool _isSupported = false;
-
-  // Track if we should try to restore suppression when app resumes
-  bool _shouldRestoreSuppression = true;
-  // Track if suppression was active before we were backgrounded
-  bool _wasSuppressedBeforeBackground = false;
+class _HomeScreenState extends State<HomeScreen> {
+  bool? _isSupported;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    initPlatformState();
+    _checkSupport();
   }
 
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused) {
-      // App is going to background
-      _wasSuppressedBeforeBackground =
-          _suppressionStatus == SuppressionStatus.suppressed;
-    } else if (state == AppLifecycleState.resumed) {
-      // App is returning to foreground
-      if (_shouldRestoreSuppression && _wasSuppressedBeforeBackground) {
-        _restoreSuppression();
-      }
-    }
-  }
-
-  void _showSnack(String message) {
+  Future<void> _checkSupport() async {
+    final isSupported = await NfcWalletSuppression.isSupported();
     if (!mounted) return;
-    _messengerKey.currentState?.showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  Future<void> _restoreSuppression() async {
-    // Only attempt if supported
-    if (!_isSupported) return;
-
-    _showSnack('Restoring NFC suppression...');
-
-    await _onRequestSuppression();
-  }
-
-  Future<void> initPlatformState() async {
-    try {
-      // Check platform support first
-      final supported = await NfcWalletSuppression.isSupported();
-
-      if (!mounted) return;
-
-      // If supported, check current status
-      if (supported) {
-        final isSuppressed = await NfcWalletSuppression.isSuppressed();
-        setState(() {
-          _isSupported = supported;
-          _suppressionStatus = isSuppressed
-              ? SuppressionStatus.suppressed
-              : SuppressionStatus.notSuppressed;
-          _statusDescription = null;
-        });
-      } else {
-        setState(() {
-          _isSupported = supported;
-        });
-      }
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Initialization error: $error';
-      });
-    }
-  }
-
-  Future<void> _onRequestSuppression() async {
-    if (_isLoading) return;
-
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final result = await NfcWalletSuppression.requestSuppression();
-      if (!mounted) return;
-      setState(() {
-        _suppressionStatus = result.status;
-        _statusDescription = result.description;
-        _isLoading = false;
-      });
-      if (result.status == SuppressionStatus.nfcDisabled) {
-        // Held: it starts by itself once NFC is switched on.
-        _showSnack('Suppression starts when NFC is switched on.');
-      }
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Error requesting suppression: $error';
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _onReleaseSuppression() async {
-    if (_isLoading) return;
-
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final result = await NfcWalletSuppression.releaseSuppression();
-      if (!mounted) return;
-      setState(() {
-        _suppressionStatus = result.status;
-        _statusDescription = result.description;
-        _isLoading = false;
-      });
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Error releasing suppression: $error';
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _checkIsSuppressed() async {
-    if (_isLoading) return;
-
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final result = await NfcWalletSuppression.isSuppressed();
-      if (!mounted) return;
-      setState(() {
-        _suppressionStatus = result
-            ? SuppressionStatus.suppressed
-            : SuppressionStatus.notSuppressed;
-        _statusDescription = null;
-        _isLoading = false;
-      });
-    } catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'Error checking suppression status: $error';
-        _isLoading = false;
-      });
-    }
-  }
-
-  Widget _buildPlatformInfo() {
-    if (!_isSupported) {
-      return const Card(
-        margin: EdgeInsets.all(16),
-        color: Colors.orange,
-        child: Padding(
-          padding: EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(Icons.warning, color: Colors.white),
-              SizedBox(height: 8),
-              Text(
-                'Platform not supported',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  fontSize: 16,
-                ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                'This device does not support NFC wallet suppression.\n'
-                'iOS requires 13.0+ on iPhone.\n'
-                'Android requires NFC hardware.',
-                style: TextStyle(color: Colors.white),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Card(
-      margin: const EdgeInsets.all(16),
-      color: Colors.green,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white),
-                SizedBox(width: 8),
-                Text(
-                  'Platform supported',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
-            const Divider(color: Colors.white54),
-            SwitchListTile(
-              title: const Text(
-                'Auto-restore on resume',
-                style: TextStyle(color: Colors.white),
-              ),
-              subtitle: const Text(
-                'Best practice for seamless UX',
-                style: TextStyle(color: Colors.white70, fontSize: 12),
-              ),
-              value: _shouldRestoreSuppression,
-              onChanged: (value) =>
-                  setState(() => _shouldRestoreSuppression = value),
-              activeThumbColor: Colors.white,
-              activeTrackColor: Colors.green.shade800,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusCard() {
-    final color = _suppressionStatus == SuppressionStatus.suppressed
-        ? Colors.blue
-        : Colors.grey;
-
-    return Card(
-      margin: const EdgeInsets.all(16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  _suppressionStatus == SuppressionStatus.suppressed
-                      ? Icons.block
-                      : Icons.nfc,
-                  color: color,
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  'Current Status',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _suppressionStatus.name,
-              style: TextStyle(
-                fontSize: 16,
-                color: color,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            // Diagnostic text from the platform, shown here only because this
-            // is a demo of the API. A real app logs it; it is not user-facing
-            // copy and its wording is not part of the contract.
-            if (_statusDescription != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                'Diagnostic: ${_statusDescription!}',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-              ),
-            ],
-            if (_error != null) ...[
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: Colors.red.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      color: Colors.red.shade700,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _error!,
-                        style: TextStyle(color: Colors.red.shade700),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
+    setState(() => _isSupported = isSupported);
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      scaffoldMessengerKey: _messengerKey,
-      home: Builder(
-        builder: (context) => Scaffold(
-          appBar: AppBar(
-            title: const Text('NFC Wallet Suppression'),
-            centerTitle: true,
+    final isSupported = _isSupported;
+    return Scaffold(
+      appBar: AppBar(title: const Text('NFC Wallet Suppression')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const Text(
+            'The wallet works as usual on this screen. Open the ticket to keep '
+            'it from popping up at NFC readers while the ticket is shown.',
           ),
-          body: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildPlatformInfo(),
-                _buildStatusCard(),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      FilledButton.icon(
-                        onPressed: _isLoading || !_isSupported
-                            ? null
-                            : _onRequestSuppression,
-                        icon: _isLoading
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(Icons.block),
-                        label: const Text('Request Suppression'),
-                      ),
-                      const SizedBox(height: 8),
-                      FilledButton.icon(
-                        onPressed: _isLoading || !_isSupported
-                            ? null
-                            : _onReleaseSuppression,
-                        icon: _isLoading
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(Icons.nfc),
-                        label: const Text('Release Suppression'),
-                      ),
-                      const SizedBox(height: 8),
-                      OutlinedButton.icon(
-                        onPressed: _isLoading ? null : _checkIsSuppressed,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Check Status'),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text(
-                    'About NFC Wallet Suppression:\n\n'
-                    'Keeps Apple Wallet (Apple Pay) and other wallet apps from '
-                    'popping up at NFC readers while this app is in the '
-                    'foreground. It does not read or write NFC tags.\n\n'
-                    'iOS: PassKit automatic pass presentation suppression '
-                    '(iOS 13.0+, needs an Apple entitlement)\n'
-                    'Android: NFC reader mode (needs NFC hardware)',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ),
-              ],
+          const SizedBox(height: 8),
+          Text(
+            'Supported on this device: '
+            '${isSupported == null ? '…' : (isSupported ? 'yes' : 'no')}',
+          ),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const TicketScreen()),
             ),
+            child: const Text('Show ticket'),
           ),
-        ),
+        ],
       ),
     );
+  }
+}
+
+/// The screen shown at the reader. Suppression is requested when it appears
+/// and released when it closes.
+class TicketScreen extends StatefulWidget {
+  const TicketScreen({super.key});
+
+  @override
+  State<TicketScreen> createState() => _TicketScreenState();
+}
+
+class _TicketScreenState extends State<TicketScreen> {
+  SuppressionResult? _result;
+  bool? _isInEffect;
+
+  @override
+  void initState() {
+    super.initState();
+    // Request when the screen appears, not when the user reaches the reader:
+    // on iOS, suppression starts only once the request completes.
+    _request();
+  }
+
+  @override
+  void dispose() {
+    // Release whatever the request returned: release is idempotent, and calls
+    // run in the order they were made, so there is no need to wait.
+    unawaited(NfcWalletSuppression.releaseSuppression());
+    super.dispose();
+  }
+
+  Future<void> _request() async {
+    final result = await NfcWalletSuppression.requestSuppression();
+    if (!mounted) return;
+    setState(() => _result = result);
+    await _checkInEffect();
+  }
+
+  /// A snapshot: whether suppression is in effect right now.
+  Future<void> _checkInEffect() async {
+    final isInEffect = await NfcWalletSuppression.isSuppressed();
+    if (!mounted) return;
+    setState(() => _isInEffect = isInEffect);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final result = _result;
+    final isInEffect = _isInEffect;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Ticket')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const Text(
+            'Hold the phone to the reader. The wallet should not appear while '
+            'this screen is open.',
+          ),
+          const SizedBox(height: 16),
+          ListTile(
+            title: const Text('Request'),
+            subtitle: Text(
+              result == null
+                  ? 'Requesting…'
+                  : '${result.status.name}: ${_explain(result)}',
+            ),
+          ),
+          ListTile(
+            title: const Text('In effect at last check'),
+            subtitle: Text(
+              isInEffect == null ? '…' : (isInEffect ? 'yes' : 'no'),
+            ),
+            trailing: IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Check again',
+              onPressed: _checkInEffect,
+            ),
+          ),
+          // The platform's own text, for logs. Not user-facing copy, and its
+          // wording is not part of the API.
+          if (result?.description case final description?)
+            ListTile(
+              title: const Text('Diagnostic'),
+              subtitle: Text(description),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _explain(SuppressionResult result) {
+    return switch (result.status) {
+      SuppressionStatus.suppressed => 'the wallet stays hidden at NFC readers.',
+      SuppressionStatus.nfcDisabled =>
+        'NFC is off. Suppression starts by itself once it is switched on.',
+      SuppressionStatus.notSupported =>
+        "this device can't suppress the wallet.",
+      // New statuses may be added, so always keep a fallback.
+      _ =>
+        result.isRetryable
+            ? 'not suppressed; requesting again may help.'
+            : 'not suppressed.',
+    };
   }
 }
