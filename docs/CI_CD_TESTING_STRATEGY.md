@@ -4,12 +4,11 @@ This document explains the testing strategy for the `nfc_wallet_suppression` Flu
 
 ## Overview
 
-CI is consolidated into a single workflow, `ci.yml`, supplemented by an integration test workflow:
+CI is consolidated into a single workflow, `ci.yml`:
 
 | Workflow                  | Purpose                              | Tests / Builds                                  | Frequency        |
 | ------------------------- | ------------------------------------ | ----------------------------------------------- | ---------------- |
-| **ci.yml**                | PR validation + main branch CI       | Format, analyze, pigeon codegen drift, Dart tests, native tests, platform builds, Pub Score, publish dry-run | Every PR / push  |
-| **integration_tests.yml** | E2E testing on real-ish devices      | Flutter integration tests                        | Manual only; re-enabling tracked in #24 |
+| **ci.yml**                | PR validation + main branch CI       | Format, analyze, pigeon codegen drift, Dart tests, native tests, integration tests, platform builds, Pub Score, publish dry-run | Every PR / push  |
 
 ## How ci.yml Runs
 
@@ -20,6 +19,7 @@ CI is consolidated into a single workflow, `ci.yml`, supplemented by an integrat
 - Platform jobs (native tests and builds) run only when **Check Changes** finds changes for that platform.
 - Jobs with a `flutter-version` matrix run on both the minimum supported Flutter version and `stable`.
 - **Android Native Tests** also runs once on `stable` with AGP 9's built-in Kotlin on, the other branch of the plugin's `build.gradle`.
+- Integration tests run in **Android Integration Tests** (an emulator, which has no NFC) and **iOS Integration Tests** (a simulator). **Web Integration Test** runs `plugin_integration_test.dart` in Chrome.
 - **CI Success** is the one required check: it fails if any job failed or was cancelled, and treats skipped jobs as passing.
 
 Codecov uploads happen from three jobs and are tagged with these flags (see `codecov.yml`):
@@ -35,7 +35,7 @@ Codecov uploads happen from three jobs and are tagged with these flags (see `cod
 | Dart unit tests     | `Run Tests & Coverage`         |
 | Android native      | `Android Native Tests`         |
 | iOS native          | `iOS Native Tests`             |
-| Integration tests   | `integration_tests.yml`        |
+| Integration tests   | `Android Integration Tests`, `iOS Integration Tests`, `Web Integration Test` (plugin test only) |
 
 ## When to Run Which Tests
 

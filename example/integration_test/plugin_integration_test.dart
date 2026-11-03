@@ -15,6 +15,18 @@ import 'package:nfc_wallet_suppression/nfc_wallet_suppression.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
+  // When the plugin can't be reached, every call answers unknown or false,
+  // which most tests accept or skip on. Only a reachable plugin answers this
+  // release with notSuppressed.
+  testWidgets('the plugin is reachable', (WidgetTester tester) async {
+    final result = await NfcWalletSuppression.releaseSuppression();
+    expect(
+      result.status,
+      SuppressionStatus.notSuppressed,
+      reason: result.description,
+    );
+  });
+
   testWidgets('reports notSupported on the web', (WidgetTester tester) async {
     final result = await NfcWalletSuppression.requestSuppression();
     expect(result.status, SuppressionStatus.notSupported);
