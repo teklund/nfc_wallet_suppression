@@ -26,7 +26,6 @@ jobs:
       android: ${{ steps.filter.outputs.android }}
       ios: ${{ steps.filter.outputs.ios }}
       web: ${{ steps.filter.outputs.web }}
-      dart: ${{ steps.filter.outputs.dart }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -72,16 +71,6 @@ jobs:
               - 'example/web/**'
               - 'pubspec.yaml'
               - 'example/pubspec.yaml'
-            dart:
-              - '.github/workflows/ci.yml'
-              - 'lib/**'
-              - 'test/**'
-              - 'example/lib/**'
-              - 'example/test/**'
-              - 'pigeons/**'
-              - 'pubspec.yaml'
-              - 'example/pubspec.yaml'
-              - 'analysis_options.yaml'
 
   format:
     name: Check Formatting
@@ -408,14 +397,6 @@ jobs:
         working-directory: example
         run: flutter pub get
       
-      - name: Cache CocoaPods
-        uses: actions/cache@v6
-        with:
-          path: example/ios/Pods
-          key: ${{ runner.os }}-pods-${{ hashFiles('example/ios/Podfile.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pods-
-      
       - name: Build example for simulator
         working-directory: example
         # Drives pod install, generates the plugin registrant, and compiles the
@@ -732,14 +713,6 @@ jobs:
       - name: Install dependencies
         working-directory: example
         run: flutter pub get
-      
-      - name: Cache CocoaPods
-        uses: actions/cache@v6
-        with:
-          path: example/ios/Pods
-          key: ${{ runner.os }}-pods-${{ hashFiles('example/ios/Podfile.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pods-
       
       - name: Install CocoaPods dependencies
         working-directory: example/ios
