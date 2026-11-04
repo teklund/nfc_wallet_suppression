@@ -182,6 +182,7 @@ abstract final class WalletSuppression {
   }
 
   static void release() {
+    assert(_screens > 0, 'release() without a matching acquire()');
     _screens--;
     if (_screens == 0) unawaited(NfcWalletSuppression.releaseSuppression());
   }
@@ -411,11 +412,15 @@ String explain(SuppressionStatus status) {
       'Refused. On iOS this usually means a missing suppression '
           'entitlement, or Wallet was showing a pass.',
     SuppressionStatus.unknown =>
-      'The outcome is unclear; Check Status on the home screen shows whether '
-          'it took effect.',
+      'The outcome is unclear; isSuppressed() shows whether suppression is in '
+          'effect.',
     SuppressionStatus.unavailable =>
       'Not suppressed: no Activity was attached. Requesting again later can '
           'succeed.',
+    SuppressionStatus.alreadyPresenting =>
+      'Not suppressed: Wallet was already showing a pass.',
+    SuppressionStatus.canceled =>
+      'Not suppressed: the request was canceled before it completed.',
     // New statuses may be added, so always keep a fallback.
     _ => 'Not suppressed.',
   };

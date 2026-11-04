@@ -192,8 +192,8 @@ void main() {
     SuppressionStatus.denied: 'Refused.',
     SuppressionStatus.unknown: 'The outcome is unclear',
     SuppressionStatus.unavailable: 'Not suppressed: no Activity was attached',
-    SuppressionStatus.canceled: 'Not suppressed.',
-    SuppressionStatus.alreadyPresenting: 'Not suppressed.',
+    SuppressionStatus.canceled: 'Not suppressed: the request was canceled',
+    SuppressionStatus.alreadyPresenting: 'Not suppressed: Wallet was already',
     SuppressionStatus.notSuppressed: 'Not suppressed.',
   };
   for (final status in SuppressionStatus.values) {
