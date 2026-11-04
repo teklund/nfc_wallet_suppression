@@ -280,6 +280,7 @@ The compiler flags the remaining changes:
 | Wallet appears while the app is in the background | Both | Expected: suppression only applies in the foreground, and resumes by itself when the app returns. |
 | Wallet appears while the share sheet, a permission dialog, the camera app, a photo picker or a browser tab is over the app | Android | Expected: anything that opens over the app as its own Android activity pauses the app's Activity, which pauses suppression until the user returns. Screens and dialogs Flutter draws itself (routes, `showDialog`, bottom sheets) don't pause it. |
 | Wallet appears again after another NFC feature ran | Android | Android keeps one reader mode per activity, so when a tag reader or other code stops reader mode on the app's Activity, this plugin's suppression is still held but not in effect, and `isSuppressed()` still returns `true`. Request again: a request restores it even while it is held. To avoid it, hand over in order; see [With NFC tag readers](#with-nfc-tag-readers-android). |
+| Wallet doesn't appear after a hot restart, even where nothing requested suppression | Both | Expected: a hot restart restarts Dart but not the plugin, so a hold from before it is kept. Call `releaseSuppression()`, or stop the app and run it again. |
 
 ### Logs
 
@@ -324,7 +325,7 @@ for a full example.
 
 ## Example App
 
-The [`example/`](https://github.com/teklund/nfc_wallet_suppression/tree/HEAD/example) app shows the recommended pattern: a ticket screen requests suppression when it appears and releases it when it closes, counting open tickets so that one closing during a transition can't end the next one's hold.
+The [`example/`](https://github.com/teklund/nfc_wallet_suppression/tree/HEAD/example) app has two parts. Its home screen calls the API directly, for trying the plugin on a device, and explains what each request result means. Its suppression screen shows the recommended pattern: it requests suppression when it appears and releases it when it closes, counting open screens so that one closing during a transition can't end the next one's hold.
 
 ```bash
 cd example && flutter run
