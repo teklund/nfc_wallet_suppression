@@ -31,7 +31,8 @@ void main() {
       'isSuppressed',
       'requestSuppression',
     ]);
-    expect(find.text('request → suppressed'), findsOne);
+    expect(find.text('requestSuppression()'), findsOne);
+    expect(find.text('suppressed'), findsOne);
 
     await tester.pageBack();
     await tester.pumpAndSettle();
@@ -108,14 +109,16 @@ void main() {
 
     await tester.tap(find.text('Request Suppression'));
     await tester.pumpAndSettle();
-    expect(find.text('request → suppressed'), findsOne);
+    expect(find.text('Last call: requestSuppression()'), findsOne);
+    expect(find.text('suppressed'), findsOne);
     expect(find.textContaining('Held.'), findsOne);
     expect(find.text('Suppression in effect'), findsOne);
     expect(find.textContaining('after request'), findsOne);
 
     await tester.tap(find.text('Release Suppression'));
     await tester.pumpAndSettle();
-    expect(find.text('release → notSuppressed'), findsOne);
+    expect(find.text('Last call: releaseSuppression()'), findsOne);
+    expect(find.text('notSuppressed'), findsOne);
     expect(find.text('Suppression not in effect'), findsOne);
     expect(find.textContaining('after release'), findsOne);
   });
@@ -201,7 +204,8 @@ void main() {
 
       final text = explanations[status];
       expect(text, isNotNull, reason: 'No explanation for $status');
-      expect(find.text('request → ${status.name}'), findsOne);
+      expect(find.text('requestSuppression()'), findsOne);
+      expect(find.text(status.name), findsOne);
       expect(find.textContaining(text!), findsOne);
     });
   }

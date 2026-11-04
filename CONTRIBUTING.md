@@ -228,7 +228,10 @@ A pigeon bump fails the Pigeon Codegen Drift check until the code is regenerated
 
    ```bash
    flutter test
-   cd example && flutter test && flutter test integration_test/ && cd ..
+   cd example
+   flutter test
+   flutter test integration_test/
+   cd ..
    ```
 
 4. **Build example app** on target platforms:

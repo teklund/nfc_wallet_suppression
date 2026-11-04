@@ -89,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     unawaited(Navigator.of(context).push(route));
     // Its release ends any hold, including one requested here. Completes once
-    // the screen is gone, so after that release.
+    // the screen is gone, after that release is called.
     await route.completed;
     await _check('after the suppression screen');
   }
@@ -118,15 +118,19 @@ class _HomeScreenState extends State<HomeScreen> {
             // Offer suppression only where it can be attempted.
             onPressed: _isSupported != true
                 ? null
-                : () =>
-                      _call('request', NfcWalletSuppression.requestSuppression),
+                : () => _call(
+                    'requestSuppression()',
+                    NfcWalletSuppression.requestSuppression,
+                  ),
             icon: const Icon(Icons.block),
             label: const Text('Request Suppression'),
           ),
           const SizedBox(height: 8),
           FilledButton.icon(
-            onPressed: () =>
-                _call('release', NfcWalletSuppression.releaseSuppression),
+            onPressed: () => _call(
+              'releaseSuppression()',
+              NfcWalletSuppression.releaseSuppression,
+            ),
             icon: const Icon(Icons.nfc),
             label: const Text('Release Suppression'),
           ),
@@ -241,12 +245,23 @@ class _SuppressionScreenState extends State<SuppressionScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          Text(
-            result == null ? 'Requesting…' : 'request → ${result.status.name}',
-            textAlign: TextAlign.center,
-          ),
-          if (result != null)
+          if (result == null)
+            const Text('Requesting…', textAlign: TextAlign.center)
+          else ...[
+            Text(
+              'requestSuppression()',
+              style: theme.textTheme.titleSmall,
+              textAlign: TextAlign.center,
+            ),
+            Text(
+              result.status.name,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
             Text(explain(result.status), textAlign: TextAlign.center),
+          ],
         ],
       ),
     );
@@ -306,7 +321,8 @@ class StatusCard extends StatelessWidget {
     this.checked = '',
   });
 
-  /// The call that returned [result]: `request` or `release`.
+  /// The call that returned [result]: `requestSuppression()` or
+  /// `releaseSuppression()`.
   final String? call;
   final SuppressionResult? result;
   final bool? isInEffect;
@@ -357,12 +373,20 @@ class StatusCard extends StatelessWidget {
             ),
             if (checked.isNotEmpty) Text('Checked $checked', style: details),
             const Divider(height: 16),
-            Text('Last call', style: theme.textTheme.titleSmall),
-            Text(
-              result == null ? 'No call yet' : '$call → ${result.status.name}',
-            ),
+            if (result == null) ...[
+              Text('Last call', style: theme.textTheme.titleSmall),
+              const Text('No call yet'),
+            ] else ...[
+              Text('Last call: $call', style: theme.textTheme.titleSmall),
+              Text(
+                result.status.name,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
             // The explanations are written for request results.
-            if (result != null && call == 'request')
+            if (result != null && call == 'requestSuppression()')
               Text(explain(result.status)),
             // The platform's own text, for logs. Not user-facing copy, and its
             // wording is not part of the API.
@@ -390,7 +414,8 @@ String explain(SuppressionStatus status) {
       'The outcome is unclear; Check Status on the home screen shows whether '
           'it took effect.',
     SuppressionStatus.unavailable =>
-      'Not suppressed: no Activity was attached.',
+      'Not suppressed: no Activity was attached. Requesting again later can '
+          'succeed.',
     // New statuses may be added, so always keep a fallback.
     _ => 'Not suppressed.',
   };
