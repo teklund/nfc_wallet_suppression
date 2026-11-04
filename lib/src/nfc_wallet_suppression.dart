@@ -82,7 +82,7 @@ abstract final class NfcWalletSuppression {
   ///
   /// switch (result.status) {
   ///   case SuppressionStatus.suppressed:
-  ///     print('Wallet suppressed successfully');
+  ///     print('Suppression held');
   ///   case SuppressionStatus.nfcDisabled:
   ///     // Held; prompt to switch NFC on only if your app needs NFC itself.
   ///     print('Suppression starts when NFC is switched on');

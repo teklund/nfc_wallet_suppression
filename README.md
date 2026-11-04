@@ -95,6 +95,11 @@ reaches the reader. On iOS, suppression is not active until the request
 completes, and Apple documents that the first request after install shows a
 one-time alert that Apple Pay is unavailable.
 
+Release it when that screen closes. If two such screens can be open at once,
+as during a route transition, where the closing screen is disposed only after
+its exit animation, release when the last one closes: one release ends the
+hold. The [example app](#example-app) counts its open screens for this.
+
 ### Quick Example
 
 ```dart
@@ -125,7 +130,7 @@ final result = await NfcWalletSuppression.requestSuppression();
 
 switch (result.status) {
   case SuppressionStatus.suppressed:
-    break; // The wallet stays hidden at NFC readers.
+    break; // Held: pauses in the background and resumes by itself.
   case SuppressionStatus.nfcDisabled:
     break; // Held: starts by itself once NFC is switched on.
   case SuppressionStatus.notSupported:
@@ -170,7 +175,7 @@ without a major version bump, so **always include a `default` when switching.**
 | `suppressed` | ✔ | | Suppression is held; [Lifetime](#lifetime) says when it is in effect |
 | `notSuppressed` | | ✔ | Suppression is off — whether this call ended it or there was nothing to end |
 | `nfcDisabled` | ✔ (Android) | | NFC is switched off in settings. The request is held and starts by itself once NFC is on. Wallet apps can't respond to readers while NFC is off either, so prompt the user (`android.settings.NFC_SETTINGS`) only if your app needs NFC itself. |
-| `unavailable` | ✔ (Android) | | Transient and retryable — no Activity is attached to the Flutter engine, for example during a configuration change |
+| `unavailable` | ✔ (Android) | | Transient and retryable — no Activity is attached to the Flutter engine, as when it runs without its screen |
 | `denied` | ✔ | ✔ (Android) | Refused — iOS: usually a missing entitlement; Android: a `SecurityException` on the NFC call |
 | `canceled` | ✔ (iOS) | | The request was canceled before it completed |
 | `notSupported` | ✔ | | Suppression isn't supported at all — Android: no NFC hardware; iOS: PassKit reports it unsupported |
@@ -319,7 +324,7 @@ for a full example.
 
 ## Example App
 
-The [`example/`](https://github.com/teklund/nfc_wallet_suppression/tree/HEAD/example) app shows the recommended pattern: a ticket screen requests suppression when it appears and releases it when it closes.
+The [`example/`](https://github.com/teklund/nfc_wallet_suppression/tree/HEAD/example) app shows the recommended pattern: a ticket screen requests suppression when it appears and releases it when it closes, counting open tickets so that one closing during a transition can't end the next one's hold.
 
 ```bash
 cd example && flutter run

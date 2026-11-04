@@ -48,6 +48,7 @@ flutter test
 
 # Full pre-push
 flutter test
+(cd example && flutter test)
 cd example/android && ./gradlew :nfc_wallet_suppression:testDebugUnitTest
 # iOS: see docs/NATIVE_COVERAGE.md ("Run locally") for the full xcodebuild invocation
 ```

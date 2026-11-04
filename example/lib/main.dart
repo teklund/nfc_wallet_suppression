@@ -42,21 +42,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isSupported = _isSupported;
+    // Offer suppression only where it can be attempted. The ticket opens either
+    // way: the request's result is the definitive answer.
+    final offer = switch (_isSupported) {
+      null => '',
+      true =>
+        ' Open the ticket to keep it from popping up at NFC readers while the '
+            'ticket is shown.',
+      false =>
+        " This device can't keep it from popping up at NFC readers, but the "
+            'ticket still opens.',
+    };
     return Scaffold(
       appBar: AppBar(title: const Text('NFC Wallet Suppression')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
-            'The wallet works as usual on this screen. Open the ticket to keep '
-            'it from popping up at NFC readers while the ticket is shown.',
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Supported on this device: '
-            '${isSupported == null ? '…' : (isSupported ? 'yes' : 'no')}',
-          ),
+          Text('The wallet works as usual on this screen.$offer'),
           const SizedBox(height: 16),
           FilledButton(
             onPressed: () => Navigator.of(context).push(
@@ -70,8 +72,28 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+/// Holds suppression while at least one screen that needs it is open.
+///
+/// Screens overlap during route transitions: a closing screen is disposed
+/// only after its exit animation, so its release can arrive after the next
+/// screen's request. One release ends the hold, so only the last screen to
+/// close may release.
+abstract final class WalletSuppression {
+  static int _screens = 0;
+
+  static Future<SuppressionResult> acquire() {
+    _screens++;
+    return NfcWalletSuppression.requestSuppression();
+  }
+
+  static void release() {
+    _screens--;
+    if (_screens == 0) unawaited(NfcWalletSuppression.releaseSuppression());
+  }
+}
+
 /// The screen shown at the reader. Suppression is requested when it appears
-/// and released when it closes.
+/// and released, through [WalletSuppression], when the last one closes.
 class TicketScreen extends StatefulWidget {
   const TicketScreen({super.key});
 
@@ -93,14 +115,13 @@ class _TicketScreenState extends State<TicketScreen> {
 
   @override
   void dispose() {
-    // Release whatever the request returned: release is idempotent, and calls
-    // run in the order they were made, so there is no need to wait.
-    unawaited(NfcWalletSuppression.releaseSuppression());
+    // Whatever the request returned: release is idempotent.
+    WalletSuppression.release();
     super.dispose();
   }
 
   Future<void> _request() async {
-    final result = await NfcWalletSuppression.requestSuppression();
+    final result = await WalletSuppression.acquire();
     if (!mounted) return;
     setState(() => _result = result);
     await _checkInEffect();
@@ -160,15 +181,22 @@ class _TicketScreenState extends State<TicketScreen> {
 
   String _explain(SuppressionResult result) {
     return switch (result.status) {
-      SuppressionStatus.suppressed => 'the wallet stays hidden at NFC readers.',
+      SuppressionStatus.suppressed =>
+        'held. It pauses in the background and resumes by itself.',
       SuppressionStatus.nfcDisabled =>
         'NFC is off. Suppression starts by itself once it is switched on.',
       SuppressionStatus.notSupported =>
         "this device can't suppress the wallet.",
+      SuppressionStatus.denied =>
+        'refused. On iOS this usually means a missing suppression '
+            'entitlement, or Wallet was showing a pass.',
+      SuppressionStatus.unknown =>
+        'the outcome is unclear; "In effect at last check" shows whether '
+            'it took effect.',
       // New statuses may be added, so always keep a fallback.
       _ =>
         result.isRetryable
-            ? 'not suppressed; requesting again may help.'
+            ? 'not suppressed: no Activity is attached right now.'
             : 'not suppressed.',
     };
   }
