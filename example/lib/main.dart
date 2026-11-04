@@ -271,7 +271,11 @@ class SupportCard extends StatelessWidget {
           iconColor: colors.onPrimaryContainer,
           textColor: colors.onPrimaryContainer,
           leading: const Icon(Icons.check_circle),
-          title: const Text('Supported on this device'),
+          title: const Text('Suppression can be attempted'),
+          subtitle: const Text(
+            'A request can still fail, for example in the iOS Simulator or '
+            'without the iOS entitlement.',
+          ),
         ),
       ),
       false => Card(
@@ -282,7 +286,8 @@ class SupportCard extends StatelessWidget {
           leading: const Icon(Icons.warning_amber),
           title: const Text('Not supported on this device'),
           subtitle: const Text(
-            'Android needs NFC hardware; iOS needs the Wallet pass library.',
+            'Needs Android with NFC hardware, or iOS with the Wallet pass '
+            'library.',
           ),
         ),
       ),

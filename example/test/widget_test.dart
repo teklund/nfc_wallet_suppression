@@ -11,14 +11,21 @@ void main() {
     NfcWalletSuppressionPlatform.instance = fake;
   });
 
+  Future<void> openSuppressionScreen(WidgetTester tester) async {
+    final button = find.text('Open Suppression Screen', skipOffstage: false);
+    await tester.ensureVisible(button);
+    await tester.pump();
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('the suppression screen requests suppression when shown and '
       'releases it when closed', (tester) async {
     await tester.pumpWidget(const ExampleApp());
     await tester.pumpAndSettle();
     expect(fake.methodCalls, ['isSupported', 'isSuppressed']);
 
-    await tester.tap(find.text('Open Suppression Screen'));
-    await tester.pumpAndSettle();
+    await openSuppressionScreen(tester);
     expect(fake.methodCalls, [
       'isSupported',
       'isSuppressed',
@@ -45,8 +52,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Suppression in effect'), findsOne);
 
-    await tester.tap(find.text('Open Suppression Screen'));
-    await tester.pumpAndSettle();
+    await openSuppressionScreen(tester);
     await tester.pageBack();
     await tester.pumpAndSettle();
 
@@ -62,15 +68,13 @@ void main() {
   testWidgets('reopening the suppression screen while the old one is still '
       'closing keeps suppression held', (tester) async {
     await tester.pumpWidget(const ExampleApp());
-    await tester.tap(find.text('Open Suppression Screen'));
-    await tester.pumpAndSettle();
+    await openSuppressionScreen(tester);
 
     // The closing screen is disposed only after its exit animation, after the
     // new one has made its request.
     await tester.pageBack();
     await tester.pump(const Duration(milliseconds: 100));
-    await tester.tap(find.text('Open Suppression Screen'));
-    await tester.pumpAndSettle();
+    await openSuppressionScreen(tester);
 
     expect(find.byType(SuppressionScreen), findsOne);
     expect(fake.methodCalls, isNot(contains('releaseSuppression')));
@@ -89,8 +93,7 @@ void main() {
     final request = find.widgetWithText(FilledButton, 'Request Suppression');
     expect(tester.widget<FilledButton>(request).onPressed, isNull);
 
-    await tester.tap(find.text('Open Suppression Screen'));
-    await tester.pumpAndSettle();
+    await openSuppressionScreen(tester);
     expect(find.byType(SuppressionScreen), findsOne);
   });
 
@@ -99,7 +102,7 @@ void main() {
   ) async {
     await tester.pumpWidget(const ExampleApp());
     await tester.pumpAndSettle();
-    expect(find.text('Supported on this device'), findsOne);
+    expect(find.text('Suppression can be attempted'), findsOne);
     expect(find.text('No call yet'), findsOne);
     expect(find.text('Suppression not in effect'), findsOne);
 
@@ -194,8 +197,7 @@ void main() {
     testWidgets('explains ${status.name}', (tester) async {
       fake.requestResult = SuppressionResult(status: status);
       await tester.pumpWidget(const ExampleApp());
-      await tester.tap(find.text('Open Suppression Screen'));
-      await tester.pumpAndSettle();
+      await openSuppressionScreen(tester);
 
       final text = explanations[status];
       expect(text, isNotNull, reason: 'No explanation for $status');
