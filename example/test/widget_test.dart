@@ -111,7 +111,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Last call: requestSuppression()'), findsOne);
     expect(find.text('suppressed'), findsOne);
-    expect(find.textContaining('Held.'), findsOne);
+    expect(find.textContaining('Held until released.'), findsOne);
     expect(find.text('Suppression in effect'), findsOne);
     expect(find.textContaining('after request'), findsOne);
 
@@ -186,7 +186,7 @@ void main() {
 
   // A status added later fails here until the example explains it.
   const explanations = {
-    SuppressionStatus.suppressed: 'Held.',
+    SuppressionStatus.suppressed: 'Held until released.',
     SuppressionStatus.nfcDisabled: 'NFC was off.',
     SuppressionStatus.notSupported: "This device can't suppress",
     SuppressionStatus.denied: 'Refused.',

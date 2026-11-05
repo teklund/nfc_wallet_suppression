@@ -404,9 +404,10 @@ class StatusCard extends StatelessWidget {
 String explain(SuppressionStatus status) {
   return switch (status) {
     SuppressionStatus.suppressed =>
-      'Held. It pauses in the background and resumes by itself.',
+      'Held until released. It pauses in the background and resumes by '
+          'itself.',
     SuppressionStatus.nfcDisabled =>
-      'NFC was off. Suppression starts by itself once it is switched on.',
+      'NFC was off. Held until released; it starts by itself once NFC is on.',
     SuppressionStatus.notSupported => "This device can't suppress the wallet.",
     SuppressionStatus.denied =>
       'Refused. On iOS this usually means a missing suppression '
