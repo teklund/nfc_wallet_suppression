@@ -17,6 +17,7 @@ This document provides a comprehensive checklist for publishing new versions of 
 ### 🧪 Testing
 
 - [ ] Run all Dart tests: `flutter test`
+- [ ] Run the example's widget tests: `(cd example && flutter test)`
 - [ ] Verify test coverage: `flutter test --coverage`
 - [ ] Run iOS native tests: `cd ios && xcodebuild test -workspace ...`
 - [ ] Run Android native tests: `cd android && ./gradlew test`

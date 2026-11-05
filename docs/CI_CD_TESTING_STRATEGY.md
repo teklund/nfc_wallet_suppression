@@ -30,12 +30,13 @@ Codecov uploads happen from three jobs and are tagged with these flags (see `cod
 
 ## Where Tests Run
 
-| Test Type           | Where                          |
-| ------------------- | ------------------------------ |
-| Dart unit tests     | `Run Tests & Coverage`         |
-| Android native      | `Android Native Tests`         |
-| iOS native          | `iOS Native Tests`             |
-| Integration tests   | `Android Integration Tests`, `iOS Integration Tests`, `Web Integration Test` (plugin test only) |
+| Test Type            | Where                          |
+| -------------------- | ------------------------------ |
+| Dart unit tests      | `Run Tests & Coverage`         |
+| Example widget tests | `Run Tests & Coverage`         |
+| Android native       | `Android Native Tests`         |
+| iOS native           | `iOS Native Tests`             |
+| Integration tests    | `Android Integration Tests`, `iOS Integration Tests`, `Web Integration Test` (plugin test only) |
 
 ## When to Run Which Tests
 
@@ -47,6 +48,7 @@ flutter test
 
 # Full pre-push
 flutter test
+(cd example && flutter test)
 cd example/android && ./gradlew :nfc_wallet_suppression:testDebugUnitTest
 # iOS: see docs/NATIVE_COVERAGE.md ("Run locally") for the full xcodebuild invocation
 ```
