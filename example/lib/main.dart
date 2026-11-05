@@ -240,8 +240,8 @@ class _SuppressionScreenState extends State<SuppressionScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Hold the phone to the reader. The wallet should not appear while '
-            'this screen is open.',
+            "Hold the phone to the reader to check that the wallet doesn't "
+            'appear while this screen is open.',
             style: theme.textTheme.titleMedium,
             textAlign: TextAlign.center,
           ),
