@@ -67,7 +67,9 @@ void main() {
   });
 
   testWidgets('reopening the suppression screen while the old one is still '
-      'closing keeps suppression held', (tester) async {
+      'closing keeps suppression held until the last one closes', (
+    tester,
+  ) async {
     await tester.pumpWidget(const ExampleApp());
     await openSuppressionScreen(tester);
 
@@ -80,6 +82,15 @@ void main() {
     expect(find.byType(SuppressionScreen), findsOne);
     expect(fake.methodCalls, isNot(contains('releaseSuppression')));
     expect(fake.suppressed, isTrue);
+
+    // Closing the last one releases.
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(
+      fake.methodCalls.where((call) => call == 'releaseSuppression'),
+      hasLength(1),
+    );
+    expect(fake.suppressed, isFalse);
   });
 
   testWidgets('an unsupported device says so, but the suppression screen '
