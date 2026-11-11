@@ -140,6 +140,9 @@ final class TestPluginRegistrar: NSObject, FlutterPluginRegistrar {
 
   var viewController: UIViewController? { nil }
 
+  // Required from Flutter 3.50.
+  var engineIdentifier: Int64 { 0 }
+
   func messenger() -> FlutterBinaryMessenger { fakeMessenger }
 
   func textures() -> FlutterTextureRegistry { fatalError("not used by this plugin") }
