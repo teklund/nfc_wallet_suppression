@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:nfc_wallet_suppression/nfc_wallet_suppression.dart';
 
 void main() => runApp(const ExampleApp());
