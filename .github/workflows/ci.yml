@@ -126,9 +126,11 @@ jobs:
       - name: Analyze project
         uses: invertase/github-action-dart-analyzer@v3
         with:
-          fatal-infos: true
+          # Newer SDKs can deprecate APIs that have no replacement on the
+          # minimum SDK yet: on stable, infos only annotate. The weekly SDK
+          # check tracks them.
+          fatal-infos: ${{ matrix.flutter-version == '3.44.x' }}
           fatal-warnings: true
-          annotate-only: ${{ matrix.flutter-version != '3.44.x' }}
 
   codegen:
     name: Pigeon Codegen Drift
