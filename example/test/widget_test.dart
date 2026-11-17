@@ -202,7 +202,6 @@ void main() {
     SuppressionStatus.notSupported: "This device can't suppress",
     SuppressionStatus.denied: 'Refused.',
     SuppressionStatus.unknown: 'The outcome is unclear',
-    SuppressionStatus.unavailable: 'Not suppressed: no Activity was attached',
     SuppressionStatus.canceled: 'Not suppressed: the request was canceled',
     SuppressionStatus.alreadyPresenting: 'Not suppressed: Wallet was already',
     SuppressionStatus.notSuppressed: 'Not suppressed.',

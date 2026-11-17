@@ -223,11 +223,10 @@ void main() {
         expect(releaseStatus, isA<SuppressionResult>());
         expect(isSuppressed, isA<bool>());
 
-        // Likely returns notSupported, or nfcDisabled/unavailable on Android
+        // Likely returns notSupported, or nfcDisabled on Android
         expect([
           SuppressionStatus.notSupported,
           SuppressionStatus.nfcDisabled,
-          SuppressionStatus.unavailable,
         ], contains(requestStatus.status));
       },
     );

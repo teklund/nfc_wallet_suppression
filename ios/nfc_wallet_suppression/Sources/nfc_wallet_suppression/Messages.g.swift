@@ -198,14 +198,12 @@ enum SuppressionStatusCode: Int, CaseIterable {
   case canceled = 4
   /// The request was refused.
   case denied = 5
-  /// Not attempted right now, but may succeed later.
-  case unavailable = 6
   /// Unknown status or error
-  case unknown = 7
+  case unknown = 6
   /// NFC hardware is present but switched off in system settings.
   ///
   /// The request is held, and suppression starts once NFC is switched on.
-  case nfcDisabled = 8
+  case nfcDisabled = 7
 }
 
 /// Result of a suppression operation with status and optional message

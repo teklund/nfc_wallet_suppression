@@ -11,6 +11,5 @@ void main() {
 
     expect(result.isSuppressed, isTrue);
     expect(result.isReleased, isFalse);
-    expect(result.isRetryable, isFalse);
   });
 }
