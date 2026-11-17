@@ -415,9 +415,6 @@ String explain(SuppressionStatus status) {
     SuppressionStatus.unknown =>
       'The outcome is unclear; isSuppressed() shows whether suppression is in '
           'effect.',
-    SuppressionStatus.unavailable =>
-      'Not suppressed: no Activity was attached. Requesting again later can '
-          'succeed.',
     SuppressionStatus.alreadyPresenting =>
       'Not suppressed: Wallet was already showing a pass.',
     SuppressionStatus.canceled =>

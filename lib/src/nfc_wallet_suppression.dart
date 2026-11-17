@@ -34,6 +34,10 @@ import 'nfc_wallet_suppression_status.dart';
 ///   notification shade, where suppression stays in effect, and in split
 ///   screen while the user is in the other app, where it stays in effect on
 ///   Android 10 and later. On Android, [isSuppressed] tells them apart.
+/// - On Android, suppression also needs an Activity attached to the Flutter
+///   engine. A request made without one, as from a pre-warmed engine before
+///   its screen is shown, is held and starts once one attaches. An engine
+///   that never gets one, such as a background engine, never suppresses.
 /// - On Android, suppression uses the Activity's one reader mode, so a tag
 ///   reader or other code that uses reader mode on the same Activity takes it
 ///   over. Once that code stops, suppression is still held but not in effect,
@@ -51,10 +55,9 @@ abstract final class NfcWalletSuppression {
   /// Requesting while suppression is held reports on that hold instead of
   /// adding another. If suppression is not in effect, as on Android after
   /// other code stopped reader mode, the request restores it. If that fails,
-  /// the hold ends, except that [SuppressionStatus.unavailable] keeps it and
-  /// [SuppressionStatus.unknown] may leave it in place. Calls don't have to be
-  /// awaited before the next one: they run in the order issued, each returns
-  /// its own outcome, and the last call wins.
+  /// the hold ends, except that [SuppressionStatus.unknown] may leave it in
+  /// place. Calls don't have to be awaited before the next one: they run in
+  /// the order issued, each returns its own outcome, and the last call wins.
   ///
   /// The result's [SuppressionResult.status] is one of:
   ///
@@ -63,7 +66,6 @@ abstract final class NfcWalletSuppression {
   /// | [SuppressionStatus.suppressed] — suppression is held; "Suppression lifecycle" on [NfcWalletSuppression] says when it is in effect | ✔ | ✔ |
   /// | [SuppressionStatus.notSupported] — no suppression capability at all; iOS: PassKit reports it unsupported, Android: no NFC hardware | ✔ | ✔ |
   /// | [SuppressionStatus.nfcDisabled] — NFC is switched off; the request is held and starts once NFC is on | | ✔ |
-  /// | [SuppressionStatus.unavailable] — transient; no Activity attached | | ✔ |
   /// | [SuppressionStatus.denied] — iOS: usually a missing entitlement; Android: a `SecurityException` | ✔ | ✔ |
   /// | [SuppressionStatus.alreadyPresenting] — the wallet is already showing a pass | ✔ | |
   /// | [SuppressionStatus.canceled] — the request was canceled before it completed | ✔ | |

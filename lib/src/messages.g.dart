@@ -117,9 +117,6 @@ enum SuppressionStatusCode {
   /// The request was refused.
   denied,
 
-  /// Not attempted right now, but may succeed later.
-  unavailable,
-
   /// Unknown status or error
   unknown,
 

@@ -136,11 +136,7 @@ switch (result.status) {
   case SuppressionStatus.notSupported:
     showUnsupportedDeviceUi();
   default:
-    if (result.isRetryable) {
-      scheduleRetry();
-    } else {
-      reportProblem(result.description);
-    }
+    reportProblem(result.description);
 }
 ```
 
@@ -163,7 +159,6 @@ Both suppression methods return a `SuppressionResult`:
 | `description` | `String?` | The platform's own account of what happened. Diagnostic only — the wording is not part of the API contract and may change. Never parse it. |
 | `isSuppressed` | `bool` | `status == suppressed` |
 | `isReleased` | `bool` | `status == notSuppressed` |
-| `isRetryable` | `bool` | `status == unavailable` |
 
 ### SuppressionStatus Values
 
@@ -175,7 +170,6 @@ without a major version bump, so **always include a `default` when switching.**
 | `suppressed` | ✔ | | Suppression is held; [Lifetime](#lifetime) says when it is in effect |
 | `notSuppressed` | | ✔ | Suppression is off — whether this call ended it or there was nothing to end |
 | `nfcDisabled` | ✔ (Android) | | NFC is switched off in settings. The request is held and starts by itself once NFC is on. Wallet apps can't respond to readers while NFC is off either, so prompt the user (`android.settings.NFC_SETTINGS`) only if your app needs NFC itself. |
-| `unavailable` | ✔ (Android) | | Transient and retryable — no Activity is attached to the Flutter engine, as when it runs without its screen |
 | `denied` | ✔ | ✔ (Android) | Refused — iOS: usually a missing entitlement; Android: a `SecurityException` on the NFC call |
 | `canceled` | ✔ (iOS) | | The request was canceled before it completed |
 | `notSupported` | ✔ | | Suppression isn't supported at all — Android: no NFC hardware; iOS: PassKit reports it unsupported |
@@ -196,6 +190,11 @@ permission dialog, and while NFC is switched off. It resumes by itself
 afterwards. On Android, a tag reader or other code that uses reader mode on the
 app's Activity can also leave it held but not in effect; see
 [With NFC tag readers](#with-nfc-tag-readers-android).
+
+On Android, suppression also needs an Activity attached to the Flutter engine.
+A request made without one, as from a pre-warmed engine before its screen is
+shown, is held and starts once one attaches. An engine that never gets one, such
+as a background engine, never suppresses.
 
 ### With NFC tag readers (Android)
 
@@ -248,18 +247,18 @@ In tests, construct a result instead of mocking it. `SuppressionResult` is a
 const result = SuppressionResult(status: SuppressionStatus.suppressed);
 ```
 
-Two status meanings also changed:
+Four status meanings also changed:
 
 | Situation | 0.1.x | 1.0.0 |
 | :--- | :--- | :--- |
-| Release when nothing is suppressed | `unavailable` | `notSuppressed` — release is idempotent |
+| Release with nothing held (iOS), or with NFC off or absent (Android) | `unavailable` | `notSuppressed` — release is idempotent and ends any hold |
 | Android, NFC switched off in settings | `unavailable`, nothing held | `nfcDisabled` — the request is held and starts once NFC is on |
-
-`unavailable` now means only "transient, retry may work" — on Android, no
-Activity attached.
+| Android, no NFC hardware | `unavailable` | `notSupported` |
+| Android, no Activity attached to the Flutter engine | `unknown` from request and release, nothing held | request: `suppressed`, held and starts once an Activity attaches; release: `notSuppressed` |
 
 The compiler flags the remaining changes:
 
+- `SuppressionStatus.unavailable` is removed; no platform returns it any more.
 - `SuppressionStatus.cancelled` is now `SuppressionStatus.canceled`.
 - `SuppressionStatus.nfcDisabled` is new, so a `switch` that lists every
   status without a `default` no longer compiles. Add a `default`; more values
