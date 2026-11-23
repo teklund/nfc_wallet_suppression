@@ -44,15 +44,6 @@ final class SuppressionResult {
   /// nothing to release.
   bool get isReleased => status == SuppressionStatus.notSuppressed;
 
-  /// Whether retrying could plausibly succeed once something changes.
-  ///
-  /// True only for [SuppressionStatus.unavailable], which is transient and may
-  /// clear on its own. [SuppressionStatus.nfcDisabled] needs no retry: the
-  /// request is held and starts once NFC is switched on. Deliberately excludes
-  /// [SuppressionStatus.unknown], where the operation may already have taken
-  /// effect — check `isSuppressed()` before retrying that.
-  bool get isRetryable => status == SuppressionStatus.unavailable;
-
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

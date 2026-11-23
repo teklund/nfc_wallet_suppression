@@ -22,12 +22,6 @@ enum SuppressionStatus {
   /// when it is in effect.
   suppressed,
 
-  /// Suppression could not be attempted right now, but may succeed later.
-  ///
-  /// Transient and retryable — for example, no Activity attached on Android.
-  /// This does *not* mean NFC is switched off; that is [nfcDisabled].
-  unavailable,
-
   /// The request was refused.
   ///
   /// On iOS this usually means the app lacks the
@@ -41,8 +35,8 @@ enum SuppressionStatus {
 
   /// The device or OS cannot suppress wallet presentation at all.
   ///
-  /// Permanent for this device — unlike [unavailable] and [nfcDisabled], there
-  /// is nothing the user or the app can do about it.
+  /// Permanent for this device — unlike [nfcDisabled], there is nothing the
+  /// user or the app can do about it.
   notSupported,
 
   /// The wallet is already presenting a pass, so suppression was refused.

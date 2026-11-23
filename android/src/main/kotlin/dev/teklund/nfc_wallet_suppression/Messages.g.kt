@@ -206,16 +206,14 @@ enum class SuppressionStatusCode(val raw: Int) {
   CANCELED(4),
   /** The request was refused. */
   DENIED(5),
-  /** Not attempted right now, but may succeed later. */
-  UNAVAILABLE(6),
   /** Unknown status or error */
-  UNKNOWN(7),
+  UNKNOWN(6),
   /**
    * NFC hardware is present but switched off in system settings.
    *
    * The request is held, and suppression starts once NFC is switched on.
    */
-  NFC_DISABLED(8);
+  NFC_DISABLED(7);
 
   companion object {
     fun ofRaw(raw: Int): SuppressionStatusCode? {

@@ -138,16 +138,6 @@ void main() {
         expect(result.status, SuppressionStatus.denied);
       });
 
-      test('returns unavailable status', () async {
-        mockApi.mockRequestResult = SuppressionResult(
-          status: SuppressionStatusCode.unavailable,
-          message: 'Unavailable',
-        );
-
-        final result = await platform.requestSuppression();
-        expect(result.status, SuppressionStatus.unavailable);
-      });
-
       test('returns unknown status', () async {
         mockApi.mockRequestResult = SuppressionResult(
           status: SuppressionStatusCode.unknown,
@@ -195,19 +185,6 @@ void main() {
 
         final result = await platform.releaseSuppression();
         expect(result.status, SuppressionStatus.notSuppressed);
-      });
-
-      // Neither platform returns `unavailable` from release any more — release
-      // is idempotent and reports `notSuppressed`. Kept as a pure conversion
-      // check: whatever the wire says is what the caller is told.
-      test('passes an unavailable wire status straight through', () async {
-        mockApi.mockReleaseResult = SuppressionResult(
-          status: SuppressionStatusCode.unavailable,
-          message: 'No active suppression',
-        );
-
-        final result = await platform.releaseSuppression();
-        expect(result.status, SuppressionStatus.unavailable);
       });
 
       test('returns notSupported status', () async {
@@ -294,7 +271,6 @@ void main() {
               SuppressionStatus.alreadyPresenting,
           SuppressionStatusCode.canceled: SuppressionStatus.canceled,
           SuppressionStatusCode.denied: SuppressionStatus.denied,
-          SuppressionStatusCode.unavailable: SuppressionStatus.unavailable,
           SuppressionStatusCode.unknown: SuppressionStatus.unknown,
           SuppressionStatusCode.nfcDisabled: SuppressionStatus.nfcDisabled,
         };

@@ -11,8 +11,7 @@ The first stable release. Compared with 0.1.1, requests and releases return a
 ### Added
 
 - `SuppressionResult`, returned by requests and releases: the status, the
-  platform's diagnostic `description`, and `isSuppressed`, `isReleased` and
-  `isRetryable`.
+  platform's diagnostic `description`, and `isSuppressed` and `isReleased`.
 - `NfcWalletSuppression.isSupported()`.
 - `SuppressionStatus.nfcDisabled`: Android with NFC switched off. The request
   is held and starts once NFC is switched on.
@@ -29,12 +28,16 @@ The first stable release. Compared with 0.1.1, requests and releases return a
   Android 7.0 (API 24, was API 21).
 - **Breaking**: `requestSuppression()` and `releaseSuppression()` return a
   `SuppressionResult` instead of a `SuppressionStatus`.
-- **Breaking**: `unavailable` now means only "transient, retry may work": on
-  Android, no Activity attached. NFC switched off returns `nfcDisabled` and
+- **Breaking**: Android requests that returned `unavailable` now return a
+  status that says what happened. NFC switched off returns `nfcDisabled` and
   holds the request, so release it like a successful one. A device without NFC
   returns `notSupported`.
-- **Breaking**: Release is idempotent: with nothing held it returns
-  `notSuppressed` instead of `unavailable`.
+- **Breaking**: Android: a request with no Activity attached to the Flutter
+  engine returns `suppressed` and starts once one attaches. Before, it
+  returned `unknown` and nothing was held.
+- **Breaking**: Release is idempotent. Where it returned `unavailable` (with
+  nothing held on iOS, or with NFC off or absent on Android), it now returns
+  `notSuppressed`.
 - **Breaking**: `SuppressionStatus.cancelled` is renamed `canceled`.
 - **Breaking**: `NfcWalletSuppression` is an `abstract final class`.
 - **Breaking**: The main library exports only `NfcWalletSuppression`,
@@ -54,6 +57,8 @@ The first stable release. Compared with 0.1.1, requests and releases return a
 
 - **Breaking**: `MethodChannelNfcWalletSuppression`. Use
   `FakeNfcWalletSuppression` or a mock of `NfcWalletSuppressionPlatform`.
+- **Breaking**: `SuppressionStatus.unavailable`. No platform returns it any
+  more.
 
 ### Fixed
 

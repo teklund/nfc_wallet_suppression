@@ -130,9 +130,53 @@ internal class NfcWalletSuppressionPluginTest {
   // requestSuppression
 
   @Test
-  fun request_returnsUnavailableWhenNoActivity() {
-    val plugin = NfcWalletSuppressionPlugin(FakeWalletSuppressor())
-    assertEquals(SuppressionStatusCode.UNAVAILABLE, requestStatus(plugin))
+  fun request_withoutActivity_holdsAndArmsOnAttach() {
+    // As with a pre-warmed engine before its screen is shown.
+    val fake = FakeWalletSuppressor()
+    val plugin = NfcWalletSuppressionPlugin(fake)
+    plugin.onAttachedToEngine(engineBinding())
+
+    assertEquals(SuppressionStatusCode.SUPPRESSED, requestStatus(plugin))
+    assertEquals(SuppressionStatusCode.SUPPRESSED, requestStatus(plugin))
+    assertEquals(0, fake.startCount)
+    assertFalse(plugin.isSuppressed())
+
+    plugin.onAttachedToActivity(activityBinding(Mockito.mock(Activity::class.java)))
+    assertEquals(1, fake.startCount)
+    assertTrue(plugin.isSuppressed())
+  }
+
+  @Test
+  fun request_withoutActivity_whileNfcOff_returnsNfcDisabled() {
+    val fake = FakeWalletSuppressor().apply { nfcEnabled = false }
+    val plugin = NfcWalletSuppressionPlugin(fake)
+    plugin.onAttachedToEngine(engineBinding())
+
+    assertEquals(SuppressionStatusCode.NFC_DISABLED, requestStatus(plugin))
+    fake.switchNfcOn()
+    assertEquals(0, fake.startCount, "Nothing to arm without an activity")
+
+    plugin.onAttachedToActivity(activityBinding(Mockito.mock(Activity::class.java)))
+    assertEquals(1, fake.startCount)
+  }
+
+  @Test
+  fun request_withoutActivity_returnsNotSupportedWhenNoNfcHardware() {
+    val plugin = NfcWalletSuppressionPlugin(FakeWalletSuppressor().apply { hasHardware = false })
+    plugin.onAttachedToEngine(engineBinding())
+    assertEquals(SuppressionStatusCode.NOT_SUPPORTED, requestStatus(plugin))
+  }
+
+  @Test
+  fun release_withoutActivity_endsTheHold() {
+    val fake = FakeWalletSuppressor()
+    val plugin = NfcWalletSuppressionPlugin(fake)
+    plugin.onAttachedToEngine(engineBinding())
+    requestStatus(plugin)
+
+    assertEquals(SuppressionStatusCode.NOT_SUPPRESSED, releaseStatus(plugin))
+    plugin.onAttachedToActivity(activityBinding(Mockito.mock(Activity::class.java)))
+    assertEquals(0, fake.startCount)
   }
 
   @Test
