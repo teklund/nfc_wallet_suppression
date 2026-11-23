@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:nfc_wallet_suppression/testing.dart';
 import 'package:nfc_wallet_suppression_example/main.dart';
 
